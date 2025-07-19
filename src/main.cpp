@@ -9,6 +9,7 @@
 #include "kp_system.h"
 #include "location_manager.h"
 #include "hindu_calendar.h"
+#include "myanmar_calendar.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -104,6 +105,14 @@ struct CommandLineArgs {
     std::string panchangaToDate;
     std::string panchangaFormat = "table";
     bool showFestivalsOnly = false;
+
+    // Myanmar Calendar options
+    bool showMyanmarCalendar = false;
+    bool showMyanmarCalendarRange = false;
+    std::string myanmarCalendarFromDate;
+    std::string myanmarCalendarToDate;
+    std::string myanmarCalendarFormat = "table";
+    bool showAstrologicalDaysOnly = false;
 };
 
 void printHelp() {
@@ -265,6 +274,29 @@ void printHelp() {
     std::cout << "                       • Filters output to show religious observances\n";
     std::cout << "                       • Includes Ekadashi, Purnima, Amavasya\n";
     std::cout << "                       • Shows major Hindu festivals\n\n";
+
+    std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
+    std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
+    std::cout << "                       • Displays Myanmar Era (ME) and Sasana Era (SE) years\n";
+    std::cout << "                       • Shows Myanmar month, day, year type (watat)\n";
+    std::cout << "                       • Includes moon phases and fortnight days\n";
+    std::cout << "                       • Displays astrological days and observances\n";
+
+    std::cout << "    --myanmar-calendar-range FROM TO\n";
+    std::cout << "                       Generate Myanmar calendar for date range\n";
+    std::cout << "                       • Format: YYYY-MM-DD YYYY-MM-DD\n";
+    std::cout << "                       • Shows daily Myanmar calendar elements\n";
+
+    std::cout << "    --myanmar-calendar-format FORMAT\n";
+    std::cout << "                       Myanmar calendar output format\n";
+    std::cout << "                       table = Detailed display (default)\n";
+    std::cout << "                       csv   = Comma-separated values\n";
+    std::cout << "                       json  = JSON structure\n";
+
+    std::cout << "    --astrological-days-only\n";
+    std::cout << "                       Show only astrological days and events\n";
+    std::cout << "                       • Filters output to show Sabbath, Yatyaza, etc.\n";
+    std::cout << "                       • Shows Myanmar astrological observances\n\n";
 
     std::cout << "UTILITY OPTIONS ⚙️🛠️\n";
     std::cout << "    --solar-system     Show solar system orbital paths only\n";
@@ -711,6 +743,32 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--festivals-only") {
             args.showFestivalsOnly = true;
+
+        // Myanmar Calendar options  
+        } else if (arg == "--myanmar-calendar") {
+            args.showMyanmarCalendar = true;
+        } else if (arg == "--myanmar-calendar-range") {
+            args.showMyanmarCalendarRange = true;
+            if (i + 2 < argc) {
+                args.myanmarCalendarFromDate = argv[++i];
+                args.myanmarCalendarToDate = argv[++i];
+            } else {
+                std::cerr << "Error: --myanmar-calendar-range requires two date arguments (FROM TO)\n";
+                return false;
+            }
+        } else if (arg == "--myanmar-calendar-format") {
+            if (i + 1 < argc) {
+                args.myanmarCalendarFormat = argv[++i];
+            } else {
+                std::cerr << "Error: --myanmar-calendar-format requires a format argument\n";
+                return false;
+            }
+            if (args.myanmarCalendarFormat != "table" && args.myanmarCalendarFormat != "csv" && args.myanmarCalendarFormat != "json") {
+                std::cerr << "Error: Myanmar calendar format must be 'table', 'csv', or 'json'\n";
+                return false;
+            }
+        } else if (arg == "--astrological-days-only") {
+            args.showAstrologicalDaysOnly = true;
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -726,15 +784,16 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    // Eclipse, ephemeris, and panchanga features can work without full birth data
+    // Eclipse, ephemeris, panchanga, and Myanmar calendar features can work without full birth data
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
-        args.showPanchangaRange) {
+        args.showPanchangaRange || args.showMyanmarCalendarRange) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
-        if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty()) &&
+        if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() || 
+             !args.myanmarCalendarFromDate.empty()) &&
             args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
              args.longitude < -180.0 || args.longitude > 180.0)) {
-            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga searches\n";
+            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar searches\n";
             return false;
         }
 
@@ -1139,9 +1198,49 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Handle Myanmar Calendar calculations
+        if (args.showMyanmarCalendarRange) {
+            MyanmarCalendar myanmarCalendar;
+            if (!myanmarCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Myanmar Calendar system: " << myanmarCalendar.getLastError() << std::endl;
+                return 1;
+            }
+
+            std::string fromDate = args.myanmarCalendarFromDate;
+            std::string toDate = args.myanmarCalendarToDate;
+
+            if (fromDate.empty() || toDate.empty()) {
+                std::cerr << "Error: Myanmar calendar range requires --myanmar-calendar-range FROM TO dates" << std::endl;
+                return 1;
+            }
+
+            // Generate Myanmar calendar for date range
+            std::vector<MyanmarCalendarData> myanmarList = myanmarCalendar.calculateMyanmarDateRange(fromDate, toDate);
+
+            if (!myanmarList.empty()) {
+                if (args.myanmarCalendarFormat == "csv") {
+                    std::string result = myanmarCalendar.generateCSV(myanmarList);
+                    std::cout << result << std::endl;
+                } else if (args.myanmarCalendarFormat == "json") {
+                    std::cout << "[\n";
+                    for (size_t i = 0; i < myanmarList.size(); ++i) {
+                        std::cout << myanmarCalendar.generateJSON(myanmarList[i]);
+                        if (i < myanmarList.size() - 1) std::cout << ",";
+                        std::cout << "\n";
+                    }
+                    std::cout << "]\n";
+                } else {
+                    std::string result = myanmarCalendar.generateMyanmarCalendarTable(myanmarList);
+                    std::cout << result << std::endl;
+                }
+            } else {
+                std::cout << "Failed to generate Myanmar Calendar for the specified period." << std::endl;
+            }
+        }
+
         // Return early if only special features were requested
         if (args.showEclipses || args.showConjunctions || args.showEphemerisTable ||
-            args.showKPTransitions || args.showPanchangaRange) {
+            args.showKPTransitions || args.showPanchangaRange || args.showMyanmarCalendarRange) {
             return 0;
         }
     } catch (const std::exception& e) {
@@ -1230,6 +1329,71 @@ int main(int argc, char* argv[]) {
         if (!args.showKPTable && args.outputFormat == "text" && args.chartStyle.empty()) {
             return 0;
         }
+    }
+
+    // Handle Myanmar Calendar for birth date
+    if (args.showMyanmarCalendar) {
+        MyanmarCalendar myanmarCalendar;
+        if (!myanmarCalendar.initialize()) {
+            std::cerr << "Error: Failed to initialize Myanmar Calendar system: " << myanmarCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        MyanmarCalendarData myanmarData = myanmarCalendar.calculateMyanmarDate(birthData);
+
+        if (args.myanmarCalendarFormat == "json") {
+            std::cout << myanmarCalendar.generateJSON(myanmarData) << std::endl;
+        } else {
+            std::cout << myanmarCalendar.generateMyanmarCalendarTable(myanmarData) << std::endl;
+        }
+
+        // If only Myanmar Calendar was requested, return
+        if (!args.showKPTable && args.outputFormat == "text" && args.chartStyle.empty()) {
+            return 0;
+        }
+    }
+
+    // Handle Myanmar Calendar Range calculations
+    if (args.showMyanmarCalendarRange) {
+        MyanmarCalendar myanmarCalendar;
+        if (!myanmarCalendar.initialize()) {
+            std::cerr << "Error: Failed to initialize Myanmar Calendar system: " << myanmarCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        std::string fromDate = args.myanmarCalendarFromDate;
+        std::string toDate = args.myanmarCalendarToDate;
+
+        if (fromDate.empty() || toDate.empty()) {
+            std::cerr << "Error: Myanmar calendar range requires both FROM and TO dates" << std::endl;
+            return 1;
+        }
+
+        try {
+            std::vector<MyanmarCalendarData> myanmarDataList = myanmarCalendar.calculateMyanmarDateRange(fromDate, toDate);
+            
+            if (myanmarDataList.empty()) {
+                std::cout << "No Myanmar calendar data found for the specified period." << std::endl;
+            } else {
+                if (args.myanmarCalendarFormat == "json") {
+                    std::cout << "[" << std::endl;
+                    for (size_t i = 0; i < myanmarDataList.size(); ++i) {
+                        if (i > 0) std::cout << "," << std::endl;
+                        std::cout << myanmarCalendar.generateJSON(myanmarDataList[i]);
+                    }
+                    std::cout << std::endl << "]" << std::endl;
+                } else if (args.myanmarCalendarFormat == "csv") {
+                    std::cout << myanmarCalendar.generateCSV(myanmarDataList) << std::endl;
+                } else {
+                    std::cout << myanmarCalendar.generateMyanmarCalendarTable(myanmarDataList) << std::endl;
+                }
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error calculating Myanmar calendar range: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after Myanmar calendar range
     }
 
     // Output results

@@ -33,6 +33,7 @@ set(SOURCES
     src/solar_system_drawer.cpp
     src/kp_system.cpp
     src/hindu_calendar.cpp
+    src/myanmar_calendar.cpp
     ${SWISSEPH_SOURCES}
 )
 
