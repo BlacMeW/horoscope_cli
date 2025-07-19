@@ -255,7 +255,7 @@ private:
 
 public:
     HinduCalendar();
-    HinduCalendar(AyanamsaType ayanamsa, CalculationMethod method = CalculationMethod::DRIK_SIDDHANTA, 
+    HinduCalendar(AyanamsaType ayanamsa, CalculationMethod method = CalculationMethod::DRIK_SIDDHANTA,
                   CalendarSystem system = CalendarSystem::LUNI_SOLAR);
     ~HinduCalendar();
 
@@ -307,7 +307,7 @@ public:
     std::string hinduDateToGregorian(int hinduYear, int hinduMonth, int hinduDay, bool isKrishna = false) const;
     std::string gregorianDateToHindu(int gregYear, int gregMonth, int gregDay) const;
     double gregorianDateToJulianDay(int year, int month, int day, double hour = 12.0) const;
-    
+
     // Configuration getters/setters
     AyanamsaType getAyanamsa() const { return ayanamsa; }
     CalculationMethod getCalculationMethod() const { return calculationMethod; }

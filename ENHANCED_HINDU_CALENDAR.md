@@ -10,7 +10,7 @@ The Hindu calendar system in `horoscope_cli` has been significantly enhanced to 
 The system now supports multiple ayanamsa (precession correction) methods:
 
 - **Lahiri/Chitrapaksha** (Default) - Most widely used in India
-- **B.V. Raman** - Popular in South India 
+- **B.V. Raman** - Popular in South India
 - **K.S. Krishnamurti** - Used in KP Astrology
 - **Sri Yukteshwar** - Based on Yukteshwar's calculations
 - **J.N. Bhasin** - Alternative traditional method
@@ -41,7 +41,7 @@ Bidirectional date conversion between Hindu and Gregorian calendars:
 // Hindu to Gregorian
 std::string gregorianDate = calendar.hinduDateToGregorian(2081, 12, 1, false);
 
-// Gregorian to Hindu  
+// Gregorian to Hindu
 std::string hinduDate = calendar.gregorianDateToHindu(2024, 3, 15);
 ```
 

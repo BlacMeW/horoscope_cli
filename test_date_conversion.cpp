@@ -13,12 +13,12 @@ int main() {
     HinduCalendar calendar1; // Default: Lahiri Ayanamsa
     HinduCalendar calendar2(AyanamsaType::RAMAN); // B.V. Raman
     HinduCalendar calendar3(AyanamsaType::KRISHNAMURTI); // K.S. Krishnamurti
-    
+
     if (!calendar1.initialize()) {
         std::cerr << "Error: Failed to initialize calendar1: " << calendar1.getLastError() << std::endl;
         return 1;
     }
-    
+
     if (!calendar2.initialize()) {
         std::cerr << "Error: Failed to initialize calendar2: " << calendar2.getLastError() << std::endl;
         return 1;
@@ -38,7 +38,7 @@ int main() {
 
     std::cout << "2. DATE CONVERSION EXAMPLES" << std::endl;
     std::cout << "===========================" << std::endl;
-    
+
     // Test date conversions
     std::string gregorianDate = "2024-03-15";
     std::cout << "Gregorian Date: " << gregorianDate << std::endl;
@@ -49,45 +49,45 @@ int main() {
 
     std::cout << "3. PANCHANGA COMPARISON FOR SAME DATE" << std::endl;
     std::cout << "=====================================" << std::endl;
-    
+
     double julianDay = calendar1.gregorianDateToJulianDay(2024, 3, 15, 12.0);
-    
+
     PanchangaData panchanga1 = calendar1.calculatePanchanga(julianDay, 28.6139, 77.2090);
     PanchangaData panchanga2 = calendar2.calculatePanchanga(julianDay, 28.6139, 77.2090);
     PanchangaData panchanga3 = calendar3.calculatePanchanga(julianDay, 28.6139, 77.2090);
 
     std::cout << "Using Lahiri Ayanamsa:" << std::endl;
-    std::cout << "  Sun: " << calendar1.getRashiName(panchanga1.sunRashi) << " (" 
+    std::cout << "  Sun: " << calendar1.getRashiName(panchanga1.sunRashi) << " ("
               << panchanga1.sunLongitude << "°)" << std::endl;
-    std::cout << "  Moon: " << calendar1.getRashiName(panchanga1.moonRashi) << " (" 
+    std::cout << "  Moon: " << calendar1.getRashiName(panchanga1.moonRashi) << " ("
               << panchanga1.moonLongitude << "°)" << std::endl;
     std::cout << "  Nakshatra: " << calendar1.getNakshatraName(panchanga1.nakshatra) << std::endl;
-    
+
     std::cout << "Using Raman Ayanamsa:" << std::endl;
-    std::cout << "  Sun: " << calendar2.getRashiName(panchanga2.sunRashi) << " (" 
+    std::cout << "  Sun: " << calendar2.getRashiName(panchanga2.sunRashi) << " ("
               << panchanga2.sunLongitude << "°)" << std::endl;
-    std::cout << "  Moon: " << calendar2.getRashiName(panchanga2.moonRashi) << " (" 
+    std::cout << "  Moon: " << calendar2.getRashiName(panchanga2.moonRashi) << " ("
               << panchanga2.moonLongitude << "°)" << std::endl;
     std::cout << "  Nakshatra: " << calendar2.getNakshatraName(panchanga2.nakshatra) << std::endl;
 
     std::cout << "Using Krishnamurti Ayanamsa:" << std::endl;
-    std::cout << "  Sun: " << calendar3.getRashiName(panchanga3.sunRashi) << " (" 
+    std::cout << "  Sun: " << calendar3.getRashiName(panchanga3.sunRashi) << " ("
               << panchanga3.sunLongitude << "°)" << std::endl;
-    std::cout << "  Moon: " << calendar3.getRashiName(panchanga3.moonRashi) << " (" 
+    std::cout << "  Moon: " << calendar3.getRashiName(panchanga3.moonRashi) << " ("
               << panchanga3.moonLongitude << "°)" << std::endl;
     std::cout << "  Nakshatra: " << calendar3.getNakshatraName(panchanga3.nakshatra) << std::endl;
 
     std::cout << std::endl;
     std::cout << "4. REVERSE DATE CONVERSION TEST" << std::endl;
     std::cout << "===============================" << std::endl;
-    
+
     // Test Hindu to Gregorian conversion
     std::string hinduToGreg = calendar1.hinduDateToGregorian(2081, 12, 1, false); // Shukla Paksha
     std::cout << "Hindu Date: Phalguna 1, 2081 VS (Shukla) -> Gregorian: " << hinduToGreg << std::endl;
-    
+
     hinduToGreg = calendar1.hinduDateToGregorian(2081, 12, 1, true); // Krishna Paksha
     std::cout << "Hindu Date: Phalguna 1, 2081 VS (Krishna) -> Gregorian: " << hinduToGreg << std::endl;
-    
+
     std::cout << std::endl;
     std::cout << "=== SUMMARY ===" << std::endl;
     std::cout << "The enhanced Hindu calendar now provides:" << std::endl;
