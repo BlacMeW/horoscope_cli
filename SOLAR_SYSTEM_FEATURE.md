@@ -15,7 +15,7 @@ The Horoscope CLI now includes a beautiful ASCII art solar system visualization 
 - All planets orbit around the Sun
 - Shows true orbital relationships
 
-### Geocentric 
+### Geocentric
 - **Earth-centered view**: Ancient astronomical perspective
 - Earth is at the center with all other bodies orbiting around it
 - Includes Moon and Sun as "planets" from Earth's perspective
@@ -23,7 +23,7 @@ The Horoscope CLI now includes a beautiful ASCII art solar system visualization 
 
 ### Planet-Centric Views
 - **Mars-Centric**: View from Mars perspective
-- **Jupiter-Centric**: View from Jupiter perspective  
+- **Jupiter-Centric**: View from Jupiter perspective
 - **Saturn-Centric**: View from Saturn perspective
 - Shows relative positions as seen from the selected planet
 - Unique astronomical perspectives rarely visualized
@@ -49,7 +49,7 @@ This displays the basic solar system structure with orbital paths and no birth d
 
 Where `[PERSPECTIVE]` can be:
 - `heliocentric` (default)
-- `geocentric` 
+- `geocentric`
 - `mars-centric`
 - `jupiter-centric`
 - `saturn-centric`

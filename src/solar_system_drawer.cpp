@@ -32,7 +32,7 @@ const std::map<Planet, std::string> SolarSystemDrawer::PLANET_SYMBOLS = {
     {Planet::PLUTO, "P"}
 };
 
-SolarSystemDrawer::SolarSystemDrawer() 
+SolarSystemDrawer::SolarSystemDrawer()
     : showOrbits(true), showPlanetNames(true), showDistances(false), scale(1.0), perspective(SolarSystemPerspective::HELIOCENTRIC) {
 }std::string SolarSystemDrawer::drawSolarSystem(const BirthChart& chart) const {
     switch (perspective) {
@@ -298,7 +298,7 @@ std::string SolarSystemDrawer::drawGeocentricView(const std::vector<PlanetPositi
             if (x >= 0 && x < width && y >= 0 && y < height) {
                 placePlanetOnCanvas(canvas, x, y, Planet::MOON);
             }
-        } else if (pos.planet != Planet::NORTH_NODE && pos.planet != Planet::SOUTH_NODE && 
+        } else if (pos.planet != Planet::NORTH_NODE && pos.planet != Planet::SOUTH_NODE &&
                    pos.planet != Planet::CHIRON && pos.planet != Planet::LILITH) {
             auto planetPos = calculateRelativePosition(pos, earthRef, centerX, centerY);
             int x = planetPos.first;
@@ -322,7 +322,7 @@ std::string SolarSystemDrawer::drawGeocentricView(const std::vector<PlanetPositi
         ss << "─────────────────────────────────\n";
         ss << "E Earth (center)  D Moon        O Sun         H Mercury     V Venus       M Mars\n";
         ss << "J Jupiter         S Saturn      U Uranus      N Neptune     P Pluto\n\n";
-        
+
         if (showOrbits) {
             ss << ". = Reference orbits\n";
             ss << "E = Earth (center)\n\n";
@@ -334,10 +334,10 @@ std::string SolarSystemDrawer::drawGeocentricView(const std::vector<PlanetPositi
         ss << "\nPlanet Positions (from Earth):\n";
         ss << "─────────────────────────────────\n";
         for (const auto& pos : positions) {
-            if (pos.planet == Planet::NORTH_NODE || pos.planet == Planet::SOUTH_NODE || 
+            if (pos.planet == Planet::NORTH_NODE || pos.planet == Planet::SOUTH_NODE ||
                 pos.planet == Planet::CHIRON || pos.planet == Planet::LILITH) continue;
-                
-            ss << std::left << std::setw(10) << getPlanetName(pos.planet) 
+
+            ss << std::left << std::setw(10) << getPlanetName(pos.planet)
                << " " << getPlanetSymbol(pos.planet)
                << "  " << pos.getFormattedPosition() << "\n";
         }
@@ -374,14 +374,14 @@ std::string SolarSystemDrawer::drawPlanetCentricView(const std::vector<PlanetPos
     // Place other planets relative to the center planet
     for (const auto& pos : positions) {
         if (pos.planet == centerPlanet) continue; // Skip the center planet
-        
-        if (pos.planet != Planet::NORTH_NODE && pos.planet != Planet::SOUTH_NODE && 
+
+        if (pos.planet != Planet::NORTH_NODE && pos.planet != Planet::SOUTH_NODE &&
             pos.planet != Planet::CHIRON && pos.planet != Planet::LILITH) {
-            
+
             auto planetPos = calculateRelativePosition(pos, centerPos, centerX, centerY);
             int x = planetPos.first;
             int y = planetPos.second;
-            
+
             if (x >= 0 && x < width && y >= 0 && y < height) {
                 placePlanetOnCanvas(canvas, x, y, pos.planet);
             }
@@ -400,12 +400,12 @@ std::string SolarSystemDrawer::drawPlanetCentricView(const std::vector<PlanetPos
     if (showPlanetNames) {
         ss << "Planet Symbols (" << perspectiveName << " View):\n";
         ss << "────────────────────────────────────────────\n";
-        
+
         std::vector<Planet> allPlanets = {
             Planet::SUN, Planet::MERCURY, Planet::VENUS, Planet::MARS,
             Planet::JUPITER, Planet::SATURN, Planet::URANUS, Planet::NEPTUNE, Planet::PLUTO
         };
-        
+
         for (Planet planet : allPlanets) {
             if (planet == centerPlanet) {
                 ss << getPlanetSymbol(planet) << " " << std::left << std::setw(10) << getPlanetName(planet) << " (center)  ";
@@ -415,7 +415,7 @@ std::string SolarSystemDrawer::drawPlanetCentricView(const std::vector<PlanetPos
             if (planet == Planet::MARS || planet == Planet::PLUTO) ss << "\n";
         }
         ss << "\n\n";
-        
+
         if (showOrbits) {
             ss << ". = Reference orbits\n";
             ss << getPlanetSymbol(centerPlanet) << " = " << getPlanetName(centerPlanet) << " (center)\n\n";
@@ -427,15 +427,15 @@ std::string SolarSystemDrawer::drawPlanetCentricView(const std::vector<PlanetPos
         ss << "\nPlanet Positions (from " << getPlanetName(centerPlanet) << "):\n";
         ss << "────────────────────────────────────────────────\n";
         for (const auto& pos : positions) {
-            if (pos.planet == Planet::NORTH_NODE || pos.planet == Planet::SOUTH_NODE || 
+            if (pos.planet == Planet::NORTH_NODE || pos.planet == Planet::SOUTH_NODE ||
                 pos.planet == Planet::CHIRON || pos.planet == Planet::LILITH) continue;
-                
+
             if (pos.planet == centerPlanet) {
-                ss << std::left << std::setw(10) << getPlanetName(pos.planet) 
+                ss << std::left << std::setw(10) << getPlanetName(pos.planet)
                    << " " << getPlanetSymbol(pos.planet)
                    << "  CENTER REFERENCE\n";
             } else {
-                ss << std::left << std::setw(10) << getPlanetName(pos.planet) 
+                ss << std::left << std::setw(10) << getPlanetName(pos.planet)
                    << " " << getPlanetSymbol(pos.planet)
                    << "  " << pos.getFormattedPosition() << "\n";
             }
@@ -448,21 +448,21 @@ std::string SolarSystemDrawer::drawPlanetCentricView(const std::vector<PlanetPos
 std::pair<int, int> SolarSystemDrawer::calculateRelativePosition(const PlanetPosition& position, const PlanetPosition& centerPosition, int centerX, int centerY) const {
     // Calculate relative longitude difference
     double relativeLongitude = position.longitude - centerPosition.longitude;
-    
+
     // Normalize to -180 to +180 degrees
     while (relativeLongitude > 180.0) relativeLongitude -= 360.0;
     while (relativeLongitude < -180.0) relativeLongitude += 360.0;
-    
+
     // Use a fixed radius for positioning (not orbital radius)
     int displayRadius = 15; // Fixed display distance
-    
+
     // Convert to radians and adjust for display
     double angleRad = (relativeLongitude * M_PI / 180.0) - (M_PI / 2.0);
-    
+
     // Calculate position
     int x = centerX + static_cast<int>(displayRadius * cos(angleRad));
     int y = centerY + static_cast<int>(displayRadius * sin(angleRad));
-    
+
     return {x, y};
 }
 
@@ -483,7 +483,7 @@ PlanetPosition SolarSystemDrawer::findPlanetPosition(const std::vector<PlanetPos
             return pos;
         }
     }
-    
+
     // Return default position if not found
     PlanetPosition defaultPos;
     defaultPos.planet = planet;
