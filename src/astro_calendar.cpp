@@ -25,13 +25,13 @@ std::string PlanetaryTransition::getDescription() const {
     std::stringstream ss;
     switch (type) {
         case TransitionType::SIGN_CHANGE:
-            ss << getPlanetName(planet) << " enters new sign";
+            ss << getPlanetName(planet) << " enters " << toSign;
             break;
         case TransitionType::RETROGRADE_START:
-            ss << getPlanetName(planet) << " goes retrograde";
+            ss << getPlanetName(planet) << " goes retrograde in " << toSign;
             break;
         case TransitionType::RETROGRADE_END:
-            ss << getPlanetName(planet) << " goes direct";
+            ss << getPlanetName(planet) << " goes direct in " << toSign;
             break;
         case TransitionType::CONJUNCTION:
             ss << getPlanetName(planet) << " conjunct " << getPlanetName(secondPlanet);
@@ -40,10 +40,34 @@ std::string PlanetaryTransition::getDescription() const {
             ss << description;
             break;
         case TransitionType::NEW_MOON:
-            ss << "New Moon";
+            ss << "New Moon in " << toSign;
             break;
         case TransitionType::FULL_MOON:
-            ss << "Full Moon";
+            ss << "Full Moon in " << toSign;
+            break;
+        case TransitionType::NAKSHATRA_CHANGE:
+            ss << getPlanetName(planet) << " enters nakshatra";
+            break;
+        case TransitionType::KP_SUB_LORD_CHANGE:
+            ss << getPlanetName(planet) << " KP sub-lord changes";
+            break;
+        case TransitionType::ASPECT_FORMATION:
+            ss << getPlanetName(planet) << " forms aspect with " << getPlanetName(secondPlanet);
+            break;
+        case TransitionType::TRANSIT_INGRESS:
+            ss << getPlanetName(planet) << " transits into " << toSign;
+            break;
+        case TransitionType::STATIONARY_DIRECT:
+            ss << getPlanetName(planet) << " stationary direct";
+            break;
+        case TransitionType::STATIONARY_RETRO:
+            ss << getPlanetName(planet) << " stationary retrograde";
+            break;
+        case TransitionType::RETROGRADE:
+            ss << getPlanetName(planet) << " retrograde motion";
+            break;
+        case TransitionType::DIRECT:
+            ss << getPlanetName(planet) << " direct motion";
             break;
     }
     return ss.str();
@@ -53,6 +77,26 @@ std::string PlanetaryTransition::getFormattedDate() const {
     int year, month, day;
     AstroCalendar::julianDayToGregorian(julianDay, year, month, day);
     return AstroCalendar::formatDate(year, month, day);
+}
+
+// KPStarLordTransition methods
+std::string KPStarLordTransition::getDescription() const {
+    std::stringstream ss;
+    ss << getPlanetName(planet) << " Level-" << level << ": "
+       << fromStarName << " → " << toStarName;
+    return ss.str();
+}
+
+std::string KPStarLordTransition::getDetailedAnalysis() const {
+    std::stringstream ss;
+    ss << "🔮 KP Analysis - " << getPlanetName(planet) << "\n";
+    ss << "   Level " << level << " Star Lord Change\n";
+    ss << "   From: " << fromStarName << " (Star " << fromStar << ")\n";
+    ss << "   To: " << toStarName << " (Star " << toStar << ")\n";
+    ss << "   Duration: " << std::fixed << std::setprecision(2) << duration << " days\n";
+    ss << "   Impact: " << (isAuspicious ? "🌟 Favorable" : "⚠️ Challenging") << "\n";
+    ss << "   Significance: " << significance;
+    return ss.str();
 }
 
 // AstroCalendarDay methods
@@ -135,6 +179,7 @@ AstroCalendar::AstroCalendar() {
     hinduCalendar = std::make_unique<HinduCalendar>();
     myanmarCalendar = std::make_unique<MyanmarCalendar>();
     ephemerisManager = std::make_unique<EphemerisManager>();
+    kpSystem = std::make_unique<KPSystem>();
     // PlanetCalculator will be initialized after ephemerisManager is ready
 }
 
@@ -262,6 +307,43 @@ AstroCalendarDay AstroCalendar::calculateDayData(double julianDay, int gregYear,
         day.planetaryTransitions = calculatePlanetaryTransitions(julianDay);
     }
 
+    // Calculate KP transitions if requested
+    if (includeKPTransitions) {
+        try {
+            day.kpTransitions = calculateKPTransitions(julianDay);
+            day.hasKPData = true;
+
+            // Calculate planetary positions for KP analysis
+            if (planetCalculator) {
+                BirthData tempData;
+                tempData.year = gregYear;
+                tempData.month = gregMonth;
+                tempData.day = gregDay;
+                tempData.hour = 12;
+                tempData.minute = 0;
+                tempData.second = 0;
+                tempData.latitude = latitude;
+                tempData.longitude = longitude;
+
+                planetCalculator->calculateAllPlanets(tempData, day.planetPositions);
+
+                // Calculate KP data for each planet
+                for (const auto& pos : day.planetPositions) {
+                    KPPosition kpData = kpSystem->calculateKPPosition(pos.longitude);
+                    day.kpPlanetData[pos.planet] = kpData;
+
+                    // Store sign and nakshatra info
+                    day.planetSigns[pos.planet] = zodiacSignToString(static_cast<ZodiacSign>(static_cast<int>(pos.longitude / 30.0)));
+                    day.planetNakshatras[pos.planet] = static_cast<int>((pos.longitude / 13.333333) + 1);
+                }
+            }
+
+        } catch (const std::exception& e) {
+            lastError = "KP calculation failed: " + std::string(e.what());
+            day.hasKPData = false;
+        }
+    }
+
     // Compile festivals and events
     compileFestivalsAndEvents(day);
 
@@ -319,6 +401,98 @@ std::vector<PlanetaryTransition> AstroCalendar::findMonthlyTransitions(int year,
 
     // This is a placeholder - would need more sophisticated ephemeris calculations
     // to find actual planetary sign changes, retrogrades, etc.
+
+    return transitions;
+}
+
+std::vector<KPStarLordTransition> AstroCalendar::calculateKPTransitions(double julianDay) const {
+    std::vector<KPStarLordTransition> transitions;
+
+    if (!kpSystem) {
+        return transitions;
+    }
+
+    try {
+        // Calculate for major planets
+        std::vector<Planet> planets = {
+            Planet::SUN, Planet::MOON, Planet::MARS, Planet::MERCURY,
+            Planet::JUPITER, Planet::VENUS, Planet::SATURN
+        };
+
+        for (const Planet& planet : planets) {
+            double planetPos[6];
+            int planetId = static_cast<int>(planet);
+
+            if (swe_calc_ut(julianDay, planetId, SEFLG_SWIEPH, planetPos, nullptr) >= 0) {
+                double longitude = planetPos[0];
+
+                // Calculate KP data for each level requested
+                for (int level = 1; level <= kpLevels; level++) {
+                    KPPosition currentKP = kpSystem->calculateKPPosition(longitude);
+                    KPPosition nextDayKP;
+
+                    // Check next day to see if there's a transition
+                    if (swe_calc_ut(julianDay + 1.0, planetId, SEFLG_SWIEPH, planetPos, nullptr) >= 0) {
+                        nextDayKP = kpSystem->calculateKPPosition(planetPos[0]);
+
+                        // Check for level transitions
+                        bool hasTransition = false;
+                        int fromStar = 0, toStar = 0;
+
+                        switch (level) {
+                            case 1:
+                                if (currentKP.nakshatra.lord != nextDayKP.nakshatra.lord) {
+                                    fromStar = static_cast<int>(currentKP.nakshatra.lord);
+                                    toStar = static_cast<int>(nextDayKP.nakshatra.lord);
+                                    hasTransition = true;
+                                }
+                                break;
+                            case 2:
+                                if (currentKP.subLord != nextDayKP.subLord) {
+                                    fromStar = static_cast<int>(currentKP.subLord);
+                                    toStar = static_cast<int>(nextDayKP.subLord);
+                                    hasTransition = true;
+                                }
+                                break;
+                            case 3:
+                                if (currentKP.subSubLord != nextDayKP.subSubLord) {
+                                    fromStar = static_cast<int>(currentKP.subSubLord);
+                                    toStar = static_cast<int>(nextDayKP.subSubLord);
+                                    hasTransition = true;
+                                }
+                                break;
+                            case 4:
+                                if (currentKP.subSubSubLord != nextDayKP.subSubSubLord) {
+                                    fromStar = static_cast<int>(currentKP.subSubSubLord);
+                                    toStar = static_cast<int>(nextDayKP.subSubSubLord);
+                                    hasTransition = true;
+                                }
+                                break;
+                        }
+
+                        if (hasTransition) {
+                            KPStarLordTransition transition;
+                            transition.planet = planet;
+                            transition.level = level;
+                            transition.fromStar = fromStar;
+                            transition.toStar = toStar;
+                            transition.fromStarName = "Star " + std::to_string(static_cast<int>(fromStar));
+                            transition.toStarName = "Star " + std::to_string(static_cast<int>(toStar));
+                            transition.julianDay = julianDay;
+                            transition.duration = 24.0; // Default 24 hours
+                            transition.isAuspicious = true; // Default
+                            transition.significance = 0.5; // Default significance
+
+                            transitions.push_back(transition);
+                        }
+                    }
+                }
+            }
+        }
+
+    } catch (const std::exception& e) {
+        lastError = "Error calculating KP transitions: " + std::string(e.what());
+    }
 
     return transitions;
 }
@@ -486,6 +660,8 @@ std::string AstroCalendar::generateMonthlyCalendar(const AstroCalendarMonth& mon
         return generateCSV(monthData);
     } else if (format == "table") {
         return generateTable(monthData);
+    } else if (format == "professional") {
+        return generateProfessionalAstroCalendar(monthData);
     } else {
         return generateCalendarLayout(monthData);
     }
@@ -571,10 +747,10 @@ std::string AstroCalendar::generateJSON(const AstroCalendarMonth& monthData) con
 // Helper methods for enhanced UI/UX
 std::string AstroCalendar::getWeekdayName(const AstroCalendarDay& day) const {
     static const std::vector<std::string> weekdays = {
-        "Sunday", "Monday", "Tuesday", "Wednesday", 
+        "Sunday", "Monday", "Tuesday", "Wednesday",
         "Thursday", "Friday", "Saturday"
     };
-    
+
     // Calculate weekday from Julian Day (JD 0 = Monday)
     int jd = static_cast<int>(day.julianDay);
     int weekday = (jd + 1) % 7; // Adjust for 0=Sunday indexing
@@ -587,7 +763,7 @@ std::string AstroCalendar::getTithiDescription(int tithi) const {
         "Panchami", "Shashthi", "Saptami", "Ashtami", "Navami", "Dashami",
         "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi", "Purnima (Full Moon)"
     };
-    
+
     if (tithi >= 0 && tithi < tithiNames.size()) {
         return tithiNames[tithi];
     }
@@ -790,7 +966,7 @@ std::string AstroCalendar::generateTable(const AstroCalendarMonth& monthData) co
         std::string hindu = getEnhancedHinduInfo(day);
         ss << " │ " << std::setw(8) << hindu;
 
-        // Enhanced Myanmar calendar info  
+        // Enhanced Myanmar calendar info
         std::string myanmar = getEnhancedMyanmarInfo(day);
         ss << " │ " << std::setw(8) << myanmar;
 
@@ -814,10 +990,10 @@ std::string AstroCalendar::generateTable(const AstroCalendarMonth& monthData) co
     ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
     ss << "║                           📊 MONTHLY SUMMARY                                         ║\n";
     ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
-    
+
     // Add monthly statistics and highlights
     ss << getEnhancedMonthlySummary(monthData);
-    
+
     ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
     ss << "║ 🔮 Legend: ⭐Excellent 🌟Good ✨Fair ⚪Neutral ⚠️Caution 🚫Avoid                    ║\n";
     ss << "║ 🕉️ Hindu: T=Tithi N=Nakshatra | 🇲🇲 Myanmar: ME=Myanmar Era SE=Sasana Era          ║\n";
@@ -826,39 +1002,254 @@ std::string AstroCalendar::generateTable(const AstroCalendarMonth& monthData) co
     return ss.str();
 }
 
+std::string AstroCalendar::generateProfessionalAstroCalendar(const AstroCalendarMonth& monthData) const {
+    std::stringstream ss;
+
+    // Professional header similar to Saint John Astronomy Club style
+    ss << "╔══════════════════════════════════════════════════════════════════════════════════════════════╗\n";
+    ss << "║                        🌟 PROFESSIONAL ASTRO CALENDAR 🌟                                   ║\n";
+    ss << "║                     " << monthData.monthName << " " << monthData.year << " - Advanced Astronomical Analysis                        ║\n";
+    ss << "╠══════════════════════════════════════════════════════════════════════════════════════════════╣\n";
+    ss << "║                   🌙 Lunar Phases • 🪐 Planetary Transits • 🔮 KP Analysis                 ║\n";
+    ss << "║           🕉️ Panchanga • 🇲🇲 Myanmar Calendar • ✨ Three Calendar Integration              ║\n";
+    ss << "╚══════════════════════════════════════════════════════════════════════════════════════════════╝\n\n";
+
+    // Major planetary transits header for the month
+    ss << "🪐 MAJOR PLANETARY TRANSITS - " << monthData.monthName << " " << monthData.year << "\n";
+    ss << "═══════════════════════════════════════════════════════════════════════════════════════════\n";
+
+    // Collect major transits for the month
+    std::map<std::string, std::vector<std::string>> transitsByPlanet;
+    for (const auto& day : monthData.days) {
+        for (const auto& transit : day.planetaryTransitions) {
+            if (transit.strength >= 3) { // Only major transits
+                std::string planetName = getPlanetName(transit.planet);
+                std::string transitDesc = transit.getDescription() + " (" +
+                    std::to_string(day.gregorianDay) + ")";
+                transitsByPlanet[planetName].push_back(transitDesc);
+            }
+        }
+    }
+
+    // Display transits by planet
+    for (const auto& [planet, transits] : transitsByPlanet) {
+        ss << planet << ": ";
+        for (size_t i = 0; i < transits.size(); ++i) {
+            if (i > 0) ss << " • ";
+            ss << transits[i];
+        }
+        ss << "\n";
+    }
+    ss << "\n";
+
+    // KP Star Lord Changes (if enabled)
+    if (includeKPTransitions) {
+        ss << "🔮 KP STAR LORD TRANSITIONS\n";
+        ss << "═══════════════════════════════════════════════════════════════════════════════════════════\n";
+
+        for (int level = 1; level <= kpLevels; level++) {
+            ss << "Level " << level << " (" << getKPLevelDescription(level) << "):\n";
+
+            for (const auto& day : monthData.days) {
+                for (const auto& kpTransit : day.kpTransitions) {
+                    if (kpTransit.level == level) {
+                        ss << "  " << std::setw(2) << day.gregorianDay << ": "
+                           << kpTransit.getDescription() << "\n";
+                    }
+                }
+            }
+            ss << "\n";
+        }
+    }
+
+    // Calendar grid with enhanced information
+    ss << "📅 MONTHLY CALENDAR GRID\n";
+    ss << "═══════════════════════════════════════════════════════════════════════════════════════════\n";
+
+    // Weekday headers
+    ss << " Sun        Mon        Tue        Wed        Thu        Fri        Sat\n";
+    ss << "──────────┬──────────┬──────────┬──────────┬──────────┬──────────┬──────────\n";
+
+    // Find first day of month
+    double firstDayJD = gregorianToJulianDay(monthData.year, monthData.month, 1);
+    int firstDayOfWeek = (static_cast<int>(firstDayJD + 1.5)) % 7; // 0=Sunday
+
+    // Print leading spaces
+    for (int i = 0; i < firstDayOfWeek; ++i) {
+        ss << "          │";
+    }
+
+    // Print each day with detailed info
+    for (size_t dayIdx = 0; dayIdx < monthData.days.size(); ++dayIdx) {
+        const auto& day = monthData.days[dayIdx];
+        int dayOfWeek = (firstDayOfWeek + dayIdx) % 7;
+
+        // Day cell with multiple lines of info
+        ss << generateProfessionalDayCell(day);
+
+        if (dayOfWeek == 6) {
+            ss << "\n";
+            // Add separator line between weeks
+            if (dayIdx + 1 < monthData.days.size()) {
+                ss << "──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────\n";
+            }
+        } else {
+            ss << "│";
+        }
+    }
+
+    ss << "\n\n";
+
+    // Legend and symbols explanation
+    ss << "🔍 SYMBOLS & ABBREVIATIONS\n";
+    ss << "═══════════════════════════════════════════════════════════════════════════════════════════\n";
+    ss << "Quality: ⭐Excellent 🌟Good ✨Fair ⚪Neutral ⚠️Caution 🚫Avoid\n";
+    ss << "Hindu: T=Tithi E=Ekadashi P=Purnima A=Amavasya N=Nakshatra\n";
+    ss << "Myanmar: ME=Myanmar Era S=Sabbath P=Pyathada Y=Yatyaza\n";
+    ss << "Planets: ☉Sun ☽Moon ♂Mars ☿Mercury ♃Jupiter ♀Venus ♄Saturn\n";
+    ss << "Transits: I=Ingress R=Retrograde D=Direct C=Conjunction E=Eclipse\n";
+    if (includeKPTransitions) {
+        ss << "KP Levels: 1=Star 2=Sub 3=Sub-Sub 4=Sub-Sub-Sub\n";
+    }
+    ss << "\n";
+
+    // Important notes
+    ss << "📋 CALENDAR NOTES\n";
+    ss << "═══════════════════════════════════════════════════════════════════════════════════════════\n";
+    ss << "• All times in local coordinates (Lat: " << std::fixed << std::setprecision(2)
+       << latitude << "° Lon: " << longitude << "°)\n";
+    ss << "• Planetary positions calculated using Swiss Ephemeris\n";
+    ss << "• Three calendar systems integrated: Gregorian, Hindu (Panchanga), Myanmar\n";
+    if (includeKPTransitions) {
+        ss << "• KP (Krishnamurti Paddhati) star lord transitions included\n";
+    }
+    ss << "• Quality ratings based on combined astrological factors\n";
+
+    return ss.str();
+}
+
 // Enhanced formatting helper methods
+std::string AstroCalendar::generateProfessionalDayCell(const AstroCalendarDay& day) const {
+    std::stringstream ss;
+
+    // Day number with quality indicator
+    ss << std::setw(2) << day.gregorianDay;
+    if (day.auspiciousScore >= 8) ss << "⭐";
+    else if (day.auspiciousScore >= 6) ss << "🌟";
+    else if (day.auspiciousScore >= 4) ss << "✨";
+    else if (day.auspiciousScore >= 2) ss << "⚪";
+    else ss << "⚠️";
+
+    // Hindu calendar info (compact)
+    if (day.hasPanchangaData) {
+        ss << " T" << static_cast<int>(day.panchangaData.tithi);
+        if (day.panchangaData.isEkadashi) ss << "E";
+        if (day.panchangaData.isPurnima) ss << "P";
+        if (day.panchangaData.isAmavasya) ss << "A";
+    }
+
+    // Myanmar calendar info (very compact)
+    if (day.hasMyanmarData) {
+        ss << " " << (day.myanmarData.myanmarYear % 100) << "ME";
+        if (day.myanmarData.isSabbath) ss << "S";
+    }
+
+    // Planetary events (symbols only)
+    for (const auto& transit : day.planetaryTransitions) {
+        switch (transit.type) {
+            case TransitionType::SIGN_CHANGE:
+            case TransitionType::TRANSIT_INGRESS:
+                ss << "I";
+                break;
+            case TransitionType::RETROGRADE_START:
+            case TransitionType::STATIONARY_RETRO:
+                ss << "R";
+                break;
+            case TransitionType::RETROGRADE_END:
+            case TransitionType::STATIONARY_DIRECT:
+                ss << "D";
+                break;
+            case TransitionType::CONJUNCTION:
+                ss << "C";
+                break;
+            case TransitionType::ECLIPSE:
+                ss << "E";
+                break;
+            case TransitionType::NEW_MOON:
+                ss << "🌑";
+                break;
+            case TransitionType::FULL_MOON:
+                ss << "🌕";
+                break;
+            default:
+                break;
+        }
+    }
+
+    // KP level indicators (if enabled)
+    if (includeKPTransitions && !day.kpTransitions.empty()) {
+        ss << " KP";
+        for (const auto& kpTransit : day.kpTransitions) {
+            ss << kpTransit.level;
+        }
+    }
+
+    // Festival indicator
+    if (!day.allFestivals.empty()) {
+        ss << "🎉";
+    }
+
+    // Pad to cell width
+    std::string cellContent = ss.str();
+    if (cellContent.length() < 10) {
+        cellContent.append(10 - cellContent.length(), ' ');
+    }
+
+    return cellContent.substr(0, 10); // Ensure exactly 10 characters
+}
+
+std::string AstroCalendar::getKPLevelDescription(int level) const {
+    switch (level) {
+        case 1: return "Star Lords";
+        case 2: return "Sub Lords";
+        case 3: return "Sub-Sub Lords";
+        case 4: return "Sub-Sub-Sub Lords";
+        default: return "Unknown Level";
+    }
+}
+
 std::string AstroCalendar::formatEnhancedDate(const AstroCalendarDay& day) const {
     std::array<std::string, 7> weekdays = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
     int weekday = static_cast<int>(day.julianDay + 1.5) % 7; // Calculate weekday from Julian Day
-    
+
     std::stringstream ss;
-    ss << std::setfill('0') << std::setw(2) << day.gregorianDay << " " 
+    ss << std::setfill('0') << std::setw(2) << day.gregorianDay << " "
        << weekdays[weekday];
     return ss.str();
 }
 
 std::string AstroCalendar::getEnhancedQualityIndicator(const AstroCalendarDay& day) const {
     std::string indicator;
-    
+
     if (day.auspiciousScore >= 9) indicator = "⭐";      // Excellent
-    else if (day.auspiciousScore >= 7) indicator = "🌟"; // Very Good  
+    else if (day.auspiciousScore >= 7) indicator = "🌟"; // Very Good
     else if (day.auspiciousScore >= 5) indicator = "✨"; // Good
     else if (day.auspiciousScore >= 3) indicator = "⚪"; // Fair
     else if (day.isInauspicious) indicator = "🚫";       // Avoid
     else indicator = "⚠️";                               // Caution
-    
+
     return indicator + std::to_string(day.auspiciousScore);
 }
 
 std::string AstroCalendar::getEnhancedHinduInfo(const AstroCalendarDay& day) const {
     if (!day.hasPanchangaData) return "-";
-    
+
     std::stringstream ss;
     ss << "T" << static_cast<int>(day.panchangaData.tithi);
     if (day.panchangaData.isEkadashi) ss << "E";
     if (day.panchangaData.isPurnima) ss << "P";
     if (day.panchangaData.isAmavasya) ss << "A";
-    
+
     return ss.str();
 }
 
@@ -902,18 +1293,18 @@ std::string AstroCalendar::getPlanetaryWeather(const std::vector<PlanetaryTransi
 // Enhanced UI helper methods for AstroCalendar
 std::string AstroCalendar::getEnhancedMyanmarInfo(const AstroCalendarDay& day) const {
     if (!day.hasMyanmarData) return "-";
-    
+
     std::stringstream ss;
     ss << std::to_string(day.myanmarData.myanmarYear % 100) << "ME"; // Show last 2 digits
     if (day.myanmarData.isSabbath) ss << "S";
     if (day.myanmarData.isPyathada) ss << "P";
-    
+
     return ss.str();
 }
 
 std::string AstroCalendar::getEnhancedFestivalsDisplay(const AstroCalendarDay& day) const {
     if (day.allFestivals.empty()) return "-";
-    
+
     std::string festivals;
     int count = 0;
     for (const auto& festival : day.allFestivals) {
@@ -922,23 +1313,23 @@ std::string AstroCalendar::getEnhancedFestivalsDisplay(const AstroCalendarDay& d
             break;
         }
         if (count > 0) festivals += ",";
-        
+
         // Abbreviate common festival names
         std::string abbrev = abbreviateFestivalName(festival);
         festivals += abbrev;
         count++;
     }
-    
+
     if (festivals.length() > 11) {
         festivals = festivals.substr(0, 8) + "...";
     }
-    
+
     return festivals;
 }
 
 std::string AstroCalendar::getEnhancedPlanetaryDisplay(const AstroCalendarDay& day) const {
     if (day.planetaryTransitions.empty()) return "-";
-    
+
     std::string planetary;
     int count = 0;
     for (const auto& transition : day.planetaryTransitions) {
@@ -947,17 +1338,17 @@ std::string AstroCalendar::getEnhancedPlanetaryDisplay(const AstroCalendarDay& d
             break;
         }
         if (count > 0) planetary += " ";
-        
+
         planetary += getPlanetarySymbol(transition);
         count++;
     }
-    
+
     return planetary;
 }
 
 std::string AstroCalendar::getDetailedDayInfo(const AstroCalendarDay& day) const {
     std::string details;
-    
+
     // Add significant astrological information
     if (day.auspiciousScore >= 8) {
         details += "✨ Highly Auspicious ";
@@ -965,12 +1356,12 @@ std::string AstroCalendar::getDetailedDayInfo(const AstroCalendarDay& day) const
     if (day.isInauspicious) {
         details += "⚠️ Exercise Caution ";
     }
-    
+
     // Add important festivals
     if (!day.allFestivals.empty()) {
         details += "🎉 " + day.allFestivals[0] + " ";
     }
-    
+
     // Add significant planetary events
     for (const auto& transition : day.planetaryTransitions) {
         if (transition.significance == "High") {
@@ -978,7 +1369,7 @@ std::string AstroCalendar::getDetailedDayInfo(const AstroCalendarDay& day) const
             break;
         }
     }
-    
+
     return details;
 }
 
@@ -994,31 +1385,31 @@ std::string AstroCalendar::getSeasonName(int month) const {
 
 std::string AstroCalendar::getEnhancedMonthlySummary(const AstroCalendarMonth& monthData) const {
     std::stringstream ss;
-    
+
     // Count special days
     int excellentDays = 0, goodDays = 0, cautionDays = 0;
     int festivalDays = 0, planetaryEventDays = 0;
-    
+
     for (const auto& day : monthData.days) {
         if (day.auspiciousScore >= 8) excellentDays++;
         else if (day.auspiciousScore >= 6) goodDays++;
         else if (day.isInauspicious) cautionDays++;
-        
+
         if (!day.allFestivals.empty()) festivalDays++;
         if (!day.planetaryTransitions.empty()) planetaryEventDays++;
     }
-    
-    ss << "║ 📈 Quality Distribution: " << excellentDays << " Excellent, " 
+
+    ss << "║ 📈 Quality Distribution: " << excellentDays << " Excellent, "
        << goodDays << " Good, " << cautionDays << " Caution days" << std::string(23, ' ') << "║\n";
-    
-    ss << "║ 🎉 Festival Days: " << festivalDays 
+
+    ss << "║ 🎉 Festival Days: " << festivalDays
        << " | 🪐 Planetary Events: " << planetaryEventDays << std::string(40, ' ') << "║\n";
-    
+
     // Add season and lunar information
     std::string season = getSeasonName(monthData.month);
-    ss << "║ 🌱 Season: " << season << " | 🌙 New/Full Moons: " 
+    ss << "║ 🌱 Season: " << season << " | 🌙 New/Full Moons: "
        << countMoonPhases(monthData) << std::string(35, ' ') << "║\n";
-    
+
     return ss.str();
 }
 
@@ -1031,14 +1422,14 @@ std::string AstroCalendar::abbreviateFestivalName(const std::string& festival) c
     if (festival.find("Festival") != std::string::npos) {
         return festival.substr(0, 3);
     }
-    
+
     // Return first 3-4 characters for other festivals
     return festival.substr(0, std::min(4, static_cast<int>(festival.length())));
 }
 
 std::string AstroCalendar::getPlanetarySymbol(const PlanetaryTransition& transition) const {
     std::string symbol;
-    
+
     switch (transition.type) {
         case TransitionType::SIGN_CHANGE:
             symbol = "🔄";
@@ -1064,35 +1455,35 @@ std::string AstroCalendar::getPlanetarySymbol(const PlanetaryTransition& transit
         default:
             symbol = "🪐";
     }
-    
+
     return symbol;
 }
 
 int AstroCalendar::countMoonPhases(const AstroCalendarMonth& monthData) const {
     int moonPhases = 0;
-    
+
     for (const auto& day : monthData.days) {
         for (const auto& transition : day.planetaryTransitions) {
-            if (transition.type == TransitionType::NEW_MOON || 
+            if (transition.type == TransitionType::NEW_MOON ||
                 transition.type == TransitionType::FULL_MOON) {
                 moonPhases++;
             }
         }
     }
-    
+
     return moonPhases;
 }
 
 std::string AstroCalendar::formatCalendarCell(const AstroCalendarDay& day) const {
     std::stringstream ss;
-    
+
     // Day number with quality indicator
     ss << std::setfill(' ') << std::setw(2) << day.gregorianDay;
-    
+
     // Quality symbol
     std::string quality = getEnhancedQualityIndicator(day);
     ss << quality.substr(0, 1); // Just the symbol
-    
+
     // Hindu indicator (single letter)
     if (day.hasPanchangaData) {
         if (day.panchangaData.isEkadashi) ss << "E";
@@ -1102,21 +1493,21 @@ std::string AstroCalendar::formatCalendarCell(const AstroCalendarDay& day) const
     } else {
         ss << " ";
     }
-    
+
     // Myanmar indicator
     if (day.hasMyanmarData && (day.myanmarData.isSabbath || day.myanmarData.isPyathada)) {
         ss << "M";
     } else {
         ss << " ";
     }
-    
+
     // Festival indicator
     if (!day.allFestivals.empty()) {
         ss << "F";
     } else {
         ss << " ";
     }
-    
+
     return ss.str();
 }
 
@@ -1161,24 +1552,117 @@ int AstroCalendar::countCautionDays(const AstroCalendarMonth& monthData) const {
 // Enhanced daily view generation
 std::string AstroCalendar::generateDetailedDayView(const AstroCalendarDay& day) const {
     std::stringstream ss;
-    
+
     // Beautiful header for individual day
     ss << "╔═══════════════════════════════════════════════════════════════════════════════════╗\n";
     ss << "║                          🌟 DAILY ASTROLOGICAL OVERVIEW 🌟                       ║\n";
     ss << "║                    " << day.gregorianDateStr << " - " << getWeekdayName(day) << "                    ║\n";
     ss << "╠═══════════════════════════════════════════════════════════════════════════════════╣\n";
-    
+
     // Day Quality Section
     ss << "║ 🔮 DAY QUALITY                                                                    ║\n";
     ss << "╠═══════════════════════════════════════════════════════════════════════════════════╣\n";
     ss << "║ Overall Rating: " << getEnhancedQualityIndicator(day) << " (" << day.auspiciousScore << "/10)";
     ss << std::string(45, ' ') << "║\n";
-    ss << "║ Status: " << (day.isAuspicious ? "✅ Auspicious Day" : 
+    ss << "║ Status: " << (day.isAuspicious ? "✅ Auspicious Day" :
                           (day.isInauspicious ? "⚠️ Exercise Caution" : "⚪ Neutral Day"));
     ss << std::string(35, ' ') << "║\n";
-    
+
     ss << "╚═══════════════════════════════════════════════════════════════════════════════════╝\n";
-    
+
+    return ss.str();
+}
+
+std::string AstroCalendar::getKPTransitionDisplay(const std::vector<KPStarLordTransition>& kpTransitions) const {
+    if (kpTransitions.empty()) return "";
+
+    std::stringstream ss;
+    ss << "\n┌─ KP Star Lord Transitions:\n";
+
+    for (const auto& transition : kpTransitions) {
+        ss << "├─ " << getPlanetName(transition.planet)
+           << " (" << getKPLevelDescription(transition.level) << "): "
+           << transition.getDescription() << "\n";
+
+        if (!transition.getDetailedAnalysis().empty()) {
+            ss << "│  📊 " << transition.getDetailedAnalysis() << "\n";
+        }
+    }
+
+    ss << "└─────────────────────────────────────────\n";
+    return ss.str();
+}
+
+std::string AstroCalendar::formatKPTransitionsTable(const std::vector<KPStarLordTransition>& kpTransitions) const {
+    if (kpTransitions.empty()) return "";
+
+    std::stringstream ss;
+    ss << "\n┌─ KP TRANSITIONS TABLE ─────────────────────────┐\n";
+    ss << "│ Planet    │ Level │ Transition             │\n";
+    ss << "├───────────┼───────┼────────────────────────┤\n";
+
+    for (const auto& transition : kpTransitions) {
+        std::string planet = getPlanetName(transition.planet);
+        planet.resize(9, ' '); // Pad to 9 characters
+
+        std::string level = std::to_string(transition.level);
+        level.resize(5, ' '); // Pad to 5 characters
+
+        std::string desc = transition.getDescription();
+        if (desc.length() > 22) {
+            desc = desc.substr(0, 19) + "...";
+        } else {
+            desc.resize(22, ' ');
+        }
+
+        ss << "│ " << planet << " │ " << level << " │ " << desc << " │\n";
+    }
+
+    ss << "└───────────┴───────┴────────────────────────┘\n";
+    return ss.str();
+}
+
+std::string AstroCalendar::getAdvancedPlanetaryDisplay(const AstroCalendarDay& day) const {
+    std::stringstream ss;
+
+    // Major planetary transits
+    if (!day.planetaryTransitions.empty()) {
+        ss << "\n╔══════════ PLANETARY TRANSITS ══════════╗\n";
+        for (const auto& transition : day.planetaryTransitions) {
+            std::string type = "";
+            switch (transition.type) {
+                case TransitionType::SIGN_CHANGE: type = "🌟 Sign Change"; break;
+                case TransitionType::RETROGRADE: type = "⏪ Retrograde"; break;
+                case TransitionType::DIRECT: type = "⏩ Direct"; break;
+                case TransitionType::CONJUNCTION: type = "🤝 Conjunction"; break;
+                case TransitionType::NAKSHATRA_CHANGE: type = "⭐ Nakshatra"; break;
+                case TransitionType::KP_SUB_LORD_CHANGE: type = "🔄 KP Change"; break;
+                case TransitionType::ASPECT_FORMATION: type = "📐 Aspect"; break;
+                case TransitionType::TRANSIT_INGRESS: type = "🚀 Ingress"; break;
+                case TransitionType::STATIONARY_DIRECT: type = "⏸️ Station-D"; break;
+                case TransitionType::STATIONARY_RETRO: type = "⏸️ Station-R"; break;
+                default: type = "📊 Transit"; break;
+            }
+
+            ss << "║ " << type << ": " << transition.getDescription() << "\n";
+
+            if (transition.strength > 0.0) {
+                ss << "║   Strength: " << std::fixed << std::setprecision(2)
+                   << transition.strength << "/10.0\n";
+            }
+
+            if (!transition.affectedHouses.empty()) {
+                ss << "║   Houses: ";
+                for (size_t i = 0; i < transition.affectedHouses.size(); ++i) {
+                    if (i > 0) ss << ", ";
+                    ss << transition.affectedHouses[i];
+                }
+                ss << "\n";
+            }
+        }
+        ss << "╚════════════════════════════════════════╝\n";
+    }
+
     return ss.str();
 }
 

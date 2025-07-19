@@ -3,6 +3,7 @@
 #include "astro_types.h"
 #include "hindu_calendar.h"
 #include "myanmar_calendar.h"
+#include "kp_system.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -16,32 +17,64 @@ class HinduCalendar;
 class MyanmarCalendar;
 class EphemerisManager;
 class PlanetCalculator;
+class KPSystem;
 
-// Planetary transition types
+// Enhanced planetary transition types
 enum class TransitionType {
     SIGN_CHANGE,        // Planet changes zodiac sign
     RETROGRADE_START,   // Planet starts retrograde motion
     RETROGRADE_END,     // Planet ends retrograde motion
+    RETROGRADE,         // Alias for retrograde motion
+    DIRECT,             // Planet goes direct
     CONJUNCTION,        // Two planets in conjunction
     ECLIPSE,           // Solar or lunar eclipse
     NEW_MOON,          // New moon
-    FULL_MOON          // Full moon
+    FULL_MOON,         // Full moon
+    NAKSHATRA_CHANGE,  // Planet changes nakshatra
+    KP_SUB_LORD_CHANGE, // KP sub lord change
+    ASPECT_FORMATION,   // Major aspect formation
+    TRANSIT_INGRESS,   // Planet ingress into new sign
+    STATIONARY_DIRECT, // Planet goes stationary direct
+    STATIONARY_RETRO   // Planet goes stationary retrograde
 };
 
-// Structure for planetary transitions
+// KP Star Lord transition structure
+struct KPStarLordTransition {
+    Planet planet;
+    int level;          // 1, 2, 3, or 4 (star, sub, sub-sub, sub-sub-sub)
+    int fromStar;       // Previous star lord number
+    int toStar;         // New star lord number
+    std::string fromStarName;
+    std::string toStarName;
+    double julianDay;
+    double duration;    // Duration in days
+    std::string significance;
+    bool isAuspicious;
+
+    std::string getDescription() const;
+    std::string getDetailedAnalysis() const;
+};
+
+// Enhanced planetary transition structure
 struct PlanetaryTransition {
     TransitionType type;
     Planet planet;
     Planet secondPlanet = Planet::SUN;  // For conjunctions
     std::string description;
     double julianDay;
+    std::string fromSign;
+    std::string toSign;
+    double longitude;
     std::string significance;
     bool isAuspicious;
     std::string recommendations;
+    int strength;       // 1-5 scale of impact
+    std::vector<std::string> affectedHouses; // Houses affected by this transit
 
-    // Formatting method
+    // Formatting methods
     std::string getDescription() const;
     std::string getFormattedDate() const;
+    std::string getDetailedAnalysis() const;
 };
 
 // Combined daily data from all calendar systems
@@ -65,9 +98,20 @@ struct AstroCalendarDay {
 
     // Planetary data
     std::vector<PlanetaryTransition> planetaryTransitions;
+    std::vector<KPStarLordTransition> kpTransitions;
     std::string moonPhaseDescription;
     double sunLongitude;
     double moonLongitude;
+
+    // Enhanced planetary positions
+    std::vector<PlanetPosition> planetPositions;
+    std::map<Planet, std::string> planetSigns;
+    std::map<Planet, int> planetNakshatras;
+
+    // KP System data
+    bool hasKPData = false;
+    std::map<Planet, KPPosition> kpPlanetData;
+    std::vector<std::string> activeKPLevels;
 
     // Combined festivals and events
     std::vector<std::string> allFestivals;
@@ -115,12 +159,15 @@ private:
     std::unique_ptr<MyanmarCalendar> myanmarCalendar;
     std::unique_ptr<EphemerisManager> ephemerisManager;
     std::unique_ptr<PlanetCalculator> planetCalculator;
+    std::unique_ptr<KPSystem> kpSystem;
 
     // Configuration
     double latitude = 0.0;
     double longitude = 0.0;
     bool includePlanetaryTransitions = false;
     bool includeAllFestivals = false;
+    bool includeKPTransitions = false;
+    int kpLevels = 4; // Number of KP sub-levels to calculate (1-4)
 
     // Month names
     static const std::array<std::string, 12> monthNames;
@@ -132,6 +179,8 @@ private:
     AstroCalendarDay calculateDayData(double julianDay, int gregYear, int gregMonth, int gregDay) const;
     std::vector<PlanetaryTransition> calculatePlanetaryTransitions(double julianDay) const;
     std::vector<PlanetaryTransition> findMonthlyTransitions(int year, int month) const;
+    std::vector<KPStarLordTransition> calculateKPTransitions(double julianDay) const;
+    std::vector<PlanetaryTransition> findAdvancedTransitions(int year, int month) const;
 
     // Festival and event compilation
     void compileFestivalsAndEvents(AstroCalendarDay& day) const;
@@ -172,6 +221,14 @@ private:
     std::string getSeasonName(int month) const;
     std::string generateDetailedDayView(const AstroCalendarDay& day) const;
 
+    // KP System helper methods
+    std::string getKPTransitionDisplay(const std::vector<KPStarLordTransition>& kpTransitions) const;
+    std::string getKPLevelDescription(int level) const;
+    std::string formatKPTransitionsTable(const std::vector<KPStarLordTransition>& transitions) const;
+    std::string getAdvancedPlanetaryDisplay(const AstroCalendarDay& day) const;
+    std::string generateProfessionalCalendar(const AstroCalendarMonth& monthData) const;
+    std::string generateProfessionalDayCell(const AstroCalendarDay& day) const;
+
 public:
     AstroCalendar();
     ~AstroCalendar();
@@ -183,6 +240,8 @@ public:
     void setLocation(double lat, double lon) { latitude = lat; longitude = lon; }
     void setIncludePlanetaryTransitions(bool include) { includePlanetaryTransitions = include; }
     void setIncludeAllFestivals(bool include) { includeAllFestivals = include; }
+    void setIncludeKPTransitions(bool include) { includeKPTransitions = include; }
+    void setKPLevels(int levels) { kpLevels = std::max(1, std::min(4, levels)); }
 
     // Main calculation methods
     AstroCalendarDay calculateAstroCalendarDay(const BirthData& birthData) const;
@@ -192,6 +251,7 @@ public:
     // Output formatting methods
     std::string generateDayCalendar(const AstroCalendarDay& day, const std::string& format = "calendar") const;
     std::string generateMonthlyCalendar(const AstroCalendarMonth& monthData, const std::string& format = "calendar") const;
+    std::string generateProfessionalAstroCalendar(const AstroCalendarMonth& monthData) const;
     std::string generateJSON(const AstroCalendarDay& day) const;
     std::string generateJSON(const AstroCalendarMonth& monthData) const;
     std::string generateCSV(const AstroCalendarMonth& monthData) const;

@@ -324,10 +324,11 @@ void printHelp() {
 
     std::cout << "    --astro-calendar-format FORMAT\n";
     std::cout << "                       Astro-calendar output format\n";
-    std::cout << "                       calendar = Beautiful calendar layout (default)\n";
-    std::cout << "                       table    = Detailed tabular format\n";
-    std::cout << "                       json     = JSON structure for integration\n";
-    std::cout << "                       csv      = Comma-separated values\n";
+    std::cout << "                       calendar     = Beautiful calendar layout (default)\n";
+    std::cout << "                       table        = Detailed tabular format\n";
+    std::cout << "                       professional = Saint John Astronomy Club style with KP\n";
+    std::cout << "                       json         = JSON structure for integration\n";
+    std::cout << "                       csv          = Comma-separated values\n";
 
     std::cout << "    --planetary-transitions\n";
     std::cout << "                       Include planetary transitions in astro-calendar\n";
@@ -834,8 +835,9 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 return false;
             }
             if (args.astroCalendarFormat != "calendar" && args.astroCalendarFormat != "table" &&
-                args.astroCalendarFormat != "csv" && args.astroCalendarFormat != "json") {
-                std::cerr << "Error: Astro-calendar format must be 'calendar', 'table', 'csv', or 'json'\n";
+                args.astroCalendarFormat != "csv" && args.astroCalendarFormat != "json" &&
+                args.astroCalendarFormat != "professional") {
+                std::cerr << "Error: Astro-calendar format must be 'calendar', 'table', 'csv', 'json', or 'professional'\n";
                 return false;
             }
         } else if (arg == "--planetary-transitions") {
