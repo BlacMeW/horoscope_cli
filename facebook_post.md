@@ -1,145 +1,170 @@
-# 🌟✨ HOROSCOPE CLI - Professional Astrology at Your Fingertips! ✨🌟
+# HOROSCOPE CLI
+## Professional Astronomical Calculations & Astrological Analysis
 
-🎯 **Introducing the Ultimate Command-Line Astrology Tool!** 🎯
+**A high-performance command-line tool for precise astronomical computations using Swiss Ephemeris**
 
-Are you fascinated by the stars and planets? 🌌 Want precise, professional-grade astrological calculations? Look no further! 🔍
+---
 
-## 🚀 What Makes Horoscope CLI Special?
+## Core Features
 
-🎪 **MULTIPLE CHART STYLES**
-🌍 Western Charts - Classic wheel & rectangular layouts
-🕌 North Indian Style - Traditional Vedic squares
-🏛️ South Indian Style - Ancient wisdom format
-🌸 East Indian Style - Bengali traditional charts
-🪐 Solar System View - See orbital mechanics!
+### Astronomical Calculations
+- **Swiss Ephemeris Integration**: Arc-second precision planetary positions
+- **Date Range**: 6000 BC to 7000 AD (13,000 years of accurate data)
+- **Coordinate Systems**: Geocentric, heliocentric, topocentric calculations
+- **Real-time Precision**: Accurate to minutes for timing
 
-## ⭐ INCREDIBLE FEATURES
+### Chart Generation
+- **Multiple House Systems**: Placidus, Koch, Equal, Whole Sign, Campanus, Regiomontanus
+- **Chart Styles**: Western wheel, North/South/East Indian, Solar system view
+- **Output Formats**: ASCII art, JSON data structure, CSV tables
+- **Professional Layout**: Clean, readable chart presentations
 
-🎯 **PRECISION CALCULATIONS**
-- 🎪 Swiss Ephemeris Integration - Professional accuracy!
-- 📅 Ancient Dates Support - Calculate charts from 6000 BC!
-- 🏠 6 House Systems - Placidus, Koch, Equal, Whole Sign & more
-- 📊 Multiple Output Formats - Text, JSON, CSV ready!
+### Eclipse Analysis
+- **Solar Eclipses**: Total, partial, annular, hybrid types
+- **Lunar Eclipses**: Total, partial, penumbral classifications
+- **Geographic Precision**: Magnitude calculations for specific locations
+- **Historical Tracking**: Search eclipses across any time period
 
-🌙 **ECLIPSE & ASTRONOMICAL EVENTS**
-- 🌑 Solar Eclipses - Total, Partial, Annular, Hybrid
-- 🌕 Lunar Eclipses - Total, Partial, Penumbral
-- 🎪 Real Swiss Ephemeris Functions - No approximations!
-- 🗓️ Historical Eclipse Tracking - From ancient times to future!
+### Conjunction Detection
+- **Planetary Alignments**: All major celestial bodies
+- **Configurable Orbs**: Set precision thresholds (degrees)
+- **Temporal Analysis**: Applying/separating aspect detection
+- **Event Timing**: Precise conjunction timestamps
 
-⭐ **PLANETARY CONJUNCTIONS**
-- 🪐 Precise Timing - Down to the minute!
-- 🎯 Configurable Orbs - Set your own precision
-- 📈 Applying/Separating Analysis - See the cosmic dance!
-- 🔄 Multiple Planet Combinations - All major celestial bodies
+### KP System (Krishnamurti Paddhati)
+- **5-Level Sub-Lords**: Complete hierarchical analysis
+- **27 Nakshatras**: Traditional lunar mansion system
+- **Transition Tracking**: Monitor planetary lord changes
+- **Professional Tables**: Standard KP notation format
 
-🧮 **KP SYSTEM (Krishnamurti Paddhati)**
-- 🎭 5-Level Sub-Lord System - Ultimate precision!
-- ⭐ 27 Nakshatras - Complete lunar mansion system
-- 🎪 Transition Tracking - Know when planets change lords
-- 📊 Professional KP Tables - Traditional format
+### Ephemeris Generation
+- **Customizable Intervals**: Daily, weekly, monthly tables
+- **Complete Planetary Data**: Sun through Pluto, lunar nodes, Chiron
+- **Motion Indicators**: Retrograde status, speed calculations
+- **Export Ready**: Multiple format support for analysis
 
-📊 **EPHEMERIS TABLES**
-- 📅 Generate Daily/Weekly/Monthly tables
-- 🌟 All Planetary Positions - Sun through Pluto + Nodes
-- 📈 Speed & Direction - Retrograde indicators
-- 💾 Export Ready - CSV, JSON formats
+---
 
-## 🎨 SAMPLE OUTPUTS
+## Technical Specifications
 
-```
-=== WESTERN CHART WHEEL ===
-                    *
-              ******* *******
-           ***               ***
-         **                     **
-        **         ☉             **
-       **     ☽      ·      ♃     **
-      *           ······           *
-     **        ···     ···        **
-    *        ·     ♀     ·        *
-   *       ·               ·       *
-  **      ·    ♂     ♄    ·      **
-   *       ·               ·       *
-    *        ·           ·        *
-     **        ···     ···        **
-      *           ······           *
-       **                       **
-        **                     **
-         **                   **
-           ***               ***
-              ******* *******
-                    *
-```
+**Language**: C++17
+**Dependencies**: Swiss Ephemeris library
+**Platform**: Linux/Unix systems
+**Performance**: Optimized for fast calculations
+**Precision**: Arc-second accuracy
+**Memory**: Efficient ephemeris data caching
 
-## 🌈 PERFECT FOR:
+---
 
-🔮 **Professional Astrologers** - Get Swiss Ephemeris accuracy
-📚 **Students** - Learn with precise calculations
-💻 **Developers** - JSON/CSV output for apps
-🏛️ **Historians** - Ancient date calculations (BC era!)
-🎪 **Enthusiasts** - Beautiful, detailed charts
-
-## 🛠️ EASY TO USE
+## Sample Usage
 
 ```bash
 # Basic birth chart
-./horoscope_cli --date 1990-01-15 --time 14:30:00
-                --lat 40.7128 --lon -74.0060 --timezone -5
+horoscope_cli --date 1990-01-15 --time 14:30:00 \
+              --lat 40.7128 --lon -74.0060 --timezone -5
 
-# Find eclipses in 2024
-./horoscope_cli --eclipse-range 2024-01-01 2024-12-31
-                --lat 40.7128 --lon -74.0060
+# Eclipse search
+horoscope_cli --eclipse-range 2024-01-01 2024-12-31 \
+              --lat 40.7128 --lon -74.0060
 
-# KP System analysis
-./horoscope_cli --date 1990-01-15 --time 14:30:00
-                --lat 40.7128 --lon -74.0060 --timezone -5 --kp-table
+# KP analysis
+horoscope_cli --date 1990-01-15 --time 14:30:00 \
+              --lat 40.7128 --lon -74.0060 --timezone -5 \
+              --kp-table
 
-# Julius Caesar's chart (44 BC!)
-./horoscope_cli --date -0044-03-15 --time 12:00:00
-                --lat 41.9028 --lon 12.4964 --timezone 1
+# JSON output
+horoscope_cli --date 1990-01-15 --time 14:30:00 \
+              --lat 40.7128 --lon -74.0060 --timezone -5 \
+              --output json
 ```
 
-## 🎊 AMAZING CAPABILITIES
+---
 
-✨ **Historical Analysis** - Chart the Ides of March, 44 BC!
-🌟 **Future Predictions** - Eclipse patterns for years ahead
-🎯 **Professional Accuracy** - Arc-second precision
-🌍 **Global Support** - Any location on Earth
-⚡ **Lightning Fast** - Optimized C++ performance
-🔧 **Developer Friendly** - JSON output for integration
+## Architecture
 
-## 🎈 Why Choose Horoscope CLI?
-
-🏆 **Professional Grade**: Uses the same Swiss Ephemeris as professional astrology software
-🎪 **Versatile**: Multiple chart styles, house systems, output formats
-🌟 **Accurate**: Precise calculations for any date/time/location
-🚀 **Fast**: Optimized for quick calculations
-💝 **Complete**: Everything from basic charts to advanced KP analysis
-🌈 **Beautiful**: Stunning ASCII art charts and clean layouts
-
-## 🎭 TECHNICAL HIGHLIGHTS
-
-🔬 **Swiss Ephemeris Powered** - Professional astronomical library
-📐 **Arc-Second Precision** - Incredibly accurate planetary positions
-🗓️ **13,000 Year Range** - From 6000 BC to 7000 AD
-🏠 **6 House Systems** - All major calculation methods
-🌟 **27 Nakshatras** - Complete Vedic lunar mansion system
-🎯 **Real Eclipse Functions** - Not approximations, real astronomy!
+```
+┌─────────────────┐    ┌──────────────────┐    ┌────────────────┐
+│   CLI Parser    │───▶│  Calculation     │───▶│   Output       │
+│                 │    │  Engine          │    │   Formatter    │
+│ • Arguments     │    │                  │    │                │
+│ • Validation    │    │ • Swiss Ephemeris│    │ • Text Charts  │
+│ • Date Parsing  │    │ • House Systems  │    │ • JSON Data    │
+└─────────────────┘    │ • KP Calculations│    │ • CSV Tables   │
+                       │ • Eclipse Engine │    └────────────────┘
+                       │ • Aspects        │
+                       └──────────────────┘
+```
 
 ---
 
-🌟 **Ready to explore the cosmos with professional precision?** 🌟
+## Key Algorithms
 
-🚀 Perfect for astrologers, students, developers, and cosmic enthusiasts!
-💫 Download, compile, and start your astrological journey today!
+### Planetary Position Calculation
+- Swiss Ephemeris `swe_calc_ut()` for precise planetary coordinates
+- Coordinate transformation for different reference frames
+- Speed and acceleration calculations for motion analysis
 
-#Astrology #OpenSource #SwissEphemeris #CLI #Horoscope #KP #Vedic #Eclipse #Programming #Astronomy #StarChart #BirthChart #CosmicCalculations #AstrologyTool #ProfessionalAstrology
+### House System Implementation
+- Multiple algorithms: Placidus, Koch, Equal, Whole Sign
+- Accurate cusp calculations using `swe_houses_ex()`
+- Geographic and temporal corrections
+
+### Eclipse Detection
+- `swe_sol_eclipse_when_glob()` for solar eclipse timing
+- `swe_lun_eclipse_when()` for lunar eclipse detection
+- Local visibility calculations with `swe_sol_eclipse_how()`
+
+### KP Sub-Lord System
+- Vimshottari Dasha proportional subdivisions
+- 5-level hierarchical lord calculations
+- Precise transition timing algorithms
 
 ---
 
-🌈 **Like this post if you love astrology!** ⭐
-💬 **Comment your birth details for a sample chart!** 🎪
-🔄 **Share with fellow cosmic explorers!** 🚀
+## Output Examples
 
-✨ *"Bringing the precision of Swiss astronomy to command-line simplicity!"* ✨
+### Western Chart
+```
+      *
+  ******* *******
+ **             **
+**    ☽       ♃  **
+*       ·         *
+*    ♂     ☉      *
+**               **
+ **             **
+  ******* *******
+      *
+```
+
+### JSON Structure
+```json
+{
+  "birthData": {...},
+  "planets": [
+    {
+      "name": "Sun",
+      "longitude": 295.396,
+      "sign": "Capricorn",
+      "house": 8
+    }
+  ],
+  "aspects": [...]
+}
+```
+
+---
+
+## Professional Applications
+
+**Astrology Software**: Backend engine for chart calculations
+**Research**: Historical astronomical event analysis
+**Education**: Teaching tool for astronomical concepts
+**Development**: API integration for astrological applications
+**Analysis**: Bulk data processing for statistical studies
+
+---
+
+**Built with Swiss Ephemeris • Open Source • Professional Grade**
+
+#AstronomicalCalculations #SwissEphemeris #CLI #OpenSource #Astrology #Programming #DataAnalysis
