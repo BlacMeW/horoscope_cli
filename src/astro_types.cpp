@@ -1,5 +1,5 @@
 #include "astro_types.h"
-#include <swephexp.h>
+#include "swephexp.h"
 #include <sstream>
 #include <iomanip>
 #include <cmath>

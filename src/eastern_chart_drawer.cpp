@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <map>
 
 namespace Astro {
 
@@ -119,26 +120,17 @@ std::string EasternChartDrawer::drawEastIndianChart(const BirthChart& chart) con
 
     const auto& positions = chart.getPlanetPositions();
 
-    // Create the chart frame - East Indian style is a rectangular format
-    // with 12 houses arranged in a 3x4 grid pattern
+    // Create the chart frame - East Indian style is a rectangular 3x4 grid format
     std::vector<std::string> lines = {
-        "┌─────────────┬─────────────┬─────────────┬─────────────┐",
-        "│             │             │             │             │",
-        "│     10      │     11      │     12      │      1      │",
-        "│             │             │             │             │",
-        "├─────────────┼─────────────┼─────────────┼─────────────┤",
-        "│             │             │             │             │",
-        "│      9      │                           │      2      │",
-        "│             │           RASI            │             │",
-        "├─────────────┤                           ├─────────────┤",
-        "│             │                           │             │",
-        "│      8      │                           │      3      │",
-        "│             │                           │             │",
-        "├─────────────┼─────────────┼─────────────┼─────────────┤",
-        "│             │             │             │             │",
-        "│      7      │      6      │      5      │      4      │",
-        "│             │             │             │             │",
-        "└─────────────┴─────────────┴─────────────┴─────────────┘"
+        "┌─────────┬─────────┬─────────┐",
+        "│   12    │    1    │    2    │",
+        "├─────────┼─────────┼─────────┤",
+        "│   11    │         │    3    │",
+        "├─────────┼─────────┼─────────┤",
+        "│   10    │         │    4    │",
+        "├─────────┼─────────┼─────────┤",
+        "│    9    │    8    │    7    │",
+        "└─────────┴─────────┴─────────┘"
     };
 
     fillEastIndianHouses(lines, positions);
@@ -154,7 +146,7 @@ std::string EasternChartDrawer::drawEastIndianChart(const BirthChart& chart) con
     oss << "Ur=Uranus, Ne=Neptune, Pl=Pluto\n";
     oss << "\nEast Indian Chart Layout:\n";
     oss << "- Houses arranged in rectangular 3x4 grid\n";
-    oss << "- House 1 (Ascendant) in top-right position\n";
+    oss << "- House 1 (Ascendant) in top-center position\n";
     oss << "- Traditional Bengali/Oriya astrology format\n";
 
     return oss.str();
@@ -304,40 +296,46 @@ void EasternChartDrawer::fillSouthIndianHouses(std::vector<std::string>& lines,
 
 void EasternChartDrawer::fillEastIndianHouses(std::vector<std::string>& lines,
                                              const std::vector<PlanetPosition>& positions) const {
-    // East Indian chart house positions in the ASCII grid
-    struct HousePosition {
-        int line;
-        int startCol;
-        int width;
+    // East Indian chart house positions in the 3x4 rectangular grid
+    // Create a mapping of houses to their positions in the grid
+    std::map<int, std::pair<int, int>> houseToLineCol = {
+        {12, {1, 1}},  // House 12 (top-left)
+        {1, {1, 11}},  // House 1 (top-center)
+        {2, {1, 21}},  // House 2 (top-right)
+        {11, {3, 1}},  // House 11 (middle-left)
+        {3, {3, 21}},  // House 3 (middle-right)
+        {10, {5, 1}},  // House 10 (not visible in this simplified format)
+        {4, {5, 21}},  // House 4 (not visible in this simplified format)
+        {9, {7, 1}},   // House 9 (bottom-left)
+        {8, {7, 11}},  // House 8 (bottom-center)
+        {7, {7, 21}}   // House 7 (bottom-right)
     };
 
-    std::vector<HousePosition> housePositions = {
-        {0, 0, 0},      // Dummy for index 0
-        {2, 42, 11},    // House 1 (top-right)
-        {6, 42, 11},    // House 2 (right-upper)
-        {10, 42, 11},   // House 3 (right-lower)
-        {14, 42, 11},   // House 4 (bottom-right)
-        {14, 28, 11},   // House 5 (bottom-center-right)
-        {14, 14, 11},   // House 6 (bottom-center-left)
-        {14, 0, 11},    // House 7 (bottom-left)
-        {10, 0, 11},    // House 8 (left-lower)
-        {6, 0, 11},     // House 9 (left-upper)
-        {2, 0, 11},     // House 10 (top-left)
-        {2, 14, 11},    // House 11 (top-center-left)
-        {2, 28, 11}     // House 12 (top-center-right)
-    };
-
+    // Fill the houses with planets
     for (int house = 1; house <= 12; house++) {
         std::string planets = getPlanetsInHouse(positions, house);
         if (!planets.empty()) {
-            const auto& pos = housePositions[house];
-            std::string formatted = formatHouseContent(planets, pos.width);
+            auto it = houseToLineCol.find(house);
+            if (it != houseToLineCol.end()) {
+                int lineIdx = it->second.first;
+                int colStart = it->second.second;
 
-            // Replace the content in the appropriate line
-            if (pos.line < static_cast<int>(lines.size())) {
-                std::string& line = lines[pos.line];
-                if (pos.startCol + formatted.length() <= line.length()) {
-                    line.replace(pos.startCol + 2, formatted.length(), formatted);
+                if (lineIdx < static_cast<int>(lines.size())) {
+                    // Format content to fit in the cell (7 characters wide)
+                    std::string content = planets;
+                    if (content.length() > 7) {
+                        content = content.substr(0, 7);
+                    }
+
+                    // Center the content
+                    int padding = (7 - content.length()) / 2;
+                    std::string formatted = std::string(padding, ' ') + content +
+                                          std::string(7 - padding - content.length(), ' ');
+
+                    // Replace in the line
+                    if (colStart + 7 <= lines[lineIdx].length()) {
+                        lines[lineIdx].replace(colStart, 7, formatted);
+                    }
                 }
             }
         }

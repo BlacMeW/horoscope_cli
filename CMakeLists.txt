@@ -4,18 +4,20 @@ project(HoroscopeCLI)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find required packages
-find_package(PkgConfig REQUIRED)
-
-# Swiss Ephemeris library
-find_library(SWISSEPH_LIB swe REQUIRED)
-if(NOT SWISSEPH_LIB)
-    message(FATAL_ERROR "Swiss Ephemeris library not found. Please install libswe-dev")
-endif()
-
 # Include directories
 include_directories(include)
-include_directories(/usr/include/swisseph)
+include_directories(third_party/swisseph)
+
+# Swiss Ephemeris source files
+set(SWISSEPH_SOURCES
+    third_party/swisseph/sweph.c
+    third_party/swisseph/swephlib.c
+    third_party/swisseph/swehouse.c
+    third_party/swisseph/swedate.c
+    third_party/swisseph/swejpl.c
+    third_party/swisseph/swemplan.c
+    third_party/swisseph/swemmoon.c
+)
 
 # Source files
 set(SOURCES
@@ -28,6 +30,7 @@ set(SOURCES
     src/ephemeris_manager.cpp
     src/astro_types.cpp
     src/eastern_chart_drawer.cpp
+    ${SWISSEPH_SOURCES}
 )
 
 # Headers
@@ -46,7 +49,11 @@ set(HEADERS
 add_executable(horoscope_cli ${SOURCES} ${HEADERS})
 
 # Link libraries
-target_link_libraries(horoscope_cli ${SWISSEPH_LIB} m)
+target_link_libraries(horoscope_cli m)
+
+# Set ephemeris data path
+target_compile_definitions(horoscope_cli PRIVATE SE_EPHE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 # Installation
 install(TARGETS horoscope_cli DESTINATION bin)
+install(DIRECTORY data/ DESTINATION share/horoscope_cli/data)

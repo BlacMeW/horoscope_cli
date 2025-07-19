@@ -1,5 +1,5 @@
 #include "ephemeris_manager.h"
-#include <swephexp.h>
+#include "swephexp.h"
 #include <iostream>
 #include <cstring>
 

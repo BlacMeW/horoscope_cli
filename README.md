@@ -14,25 +14,31 @@ A C++ command-line tool for calculating horoscopes using Swiss Ephemeris.
 
 ## Dependencies
 
-- Swiss Ephemeris library (libswe-dev)
-- CMake 3.10 or higher
 - C++17 compatible compiler
+- CMake 3.10 or higher (optional - Makefile also provided)
+- Standard C math library
+
+**Note:** Swiss Ephemeris is embedded in the project - no external installation required!
 
 ## Installation
 
-### Ubuntu/Debian
+### Building with Makefile (Recommended)
 ```bash
-sudo apt-get update
-sudo apt-get install libswe-dev cmake build-essential
+make clean
+make
 ```
 
-### Building
+### Building with CMake
 ```bash
 mkdir build
 cd build
 cmake ..
 make
 ```
+
+### No External Dependencies Required
+The Swiss Ephemeris library is embedded in the project under `third_party/swisseph/`.
+No external package installation is needed.
 
 ## Usage
 
