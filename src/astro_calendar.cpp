@@ -1062,19 +1062,18 @@ std::string AstroCalendar::generateProfessionalAstroCalendar(const AstroCalendar
         }
     }
 
-    // Calendar grid with enhanced information
+    // Calendar grid with enhanced box drawing borders
     ss << "📅 MONTHLY CALENDAR GRID\n";
-    ss << "═══════════════════════════════════════════════════════════════════════════════════════════\n";
-
-    // Weekday headers
-    ss << " Sun        Mon        Tue        Wed        Thu        Fri        Sat\n";
-    ss << "──────────┬──────────┬──────────┬──────────┬──────────┬──────────┬──────────\n";
+    ss << "┌─────────────────────────────────────────────────────────────────────────────────────────┐\n";
+    ss << "│ Sun        Mon        Tue        Wed        Thu        Fri        Sat                 │\n";
+    ss << "├──────────┬──────────┬──────────┬──────────┬──────────┬──────────┬──────────┤\n";
 
     // Find first day of month
     double firstDayJD = gregorianToJulianDay(monthData.year, monthData.month, 1);
     int firstDayOfWeek = (static_cast<int>(firstDayJD + 1.5)) % 7; // 0=Sunday
 
-    // Print leading spaces
+    // Print leading spaces for first week
+    ss << "│";
     for (int i = 0; i < firstDayOfWeek; ++i) {
         ss << "          │";
     }
@@ -1088,17 +1087,28 @@ std::string AstroCalendar::generateProfessionalAstroCalendar(const AstroCalendar
         ss << generateProfessionalDayCell(day);
 
         if (dayOfWeek == 6) {
-            ss << "\n";
+            ss << "│\n";
             // Add separator line between weeks
             if (dayIdx + 1 < monthData.days.size()) {
-                ss << "──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────\n";
+                ss << "├──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────┤\n";
             }
         } else {
             ss << "│";
         }
     }
 
-    ss << "\n\n";
+    // Add closing border for incomplete last week
+    int lastDayOfWeek = (firstDayOfWeek + monthData.days.size() - 1) % 7;
+    if (lastDayOfWeek != 6) {
+        // Fill remaining cells in the last row
+        for (int i = lastDayOfWeek + 1; i <= 6; ++i) {
+            ss << "          │";
+        }
+        ss << "\n";
+    }
+    ss << "└──────────┴──────────┴──────────┴──────────┴──────────┴──────────┴──────────┘\n";
+
+    ss << "\n";
 
     // Legend and symbols explanation
     ss << "🔍 SYMBOLS & ABBREVIATIONS\n";
