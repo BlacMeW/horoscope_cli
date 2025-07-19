@@ -8,7 +8,7 @@ A C++ command-line tool for calculating horoscopes using Swiss Ephemeris.
 - Generate birth charts with house calculations
 - Calculate aspects between planets
 - Support for various house systems (Placidus, Koch, Equal House, etc.)
-- **Eastern/Vedic chart drawing** - Visual ASCII charts in North Indian and South Indian styles
+- **Eastern/Vedic chart drawing** - Visual ASCII charts in North Indian, South Indian, and East Indian styles
 - Multiple output formats (text, JSON)
 - Accurate astronomical calculations using Swiss Ephemeris
 
@@ -48,7 +48,7 @@ make
 - `--lon`: Longitude in decimal degrees
 - `--timezone`: Timezone offset from UTC in hours
 - `--house-system`: House system (P=Placidus, K=Koch, E=Equal, W=Whole Sign)
-- `--chart-style`: Chart style (western, north-indian, south-indian)
+- `--chart-style`: Chart style (western, north-indian, south-indian, east-indian)
 - `--output`: Output format (text, json)
 
 ### Example Output
@@ -88,14 +88,32 @@ Mercury:    05°33' Aquarius (House 6)
 └─────────────┴─────────────┴─────────────┴─────────────┘
 ```
 
+**East Indian Vedic Chart (Bengali/Oriya Style):**
+```
+=== EAST INDIAN VEDIC CHART ===
+
+┌─────────┬─────────┬─────────┐
+│   Ve,Ke │  Su,Me  │    2    │
+├─────────┼─────────┼─────────┤
+│   Ju    │         │   Sa    │
+├─────────┼─────────┼─────────┤
+│   10    │         │   Mo    │
+├─────────┼─────────┼─────────┤
+│   Ma    │   Ra    │    7    │
+└─────────┴─────────┴─────────┘
+```
+
 ### Eastern Chart Examples
 
 ```bash
 # North Indian style
 ./horoscope_cli --date "1990-01-15" --time "14:30:00" --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style north-indian
 
-# South Indian style  
+# South Indian style
 ./horoscope_cli --date "1990-01-15" --time "14:30:00" --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style south-indian
+
+# East Indian style (Bengali/Oriya tradition)
+./horoscope_cli --date "1990-01-15" --time "14:30:00" --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style east-indian
 
 # Compare all styles
 ./examples/chart_comparison.sh 1990-01-15 14:30:00 40.7128 -74.0060 -5

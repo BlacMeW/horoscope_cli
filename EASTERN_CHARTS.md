@@ -24,6 +24,12 @@ The Horoscope CLI now supports Eastern/Vedic astrology chart drawing in addition
 - Houses move relative to the Ascendant
 - Traditional Tamil/Kerala style presentation
 
+### 4. East Indian Style
+- Rectangular 3x4 grid format
+- Houses arranged in a systematic grid pattern
+- Traditional Bengali/Oriya astrology format
+- House 1 (Ascendant) positioned in top-right corner
+
 ## Usage
 
 ### Command Line Options
@@ -36,6 +42,7 @@ The Horoscope CLI now supports Eastern/Vedic astrology chart drawing in addition
 # - western (default)
 # - north-indian
 # - south-indian
+# - east-indian
 ```
 
 ### Examples
@@ -47,7 +54,10 @@ The Horoscope CLI now supports Eastern/Vedic astrology chart drawing in addition
 # Same chart in South Indian style
 ./horoscope_cli --date "1869-10-02" --time "07:45:00" --lat 21.6416 --lon 69.6293 --timezone 5.5 --chart-style south-indian
 
-# Compare all three styles
+# Same chart in East Indian style
+./horoscope_cli --date "1869-10-02" --time "07:45:00" --lat 21.6416 --lon 69.6293 --timezone 5.5 --chart-style east-indian
+
+# Compare all four styles
 ./examples/chart_comparison.sh 1869-10-02 07:45:00 21.6416 69.6293 5.5
 ```
 
@@ -99,9 +109,9 @@ The Eastern charts use abbreviated planet symbols to fit in the compact format:
 
 ### South Indian Chart
 ```
-        ┌─────────────┬─────────────┐        
-        │      2      │      3      │        
-        │             │             │        
+        ┌─────────────┬─────────────┐
+        │      2      │      3      │
+        │             │             │
 ┌───────┼─────────────┼─────────────┼───────┐
 │   1   │                           │   4   │
 │       │                           │       │
@@ -109,14 +119,40 @@ The Eastern charts use abbreviated planet symbols to fit in the compact format:
 │  12   │                           │   5   │
 │       │                           │       │
 └───────┼─────────────┼─────────────┼───────┘
-        │     11      │      6      │        
-        │             │             │        
-        └─────────────┴─────────────┘        
+        │     11      │      6      │
+        │             │             │
+        └─────────────┴─────────────┘
 ```
 
 - Fixed zodiac positions (Aries always top-left)
 - Houses move based on Ascendant position
 - More traditional Kerala/Tamil format
+
+### East Indian Chart
+```
+┌─────────────┬─────────────┬─────────────┬─────────────┐
+│             │             │             │             │
+│     10      │     11      │     12      │      1      │
+│             │             │             │             │
+├─────────────┼─────────────┼─────────────┼─────────────┤
+│             │             │             │             │
+│      9      │                           │      2      │
+│             │           RASI            │             │
+├─────────────┤                           ├─────────────┤
+│             │                           │             │
+│      8      │                           │      3      │
+│             │                           │             │
+├─────────────┼─────────────┼─────────────┼─────────────┤
+│             │             │             │             │
+│      7      │      6      │      5      │      4      │
+│             │             │             │             │
+└─────────────┴─────────────┴─────────────┴─────────────┘
+```
+
+- Rectangular 3x4 grid layout
+- House 1 (Ascendant) in top-right position
+- Traditional Bengali/Oriya astrology format
+- Systematic house arrangement in clockwise order
 
 ## Example Scripts
 
@@ -164,7 +200,8 @@ Eastern charts can be combined with Western chart features:
 
 - **North Indian Style**: Common in Hindi-speaking regions
 - **South Indian Style**: Traditional in Tamil Nadu, Kerala, Karnataka
-- Both styles show the same astronomical information
+- **East Indian Style**: Traditional in Bengal, Orissa, and eastern Indian regions
+- All styles show the same astronomical information
 - Choice of style is often based on regional tradition or personal preference
 
 ## Troubleshooting

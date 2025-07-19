@@ -43,6 +43,11 @@ echo "---------------------------"
 $EXECUTABLE --date "$DATE" --time "$TIME" --lat "$LAT" --lon "$LON" --timezone "$TIMEZONE" --chart-style south-indian
 
 echo ""
+echo "4. EAST INDIAN VEDIC CHART"
+echo "--------------------------"
+$EXECUTABLE --date "$DATE" --time "$TIME" --lat "$LAT" --lon "$LON" --timezone "$TIMEZONE" --chart-style east-indian
+
+echo ""
 echo "=== COMPARING DIFFERENT BIRTH CHARTS ==="
 echo "========================================"
 

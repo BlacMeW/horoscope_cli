@@ -83,7 +83,7 @@ I've successfully added Eastern/Vedic chart drawing functionality to the Horosco
 # North Indian chart for Gandhi
 ./horoscope_cli --date "1869-10-02" --time "07:45:00" --lat 21.6416 --lon 69.6293 --timezone 5.5 --chart-style north-indian
 
-# South Indian chart for Vivekananda  
+# South Indian chart for Vivekananda
 ./horoscope_cli --date "1863-01-12" --time "06:33:00" --lat 22.5726 --lon 88.3639 --timezone 5.5 --chart-style south-indian
 ```
 

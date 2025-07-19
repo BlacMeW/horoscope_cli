@@ -64,4 +64,9 @@ echo -e "\n${YELLOW}Test 9: South Indian Chart Style${NC}"
 echo "Date: January 12, 1863, 6:33 AM, Kolkata, India (Swami Vivekananda)"
 $EXECUTABLE --date "1863-01-12" --time "06:33:00" --lat 22.5726 --lon 88.3639 --timezone 5.5 --chart-style south-indian
 
+# Test 10: East Indian Chart Style
+echo -e "\n${YELLOW}Test 10: East Indian Chart Style${NC}"
+echo "Date: October 15, 1931, 12:00 PM, Rameswaram, India (APJ Abdul Kalam)"
+$EXECUTABLE --date "1931-10-15" --time "12:00:00" --lat 9.2815 --lon 79.4509 --timezone 5.5 --chart-style east-indian
+
 echo -e "\n${GREEN}Testing completed!${NC}"

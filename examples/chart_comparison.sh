@@ -45,10 +45,16 @@ echo "--------------------------------"
 $EXECUTABLE --date "$DATE" --time "$TIME" --lat "$LAT" --lon "$LON" --timezone "$TZ" --chart-style south-indian
 
 echo ""
+echo ">>> EAST INDIAN VEDIC CHART <<<"
+echo "-------------------------------"
+$EXECUTABLE --date "$DATE" --time "$TIME" --lat "$LAT" --lon "$LON" --timezone "$TZ" --chart-style east-indian
+
+echo ""
 echo "=== NOTES ==="
 echo "============"
-echo "All three charts show the same astronomical data."
+echo "All four charts show the same astronomical data."
 echo "The difference is in the visual presentation:"
 echo "- Western: Detailed text format with aspects"
 echo "- North Indian: Diamond-shaped house layout"
 echo "- South Indian: Square format with fixed house positions"
+echo "- East Indian: Rectangular 3x4 grid layout (Bengali style)"
