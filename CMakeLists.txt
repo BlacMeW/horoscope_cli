@@ -32,6 +32,7 @@ set(SOURCES
     src/eastern_chart_drawer.cpp
     src/solar_system_drawer.cpp
     src/kp_system.cpp
+    src/hindu_calendar.cpp
     ${SWISSEPH_SOURCES}
 )
 
@@ -47,6 +48,7 @@ set(HEADERS
     include/eastern_chart_drawer.h
     include/solar_system_drawer.h
     include/kp_system.h
+    include/hindu_calendar.h
 )
 
 # Create executable

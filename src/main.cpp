@@ -8,6 +8,7 @@
 #include "ephemeris_table.h"
 #include "kp_system.h"
 #include "location_manager.h"
+#include "hindu_calendar.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -95,6 +96,14 @@ struct CommandLineArgs {
     std::string kpTransitionPlanet = "all";
     std::string kpTransitionLevel = "all";
     std::string kpOutputFormat = "table";
+
+    // Hindu Calendar (Panchanga) options
+    bool showPanchanga = false;
+    bool showPanchangaRange = false;
+    std::string panchangaFromDate;
+    std::string panchangaToDate;
+    std::string panchangaFormat = "table";
+    bool showFestivalsOnly = false;
 };
 
 void printHelp() {
@@ -233,6 +242,29 @@ void printHelp() {
     std::cout << "                       (default: all levels)\n\n";
 
     std::cout << "    --kp-format FORMAT KP output format: table, csv, json (default: table)\n\n";
+
+    std::cout << "HINDU CALENDAR OPTIONS (Panchanga) 🕉️📅\n";
+    std::cout << "    --panchanga        Show Hindu calendar (Panchanga) for birth date\n";
+    std::cout << "                       • Displays Tithi, Vara, Nakshatra, Yoga, Karana\n";
+    std::cout << "                       • Shows Hindu month, year (Vikram Samvat)\n";
+    std::cout << "                       • Includes festivals and special events\n\n";
+
+    std::cout << "    --panchanga-range FROM TO\n";
+    std::cout << "                       Generate Panchanga for date range\n";
+    std::cout << "                       • Format: YYYY-MM-DD YYYY-MM-DD\n";
+    std::cout << "                       • Shows daily Panchanga elements\n";
+    std::cout << "                       • Requires --lat and --lon for calculations\n\n";
+
+    std::cout << "    --panchanga-format FORMAT\n";
+    std::cout << "                       Panchanga output format\n";
+    std::cout << "                       table = Detailed ASCII table (default)\n";
+    std::cout << "                       csv   = Comma-separated values\n";
+    std::cout << "                       json  = JSON structure\n\n";
+
+    std::cout << "    --festivals-only   Show only festivals and special events\n";
+    std::cout << "                       • Filters output to show religious observances\n";
+    std::cout << "                       • Includes Ekadashi, Purnima, Amavasya\n";
+    std::cout << "                       • Shows major Hindu festivals\n\n";
 
     std::cout << "UTILITY OPTIONS ⚙️🛠️\n";
     std::cout << "    --solar-system     Show solar system orbital paths only\n";
@@ -665,6 +697,20 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 std::cerr << "Error: KP format must be 'table', 'csv', or 'json'\n";
                 return false;
             }
+        } else if (arg == "--panchanga") {
+            args.showPanchanga = true;
+        } else if (arg == "--panchanga-range" && i + 2 < argc) {
+            args.panchangaFromDate = argv[++i];
+            args.panchangaToDate = argv[++i];
+            args.showPanchangaRange = true;
+        } else if (arg == "--panchanga-format" && i + 1 < argc) {
+            args.panchangaFormat = argv[++i];
+            if (args.panchangaFormat != "table" && args.panchangaFormat != "csv" && args.panchangaFormat != "json") {
+                std::cerr << "Error: Panchanga format must be 'table', 'csv', or 'json'\n";
+                return false;
+            }
+        } else if (arg == "--festivals-only") {
+            args.showFestivalsOnly = true;
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -680,14 +726,15 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    // Eclipse and ephemeris features can work without full birth data
-    if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions) {
+    // Eclipse, ephemeris, and panchanga features can work without full birth data
+    if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
+        args.showPanchangaRange) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
-        if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty()) &&
+        if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty()) &&
             args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
              args.longitude < -180.0 || args.longitude > 180.0)) {
-            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction searches\n";
+            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga searches\n";
             return false;
         }
 
@@ -1051,8 +1098,50 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Handle Hindu Calendar (Panchanga) calculations
+        if (args.showPanchangaRange) {
+            HinduCalendar hinduCalendar;
+            if (!hinduCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Hindu Calendar system: " << hinduCalendar.getLastError() << std::endl;
+                return 1;
+            }
+
+            std::string fromDate = args.panchangaFromDate;
+            std::string toDate = args.panchangaToDate;
+
+            if (fromDate.empty() || toDate.empty()) {
+                std::cerr << "Error: Panchanga range requires --panchanga-range FROM TO dates" << std::endl;
+                return 1;
+            }
+
+            // Generate panchanga for date range
+            std::vector<PanchangaData> panchangaList = hinduCalendar.calculatePanchangaRange(
+                fromDate, toDate, args.latitude, args.longitude);
+
+            if (!panchangaList.empty()) {
+                if (args.panchangaFormat == "csv") {
+                    std::string result = hinduCalendar.generateCSV(panchangaList);
+                    std::cout << result << std::endl;
+                } else if (args.panchangaFormat == "json") {
+                    std::cout << "[\n";
+                    for (size_t i = 0; i < panchangaList.size(); ++i) {
+                        std::cout << hinduCalendar.generateJSON(panchangaList[i]);
+                        if (i < panchangaList.size() - 1) std::cout << ",";
+                        std::cout << "\n";
+                    }
+                    std::cout << "]\n";
+                } else {
+                    std::string result = hinduCalendar.generatePanchangaTable(panchangaList);
+                    std::cout << result << std::endl;
+                }
+            } else {
+                std::cout << "Failed to generate Panchanga for the specified period." << std::endl;
+            }
+        }
+
         // Return early if only special features were requested
-        if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions) {
+        if (args.showEclipses || args.showConjunctions || args.showEphemerisTable ||
+            args.showKPTransitions || args.showPanchangaRange) {
             return 0;
         }
     } catch (const std::exception& e) {
@@ -1116,7 +1205,29 @@ int main(int argc, char* argv[]) {
         std::cout << kpTable << std::endl;
 
         // If only KP table was requested, return
-        if (!args.showKPTransitions && args.outputFormat == "text" && args.chartStyle.empty()) {
+        if (!args.showKPTransitions && !args.showPanchanga && args.outputFormat == "text" && args.chartStyle.empty()) {
+            return 0;
+        }
+    }
+
+    // Handle Panchanga (Hindu Calendar) for birth date
+    if (args.showPanchanga) {
+        HinduCalendar hinduCalendar;
+        if (!hinduCalendar.initialize()) {
+            std::cerr << "Error: Failed to initialize Hindu Calendar system: " << hinduCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        PanchangaData panchanga = hinduCalendar.calculatePanchanga(birthData);
+
+        if (args.panchangaFormat == "json") {
+            std::cout << hinduCalendar.generateJSON(panchanga) << std::endl;
+        } else {
+            std::cout << hinduCalendar.generatePanchangaTable(panchanga) << std::endl;
+        }
+
+        // If only Panchanga was requested, return
+        if (!args.showKPTable && args.outputFormat == "text" && args.chartStyle.empty()) {
             return 0;
         }
     }

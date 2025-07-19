@@ -1,0 +1,269 @@
+#pragma once
+
+#include "astro_types.h"
+#include <string>
+#include <vector>
+#include <map>
+
+namespace Astro {
+
+// Hindu calendar elements enumeration
+enum class Tithi {
+    PRATIPAD = 1, DWITIYA, TRITIYA, CHATURTHI, PANCHAMI,
+    SHASHTHI, SAPTAMI, ASHTAMI, NAVAMI, DASHAMI,
+    EKADASHI, DWADASHI, TRAYODASHI, CHATURDASHI,
+    PURNIMA = 15,  // Full moon
+    PRATIPAD_K = 16, DWITIYA_K, TRITIYA_K, CHATURTHI_K, PANCHAMI_K,
+    SHASHTHI_K, SAPTAMI_K, ASHTAMI_K, NAVAMI_K, DASHAMI_K,
+    EKADASHI_K, DWADASHI_K, TRAYODASHI_K, CHATURDASHI_K,
+    AMAVASYA = 30  // New moon
+};
+
+enum class Vara {
+    SUNDAY = 0, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY
+};
+
+enum class HinduNakshatra {
+    ASHWINI = 1, BHARANI, KRITTIKA, ROHINI, MRIGASHIRA, ARDRA,
+    PUNARVASU, PUSHYA, ASHLESHA, MAGHA, PURVA_PHALGUNI, UTTARA_PHALGUNI,
+    HASTA, CHITRA, SWATI, VISHAKHA, ANURADHA, JYESHTHA,
+    MULA, PURVA_ASHADHA, UTTARA_ASHADHA, SHRAVANA, DHANISHTA,
+    SHATABHISHA, PURVA_BHADRAPADA, UTTARA_BHADRAPADA, REVATI
+};
+
+enum class Yoga {
+    VISHKUMBHA = 1, PRITI, AYUSHMAN, SAUBHAGYA, SHOBHANA, ATIGANDA,
+    SUKARMAN, DHRITI, SHULA, GANDA, VRIDDHI, DHRUVA,
+    VYAGHATA, HARSHANA, VAJRA, SIDDHI, VYATIPATA, VARIYAN,
+    PARIGHA, SHIVA, SIDDHA, SADHYA, SHUBHA, SHUKLA,
+    BRAHMA, INDRA, VAIDHRITI
+};
+
+enum class Karana {
+    BAVA = 1, BALAVA, KAULAVA, TAITILA, GARA, VANIJA, VISHTI,
+    SHAKUNI, CHATUSHPADA, NAGA, KIMSTUGHNA
+};
+
+enum class HinduMonth {
+    CHAITRA = 1, VAISHAKHA, JYESHTHA, ASHADHA, SHRAVANA, BHADRAPADA,
+    ASHWINI_MONTH, KARTIKA, MARGASHIRSHA, PAUSHA, MAGHA, PHALGUNA
+};
+
+enum class Rashi {
+    MESHA = 1, VRISHABHA, MITHUNA, KARKA, SIMHA, KANYA,
+    TULA, VRISHCHIKA, DHANU, MAKARA, KUMBHA, MEENA
+};
+
+// Pancanga data structure
+struct PanchangaData {
+    // Basic five elements
+    Tithi tithi;
+    Vara vara;
+    HinduNakshatra nakshatra;
+    Yoga yoga;
+    Karana karana;
+
+    // Extended information
+    HinduMonth month;
+    int day;                    // Day of Hindu month
+    int year;                   // Hindu year (Vikram Samvat, Shaka, etc.)
+    bool isKrishna;            // Krishna paksha (dark fortnight)
+    bool isShukla;             // Shukla paksha (bright fortnight)
+
+    // Timing information
+    double tithiEndTime;       // When current tithi ends (in hours from midnight)
+    double nakshatraEndTime;   // When current nakshatra ends
+    double yogaEndTime;        // When current yoga ends
+    double karanaEndTime;      // When current karana ends
+
+    // Solar information
+    Rashi sunRashi;            // Sun's zodiac sign
+    double sunLongitude;       // Sun's longitude
+
+    // Lunar information
+    Rashi moonRashi;           // Moon's zodiac sign
+    double moonLongitude;      // Moon's longitude
+    double lunarPhase;         // 0-360 degrees from new moon
+
+    // Special events and festivals
+    std::vector<std::string> festivals;
+    std::vector<std::string> specialEvents;
+    bool isEkadashi;
+    bool isPurnima;
+    bool isAmavasya;
+    bool isSankranti;          // Solar transition
+
+    // Quality assessments
+    bool isShubhaMuhurta;      // Auspicious time
+    bool isAshubhaMuhurta;     // Inauspicious time
+    std::string muhurtaDescription;
+
+    // Formatting methods
+    std::string getFormattedTithi() const;
+    std::string getFormattedNakshatra() const;
+    std::string getFormattedYoga() const;
+    std::string getFormattedKarana() const;
+    std::string getFullDescription() const;
+    std::string getSummary() const;
+};
+
+// Main Hindu Calendar System
+class HinduCalendar {
+private:
+    // Calculation parameters
+    static constexpr double SIDEREAL_YEAR = 365.25636; // days
+    static constexpr double LUNAR_MONTH = 29.53058868; // days
+    static constexpr double NAKSHATRA_SPAN = 13.333333; // degrees (360/27)
+    static constexpr double YOGA_SPAN = 13.333333; // degrees
+
+    // Reference epochs
+    static constexpr double KALI_EPOCH_JD = 588465.5; // Feb 18, 3102 BC
+    static constexpr double SHAKA_EPOCH_JD = 1749994.5; // Mar 22, 79 AD
+
+    // Nakshatra and star data
+    struct NakshatraInfo {
+        std::string name;
+        std::string sanskrit;
+        Planet lord;
+        std::string symbol;
+        std::string deity;
+        double startDegree;
+        double endDegree;
+        std::string nature; // Dev, Manush, Rakshasa
+        std::string gana;
+        std::string quality;
+    };
+
+    struct TithiInfo {
+        std::string name;
+        std::string sanskrit;
+        Planet lord;
+        std::string nature;
+        bool isShubha; // auspicious
+        std::string significance;
+    };
+
+    struct YogaInfo {
+        std::string name;
+        std::string sanskrit;
+        std::string nature;
+        std::string effect;
+    };
+
+    struct KaranaInfo {
+        std::string name;
+        std::string sanskrit;
+        std::string nature;
+        bool isMovable;
+    };
+
+    // Data tables
+    std::vector<NakshatraInfo> nakshatraData;
+    std::vector<TithiInfo> tithiData;
+    std::vector<YogaInfo> yogaData;
+    std::vector<KaranaInfo> karanaData;
+
+    // Festival and special event data
+    std::map<std::string, std::vector<std::string>> festivalMap;
+
+    // Initialization
+    void initializeNakshatraData();
+    void initializeTithiData();
+    void initializeYogaData();
+    void initializeKaranaData();
+    void initializeFestivalData();
+
+    // Calculation methods
+    double calculateLunarPhase(double sunLong, double moonLong) const;
+    Tithi calculateTithi(double lunarPhase) const;
+    HinduNakshatra calculateNakshatra(double moonLongitude) const;
+    Yoga calculateYoga(double sunLong, double moonLong) const;
+    Karana calculateKarana(double lunarPhase, bool isFirstHalf) const;
+    Vara calculateVara(double julianDay) const;
+    HinduMonth calculateHinduMonth(double sunLongitude) const;
+    Rashi calculateRashi(double longitude) const;
+
+    // Timing calculations
+    double calculateTithiEndTime(double currentPhase, double sunSpeed, double moonSpeed) const;
+    double calculateNakshatraEndTime(double moonLong, double moonSpeed) const;
+    double calculateYogaEndTime(double sunLong, double moonLong, double sunSpeed, double moonSpeed) const;
+    double calculateKaranaEndTime(double currentPhase, double sunSpeed, double moonSpeed) const;
+
+    // Year calculations
+    int calculateVikramYear(double julianDay) const;
+    int calculateShakaYear(double julianDay) const;
+    int calculateKaliYear(double julianDay) const;
+
+    // Festival identification
+    void identifyFestivals(PanchangaData& panchanga) const;
+    void identifySpecialEvents(PanchangaData& panchanga) const;
+
+    // Muhurta calculations
+    void calculateMuhurta(PanchangaData& panchanga) const;
+
+    bool initialized;
+    mutable std::string lastError;
+
+public:
+    HinduCalendar();
+    ~HinduCalendar();
+
+    // Initialize the calendar system
+    bool initialize();
+
+    // Main calculation method
+    PanchangaData calculatePanchanga(const BirthData& birthData) const;
+    PanchangaData calculatePanchanga(double julianDay, double latitude, double longitude) const;
+
+    // Bulk calculations
+    std::vector<PanchangaData> calculatePanchangaRange(const std::string& fromDate,
+                                                       const std::string& toDate,
+                                                       double latitude, double longitude) const;
+
+    // Specific element calculations
+    Tithi getTithi(double julianDay) const;
+    HinduNakshatra getNakshatra(double julianDay) const;
+    Yoga getYoga(double julianDay) const;
+    Karana getKarana(double julianDay) const;
+
+    // Festival and event queries
+    std::vector<std::string> getFestivalsForDate(const PanchangaData& panchanga) const;
+    bool isEkadashi(const PanchangaData& panchanga) const;
+    bool isPurnima(const PanchangaData& panchanga) const;
+    bool isAmavasya(const PanchangaData& panchanga) const;
+
+    // Muhurta calculations
+    bool isShubhaMuhurta(const PanchangaData& panchanga) const;
+    std::string getMuhurtaDescription(const PanchangaData& panchanga) const;
+
+    // Output formatting
+    std::string generatePanchangaTable(const PanchangaData& panchanga) const;
+    std::string generatePanchangaTable(const std::vector<PanchangaData>& panchangaList) const;
+    std::string generateJSON(const PanchangaData& panchanga) const;
+    std::string generateCSV(const std::vector<PanchangaData>& panchangaList) const;
+
+    // Utility methods
+    std::string getNakshatraName(HinduNakshatra nak) const;
+    std::string getTithiName(Tithi tithi) const;
+    std::string getYogaName(Yoga yoga) const;
+    std::string getKaranaName(Karana karana) const;
+    std::string getVaraName(Vara vara) const;
+    std::string getHinduMonthName(HinduMonth month) const;
+    std::string getRashiName(Rashi rashi) const;
+
+    // Error handling
+    std::string getLastError() const { return lastError; }
+    bool isInitialized() const { return initialized; }
+
+private:
+    // Utility method for parsing dates
+    bool parseDate(const std::string& dateStr, int& year, int& month, int& day) const;
+};
+
+// Utility functions
+std::string formatHinduDate(int day, HinduMonth month, int year, bool isKrishna);
+double julianDayToHinduDate(double jd, int& year, int& month, int& day);
+double hinduDateToJulianDay(int year, int month, int day);
+bool isLeapYear(int hinduYear);
+
+} // namespace Astro
