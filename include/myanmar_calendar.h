@@ -3,11 +3,12 @@
 #include "astro_types.h"
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 
 namespace Astro {
 
-// Myanmar calendar elements enumeration
+// Myanmar calendar elements enumeration (based on yan9a/mmcal)
 enum class MyanmarYearType {
     COMMON = 0,      // Common year (354 days)
     LITTLE_WATAT = 1, // Little watat (384 days)
@@ -40,13 +41,13 @@ enum class MyanmarMoonPhase {
 };
 
 enum class MyanmarWeekday {
-    SATURDAY = 0,
-    SUNDAY = 1,
-    MONDAY = 2,
-    TUESDAY = 3,
-    WEDNESDAY = 4,
-    THURSDAY = 5,
-    FRIDAY = 6
+    SATURDAY = 0,    // yan9a/mmcal: 0=sat
+    SUNDAY = 1,      // yan9a/mmcal: 1=sun
+    MONDAY = 2,      // yan9a/mmcal: 2=mon
+    TUESDAY = 3,     // yan9a/mmcal: 3=tue
+    WEDNESDAY = 4,   // yan9a/mmcal: 4=wed
+    THURSDAY = 5,    // yan9a/mmcal: 5=thu
+    FRIDAY = 6       // yan9a/mmcal: 6=fri
 };
 
 enum class Mahabote {
@@ -125,104 +126,56 @@ struct MyanmarCalendarData {
     std::string getFullDescription() const;
 };
 
-// Main Myanmar Calendar System
+// Main Myanmar Calendar System (Rewritten based on yan9a/mmcal)
 class MyanmarCalendar {
 private:
-    // Constants for calculations
-    static constexpr double SOLAR_YEAR = 365.2587565;        // Solar year in days
-    static constexpr double LUNAR_MONTH = 29.53058795;       // Lunar month in days
-    static constexpr double MYANMAR_EPOCH = 1954168.050623;  // Beginning of 0 ME for MMT
+    // Astronomical constants from yan9a/mmcal reference implementation
+    static constexpr double SOLAR_YEAR = 1577917828.0 / 4320000.0;        // 365.2587565 days
+    static constexpr double LUNAR_MONTH = 1577917828.0 / 53433336.0;       // 29.53058795 days
+    static constexpr double MYANMAR_EPOCH = 1954168.050623;                // Beginning of 0 ME for MMT
 
-    // Era data structures
-    struct EraData {
-        double eraId;          // Calendar era ID [1-3]
-        double watatOffset;    // Watat offset
-        double monthNumber;    // Number of months for excess days
-        long exceptionWatat;   // Exception in watat year
-    };
+    // Core calculation methods (yan9a/mmcal implementation)
+    static void getMyanmarConstants(long my, double& EI, double& WO, double& NM, long& EW);
+    static void calculateWatat(long my, long& watat, long& fm);
+    static void calculateMyanmarYear(long my, long& myt, long& tg1, long& fm, long& werr);
+    static void julianToMyanmar(double jd, long& myt, long& my, long& mm, long& md);
+    static long myanmarToJulian(long my, long mm, long md);
 
-    // Month information structure
-    struct MonthInfo {
-        std::string englishName;
-        std::string myanmarName;
-        std::string description;
-        std::vector<std::string> festivals;
-        bool hasSpecialEvents;
-    };
+    // Calendar property calculations
+    static long calculateYearLength(long myt);
+    static long calculateMonthLength(long mm, long myt);
+    static long calculateFortnightDay(long md);
+    static long calculateMoonPhase(long md, long mm, long myt);
 
-    // Astrological day information
-    struct AstrologicalDayInfo {
-        std::string name;
-        std::string description;
-        bool isAuspicious;
-        std::string recommendation;
-    };
+    // Weekday and astrological calculations
+    static long calculateSabbath(long md, long mm, long myt);
+    static long calculateYatyaza(long mm, long wd);
+    static long calculatePyathada(long mm, long wd);
+    static long calculateThamanyo(long mm, long wd);
+    static long calculateAmyeittasote(long md, long wd);
+    static long calculateWarameittugyi(long md, long wd);
+    static long calculateWarameittunge(long md, long wd);
+    static long calculateYatpote(long md, long wd);
+    static long calculateThamaphyu(long md, long wd);
+    static long calculateNagapor(long md, long wd);
+    static long calculateYatyotema(long mm, long md);
+    static long calculateMahayatkyan(long mm, long md);
+    static long calculateShanyat(long mm, long md);
 
-    // Data tables and maps
-    std::vector<MonthInfo> monthData;
-    std::map<std::string, AstrologicalDayInfo> astrologicalDays;
-    std::map<std::string, std::vector<std::string>> festivalMap;
-
-    // Exception arrays (from original Myanmar calendar implementation)
-    std::vector<std::array<long, 2>> fullMoonOffsetExceptions;
-    std::vector<long> watatExceptions;
-
-    // Initialization methods
-    void initializeMonthData();
-    void initializeAstrologicalDays();
-    void initializeFestivalData();
-    void initializeExceptionData();
-
-    // Core calculation methods (adapted from cemmdatetime)
-    void getMyanmarConstants(long myanmarYear, double& eraId, double& watatOffset,
-                           double& monthNumber, long& exceptionWatat) const;
-    void calculateWatat(long myanmarYear, long& watat, long& fullMoonDay) const;
-    void calculateMyanmarYear(long myanmarYear, long& yearType, long& tagu1,
-                            long& fullMoonDay, long& watatError) const;
-    void julianToMyanmarDate(double julianDay, long& yearType, long& myanmarYear,
-                           long& month, long& dayOfMonth) const;
-    long myanmarToJulianDay(long myanmarYear, long month, long dayOfMonth) const;
-
-    // Julian Day Number conversion utilities (from reference implementation)
-    double gregorianToJdn(int year, int month, int day) const;
-    std::vector<int> jdnToGregorian(double jd) const;
-
-    // Utility calculation methods
-    long calculateMoonPhase(long dayOfMonth, long month, long yearType) const;
-    long calculateMonthLength(long month, long yearType) const;
-    long calculateYearLength(long yearType) const;
-    long calculateFortnightDay(long dayOfMonth) const;
-    long calculateDayOfMonth(long fortnightDay, long moonPhase, long month, long yearType) const;
-
-    // Astrological calculations
-    long calculateSabbath(long dayOfMonth, long month, long yearType) const;
-    long calculateYatyaza(long month, long weekday) const;
-    long calculatePyathada(long month, long weekday) const;
-    long calculateNagahle(long month) const;
-    long calculateMahabote(long myanmarYear, long weekday) const;
-    long calculateNakhat(long myanmarYear) const;
-    long calculateThamanyo(long month, long weekday) const;
-    long calculateAmyeittasote(long dayOfMonth, long weekday) const;
-    long calculateWarameittugyi(long dayOfMonth, long weekday) const;
-    long calculateWarameittunge(long dayOfMonth, long weekday) const;
-    long calculateYatpote(long dayOfMonth, long weekday) const;
-    long calculateThamaphyu(long dayOfMonth, long weekday) const;
-    long calculateNagapor(long dayOfMonth, long weekday) const;
-    long calculateYatyotema(long month, long dayOfMonth) const;
-    long calculateMahayatkyan(long month, long dayOfMonth) const;
-    long calculateShanyat(long month, long dayOfMonth) const;
-
-    // Binary search methods (from original implementation)
-    long binarySearch2D(long key, const std::vector<std::array<long, 2>>& array) const;
-    long binarySearch1D(long key, const std::vector<long>& array) const;
+    // Derived astrological calculations
+    static long calculateMahabote(long my, long wd);
+    static long calculateNakhat(long my);
+    static long calculateNagahle(long mm);
 
     // Festival and holiday identification
-    void identifyFestivals(MyanmarCalendarData& data) const;
-    void identifyHolidays(MyanmarCalendarData& data) const;
-    void identifyAstrologicalEvents(MyanmarCalendarData& data) const;
+    static void identifyFestivals(MyanmarCalendarData& data);
+    static void identifyHolidays(MyanmarCalendarData& data);
+    static void identifyAstrologicalEvents(MyanmarCalendarData& data);
 
-    // Date of Easter calculation (for Christian holidays in Myanmar)
-    long calculateEaster(long year) const;
+    // Internal utility methods
+    static long sasanaYear(long my, long mm, long md, long k = 0);
+    static long binarySearch1(long key, const std::vector<long>& array);
+    static long binarySearch2(long key, const std::vector<std::pair<long, long>>& array);
 
     bool initialized;
     mutable std::string lastError;
@@ -234,37 +187,36 @@ public:
     // Initialize the calendar system
     bool initialize();
 
-    // Main calculation methods
-    MyanmarCalendarData calculateMyanmarDate(const BirthData& birthData) const;
-    MyanmarCalendarData calculateMyanmarDate(double julianDay) const;
+    // Main calculation method (yan9a/mmcal interface)
+    MyanmarCalendarData calculateMyanmarCalendar(const BirthData& birthData) const;
+    MyanmarCalendarData calculateMyanmarCalendar(double julianDay) const;
 
-    // Bulk calculations
+    // Methods for main.cpp compatibility
+    MyanmarCalendarData calculateMyanmarDate(const BirthData& birthData) const;
     std::vector<MyanmarCalendarData> calculateMyanmarDateRange(const std::string& fromDate,
                                                               const std::string& toDate) const;
-
-    // Specific element calculations
-    MyanmarYearType getYearType(long myanmarYear) const;
-    MyanmarMonth getCurrentMonth(double julianDay) const;
-    MyanmarMoonPhase getMoonPhase(double julianDay) const;
-    long getSasanaYear(long myanmarYear) const { return myanmarYear + 1182; }
-
-    // Astrological queries
-    bool isSabbathDay(const MyanmarCalendarData& data) const;
-    bool isAuspiciousDay(const MyanmarCalendarData& data) const;
-    bool isInauspiciousDay(const MyanmarCalendarData& data) const;
-    std::vector<std::string> getAstrologicalEvents(const MyanmarCalendarData& data) const;
-
-    // Festival and holiday queries
-    std::vector<std::string> getFestivalsForDate(const MyanmarCalendarData& data) const;
-    std::vector<std::string> getHolidaysForDate(const MyanmarCalendarData& data) const;
-
-    // Output formatting
     std::string generateMyanmarCalendarTable(const MyanmarCalendarData& data) const;
     std::string generateMyanmarCalendarTable(const std::vector<MyanmarCalendarData>& dataList) const;
+
+    // Bulk calculations
+    std::vector<MyanmarCalendarData> calculateMyanmarCalendarRange(const std::string& fromDate,
+                                                                  const std::string& toDate) const;
+
+    // Utility calculations
+    MyanmarYearType getYearType(long myanmarYear) const;
+    long getSasanaYear(long myanmarYear, long month = 1, long day = 1) const;
+
+    // Output formatting (yan9a/mmcal style)
+    std::string generateTable(const MyanmarCalendarData& data) const;
+    std::string generateTable(const std::vector<MyanmarCalendarData>& dataList) const;
     std::string generateJSON(const MyanmarCalendarData& data) const;
     std::string generateCSV(const std::vector<MyanmarCalendarData>& dataList) const;
+    std::string generateCalendarView(long myanmarYear, long month) const;
 
-    // Utility methods
+    // Myanmar date string formatting (yan9a/mmcal interface)
+    std::string formatMyanmarDate(double jd, const std::string& format = "&y &M &P &ff", double tz = 0) const;
+
+    // Name conversion utilities
     std::string getMyanmarMonthName(MyanmarMonth month) const;
     std::string getMyanmarWeekdayName(MyanmarWeekday weekday) const;
     std::string getMahaboteName(Mahabote mahabote) const;
@@ -272,10 +224,6 @@ public:
     std::string getNagahleDirectionName(NagahleDirection direction) const;
     std::string getMoonPhaseName(MyanmarMoonPhase phase) const;
     std::string getYearTypeName(MyanmarYearType type) const;
-
-    // Date conversion utilities
-    std::string formatMyanmarDate(const MyanmarCalendarData& data, const std::string& format = "&y &M &P &ff") const;
-    bool parseDate(const std::string& dateStr, int& year, int& month, int& day) const;
 
     // Error handling
     std::string getLastError() const { return lastError; }

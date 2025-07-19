@@ -349,4 +349,24 @@ std::string formatBCDateLong(int year, int month, int day) {
     return oss.str();
 }
 
+std::string getPlanetName(Planet planet) {
+    switch (planet) {
+        case Planet::SUN: return "Sun";
+        case Planet::MOON: return "Moon";
+        case Planet::MERCURY: return "Mercury";
+        case Planet::VENUS: return "Venus";
+        case Planet::MARS: return "Mars";
+        case Planet::JUPITER: return "Jupiter";
+        case Planet::SATURN: return "Saturn";
+        case Planet::URANUS: return "Uranus";
+        case Planet::NEPTUNE: return "Neptune";
+        case Planet::PLUTO: return "Pluto";
+        case Planet::NORTH_NODE: return "North Node";
+        case Planet::SOUTH_NODE: return "South Node";
+        case Planet::CHIRON: return "Chiron";
+        case Planet::LILITH: return "Lilith";
+        default: return "Unknown";
+    }
+}
+
 } // namespace Astro

@@ -10,6 +10,7 @@
 #include "location_manager.h"
 #include "hindu_calendar.h"
 #include "myanmar_calendar.h"
+#include "astro_calendar.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -113,6 +114,15 @@ struct CommandLineArgs {
     std::string myanmarCalendarToDate;
     std::string myanmarCalendarFormat = "table";
     bool showAstrologicalDaysOnly = false;
+
+    // Astro Calendar options (Combined calendar system)
+    bool showAstroCalendar = false;
+    std::string astroCalendarDate;
+    std::string astroCalendarMonth; // Format: YYYY-MM for monthly view
+    bool showAstroCalendarMonthly = false;
+    std::string astroCalendarFormat = "calendar";
+    bool showPlanetaryTransitions = false;
+    bool showAllFestivals = false;
 };
 
 void printHelp() {
@@ -297,6 +307,38 @@ void printHelp() {
     std::cout << "                       Show only astrological days and events\n";
     std::cout << "                       • Filters output to show Sabbath, Yatyaza, etc.\n";
     std::cout << "                       • Shows Myanmar astrological observances\n\n";
+
+    std::cout << "ASTRO CALENDAR OPTIONS (Combined Calendar System) 📅🌟🇮🇳🇲🇲\n";
+    std::cout << "    --astro-calendar   Show comprehensive astro-calendar for birth date\n";
+    std::cout << "                       • Combines Gregorian, Hindu (Panchanga), Myanmar calendars\n";
+    std::cout << "                       • Shows festivals, events, and planetary positions\n";
+    std::cout << "                       • Displays astrological days and recommendations\n";
+    std::cout << "                       • Beautiful unified calendar layout\n";
+
+    std::cout << "    --astro-calendar-monthly YYYY-MM\n";
+    std::cout << "                       Generate monthly astro-calendar view\n";
+    std::cout << "                       • Format: 2024-01 for January 2024\n";
+    std::cout << "                       • Shows all three calendar systems for entire month\n";
+    std::cout << "                       • Includes daily festivals, events, planetary transits\n";
+    std::cout << "                       • Comprehensive monthly astrological overview\n";
+
+    std::cout << "    --astro-calendar-format FORMAT\n";
+    std::cout << "                       Astro-calendar output format\n";
+    std::cout << "                       calendar = Beautiful calendar layout (default)\n";
+    std::cout << "                       table    = Detailed tabular format\n";
+    std::cout << "                       json     = JSON structure for integration\n";
+    std::cout << "                       csv      = Comma-separated values\n";
+
+    std::cout << "    --planetary-transitions\n";
+    std::cout << "                       Include planetary transitions in astro-calendar\n";
+    std::cout << "                       • Shows planet sign changes, retrogrades\n";
+    std::cout << "                       • Displays conjunction aspects\n";
+    std::cout << "                       • Indicates astrologically significant movements\n";
+
+    std::cout << "    --all-festivals    Show all festivals from all calendar systems\n";
+    std::cout << "                       • Hindu festivals, Myanmar observances\n";
+    std::cout << "                       • Religious holidays, special events\n";
+    std::cout << "                       • Cultural celebrations and fasting days\n\n";
 
     std::cout << "UTILITY OPTIONS ⚙️🛠️\n";
     std::cout << "    --solar-system     Show solar system orbital paths only\n";
@@ -769,6 +811,37 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--astrological-days-only") {
             args.showAstrologicalDaysOnly = true;
+        } else if (arg == "--astro-calendar") {
+            args.showAstroCalendar = true;
+        } else if (arg == "--astro-calendar-monthly") {
+            if (i + 1 < argc) {
+                args.astroCalendarMonth = argv[++i];
+                args.showAstroCalendarMonthly = true;
+                // Validate YYYY-MM format
+                if (args.astroCalendarMonth.length() != 7 || args.astroCalendarMonth[4] != '-') {
+                    std::cerr << "Error: --astro-calendar-monthly requires YYYY-MM format (e.g., 2024-01)\n";
+                    return false;
+                }
+            } else {
+                std::cerr << "Error: --astro-calendar-monthly requires a month argument (YYYY-MM)\n";
+                return false;
+            }
+        } else if (arg == "--astro-calendar-format") {
+            if (i + 1 < argc) {
+                args.astroCalendarFormat = argv[++i];
+            } else {
+                std::cerr << "Error: --astro-calendar-format requires a format argument\n";
+                return false;
+            }
+            if (args.astroCalendarFormat != "calendar" && args.astroCalendarFormat != "table" &&
+                args.astroCalendarFormat != "csv" && args.astroCalendarFormat != "json") {
+                std::cerr << "Error: Astro-calendar format must be 'calendar', 'table', 'csv', or 'json'\n";
+                return false;
+            }
+        } else if (arg == "--planetary-transitions") {
+            args.showPlanetaryTransitions = true;
+        } else if (arg == "--all-festivals") {
+            args.showAllFestivals = true;
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -808,12 +881,12 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    if (args.date.empty()) {
+    if (args.date.empty() && !args.showAstroCalendarMonthly) {
         std::cerr << "Error: --date is required\n";
         return false;
     }
 
-    if (args.time.empty()) {
+    if (args.time.empty() && !args.showAstroCalendarMonthly) {
         std::cerr << "Error: --time is required\n";
         return false;
     }
@@ -1257,7 +1330,36 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // Parse date and time
+    // Handle AstroCalendar monthly calculations early (doesn't need birth data)
+    if (args.showAstroCalendarMonthly) {
+        AstroCalendar astroCalendar;
+
+        if (!astroCalendar.initialize(args.latitude, args.longitude)) {
+            std::cerr << "Error: Failed to initialize AstroCalendar system: " << astroCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        astroCalendar.setIncludePlanetaryTransitions(args.showPlanetaryTransitions);
+
+        try {
+            // Parse year and month from astroCalendarMonth
+            int year, month;
+            if (sscanf(args.astroCalendarMonth.c_str(), "%d-%d", &year, &month) == 2) {
+                AstroCalendarMonth monthData = astroCalendar.calculateAstroCalendarMonth(year, month);
+                std::cout << astroCalendar.generateMonthlyCalendar(monthData, args.astroCalendarFormat) << std::endl;
+            } else {
+                std::cerr << "Error: Invalid date format for monthly calendar. Use YYYY-MM format.\n";
+                return 1;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error generating monthly astro-calendar: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after monthly astro-calendar
+    }
+
+    // Parse date and time (required for all other functions)
     BirthData birthData;
     if (!parseDate(args.date, birthData.year, birthData.month, birthData.day)) {
         std::cerr << "Error: Invalid date format. Supported formats:\n";
@@ -1394,6 +1496,30 @@ int main(int argc, char* argv[]) {
         }
 
         return 0; // Exit after Myanmar calendar range
+    }
+
+    // Handle AstroCalendar single-day calculations
+    if (args.showAstroCalendar) {
+        AstroCalendar astroCalendar;
+
+        if (!astroCalendar.initialize(birthData.latitude, birthData.longitude)) {
+            std::cerr << "Error: Failed to initialize AstroCalendar system: " << astroCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        // Set configuration options
+        astroCalendar.setIncludePlanetaryTransitions(args.showPlanetaryTransitions);
+
+        try {
+            // Single day AstroCalendar
+            AstroCalendarDay dayData = astroCalendar.calculateAstroCalendarDay(birthData);
+            std::cout << astroCalendar.generateDayCalendar(dayData, args.astroCalendarFormat) << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "Error generating astro-calendar: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after single-day astro-calendar
     }
 
     // Output results

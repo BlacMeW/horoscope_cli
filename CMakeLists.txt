@@ -17,6 +17,7 @@ set(SWISSEPH_SOURCES
     third_party/swisseph/swejpl.c
     third_party/swisseph/swemplan.c
     third_party/swisseph/swemmoon.c
+    third_party/swisseph/swecl.c
 )
 
 # Source files
@@ -31,9 +32,15 @@ set(SOURCES
     src/astro_types.cpp
     src/eastern_chart_drawer.cpp
     src/solar_system_drawer.cpp
+    src/western_chart_drawer.cpp
+    src/conjunction_calculator.cpp
+    src/eclipse_calculator.cpp
+    src/location_manager.cpp
+    src/ephemeris_table.cpp
     src/kp_system.cpp
     src/hindu_calendar.cpp
     src/myanmar_calendar.cpp
+    src/astro_calendar.cpp
     ${SWISSEPH_SOURCES}
 )
 
@@ -50,6 +57,7 @@ set(HEADERS
     include/solar_system_drawer.h
     include/kp_system.h
     include/hindu_calendar.h
+    include/astro_calendar.h
 )
 
 # Create executable

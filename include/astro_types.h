@@ -109,6 +109,7 @@ ZodiacSign longitudeToSign(double longitude);
 double normalizeAngle(double angle);
 double calculateAspectOrb(double angle1, double angle2, AspectType aspect);
 Planet getSignLord(ZodiacSign sign);
+std::string getPlanetName(Planet planet);
 
 // Date parsing with BC era support
 bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day);
