@@ -30,6 +30,7 @@ set(SOURCES
     src/ephemeris_manager.cpp
     src/astro_types.cpp
     src/eastern_chart_drawer.cpp
+    src/solar_system_drawer.cpp
     ${SWISSEPH_SOURCES}
 )
 
@@ -43,6 +44,7 @@ set(HEADERS
     include/ephemeris_manager.h
     include/astro_types.h
     include/eastern_chart_drawer.h
+    include/solar_system_drawer.h
 )
 
 # Create executable
