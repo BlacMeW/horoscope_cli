@@ -568,6 +568,32 @@ std::string AstroCalendar::generateJSON(const AstroCalendarMonth& monthData) con
     return ss.str();
 }
 
+// Helper methods for enhanced UI/UX
+std::string AstroCalendar::getWeekdayName(const AstroCalendarDay& day) const {
+    static const std::vector<std::string> weekdays = {
+        "Sunday", "Monday", "Tuesday", "Wednesday", 
+        "Thursday", "Friday", "Saturday"
+    };
+    
+    // Calculate weekday from Julian Day (JD 0 = Monday)
+    int jd = static_cast<int>(day.julianDay);
+    int weekday = (jd + 1) % 7; // Adjust for 0=Sunday indexing
+    return weekdays[weekday];
+}
+
+std::string AstroCalendar::getTithiDescription(int tithi) const {
+    static const std::vector<std::string> tithiNames = {
+        "Amavasya (New Moon)", "Pratipad", "Dwitiya", "Tritiya", "Chaturthi",
+        "Panchami", "Shashthi", "Saptami", "Ashtami", "Navami", "Dashami",
+        "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi", "Purnima (Full Moon)"
+    };
+    
+    if (tithi >= 0 && tithi < tithiNames.size()) {
+        return tithiNames[tithi];
+    }
+    return "Unknown Tithi";
+}
+
 std::string AstroCalendar::generateCalendarLayout(const AstroCalendarMonth& monthData) const {
     std::stringstream ss;
 
@@ -743,68 +769,101 @@ std::string AstroCalendar::generateCSV(const AstroCalendarMonth& monthData) cons
 std::string AstroCalendar::generateTable(const AstroCalendarMonth& monthData) const {
     std::stringstream ss;
 
-    ss << "═══════════════════════════════════════════════════════════════════\n";
-    ss << "           ASTRO CALENDAR TABLE - " << monthData.monthName << " " << monthData.year << "\n";
-    ss << "═══════════════════════════════════════════════════════════════════\n";
-
-    // Table header
-    ss << std::left << std::setw(12) << "Date"
-       << std::setw(8) << "Quality"
-       << std::setw(10) << "Hindu"
-       << std::setw(12) << "Myanmar"
-       << std::setw(20) << "Festivals"
-       << std::setw(15) << "Planetary" << "\n";
-
-    ss << std::string(77, '-') << "\n";
+    // Enhanced header with emojis and better formatting
+    ss << "╔═══════════════════════════════════════════════════════════════════════════════════════╗\n";
+    ss << "║                       🌟 ASTRO CALENDAR 🌟                                           ║\n";
+    ss << "║              " << monthData.monthName << " " << monthData.year << " - Comprehensive Astrological Overview              ║\n";
+    ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
+    ss << "║ 📅 Gregorian | 🔮 Quality | 🕉️ Hindu | 🇲🇲 Myanmar | 🎉 Festivals | 🪐 Planetary    ║\n";
+    ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
 
     for (const auto& day : monthData.days) {
-        ss << std::left << std::setw(12) << day.gregorianDateStr;
+        // Enhanced date formatting with weekday
+        std::string dateStr = formatEnhancedDate(day);
+        ss << "║ " << std::left << std::setw(12) << dateStr;
 
-        // Quality
-        std::string quality = (day.isAuspicious ? "✅" : (day.isInauspicious ? "⚠️" : "⚪"));
-        quality += std::to_string(day.auspiciousScore);
-        ss << std::setw(8) << quality;
+        // Enhanced quality indicator with color-like symbols
+        std::string quality = getEnhancedQualityIndicator(day);
+        ss << " │ " << std::setw(8) << quality;
 
-        // Hindu info
-        std::string hindu = "";
-        if (day.hasPanchangaData) {
-            hindu = "T" + std::to_string(static_cast<int>(day.panchangaData.tithi));
+        // Enhanced Hindu calendar info
+        std::string hindu = getEnhancedHinduInfo(day);
+        ss << " │ " << std::setw(8) << hindu;
+
+        // Enhanced Myanmar calendar info  
+        std::string myanmar = getEnhancedMyanmarInfo(day);
+        ss << " │ " << std::setw(8) << myanmar;
+
+        // Enhanced festivals display
+        std::string festivals = getEnhancedFestivalsDisplay(day);
+        ss << " │ " << std::setw(11) << festivals;
+
+        // Enhanced planetary info
+        std::string planetary = getEnhancedPlanetaryDisplay(day);
+        ss << " │ " << std::setw(10) << planetary;
+
+        ss << " ║\n";
+
+        // Add detailed line for highly significant days
+        if (day.auspiciousScore >= 8 || day.isInauspicious || !day.allFestivals.empty() || !day.planetaryTransitions.empty()) {
+            ss << "║   " << getDetailedDayInfo(day) << std::string(80 - getDetailedDayInfo(day).length(), ' ') << " ║\n";
         }
-        ss << std::setw(10) << hindu;
-
-        // Myanmar info
-        std::string myanmar = "";
-        if (day.hasMyanmarData) {
-            myanmar = std::to_string(day.myanmarData.myanmarYear) + "ME";
-        }
-        ss << std::setw(12) << myanmar;
-
-        // Festivals (abbreviated)
-        std::string festivals = day.getFestivalsSummary();
-        if (festivals.length() > 18) {
-            festivals = festivals.substr(0, 15) + "...";
-        }
-        ss << std::setw(20) << festivals;
-
-        // Planetary (abbreviated)
-        std::string planetary = day.getPlanetaryTransitionsSummary();
-        if (planetary.length() > 13) {
-            planetary = planetary.substr(0, 10) + "...";
-        }
-        ss << std::setw(15) << planetary;
-
-        ss << "\n";
     }
 
-    ss << "═══════════════════════════════════════════════════════════════════\n";
-    ss << monthData.getMonthSummary() << "\n";
-    ss << "═══════════════════════════════════════════════════════════════════\n";
+    // Enhanced footer with monthly summary
+    ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
+    ss << "║                           📊 MONTHLY SUMMARY                                         ║\n";
+    ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
+    
+    // Add monthly statistics and highlights
+    ss << getEnhancedMonthlySummary(monthData);
+    
+    ss << "╠═══════════════════════════════════════════════════════════════════════════════════════╣\n";
+    ss << "║ 🔮 Legend: ⭐Excellent 🌟Good ✨Fair ⚪Neutral ⚠️Caution 🚫Avoid                    ║\n";
+    ss << "║ 🕉️ Hindu: T=Tithi N=Nakshatra | 🇲🇲 Myanmar: ME=Myanmar Era SE=Sasana Era          ║\n";
+    ss << "╚═══════════════════════════════════════════════════════════════════════════════════════╝\n";
 
     return ss.str();
 }
 
+// Enhanced formatting helper methods
+std::string AstroCalendar::formatEnhancedDate(const AstroCalendarDay& day) const {
+    std::array<std::string, 7> weekdays = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    int weekday = static_cast<int>(day.julianDay + 1.5) % 7; // Calculate weekday from Julian Day
+    
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(2) << day.gregorianDay << " " 
+       << weekdays[weekday];
+    return ss.str();
+}
+
+std::string AstroCalendar::getEnhancedQualityIndicator(const AstroCalendarDay& day) const {
+    std::string indicator;
+    
+    if (day.auspiciousScore >= 9) indicator = "⭐";      // Excellent
+    else if (day.auspiciousScore >= 7) indicator = "🌟"; // Very Good  
+    else if (day.auspiciousScore >= 5) indicator = "✨"; // Good
+    else if (day.auspiciousScore >= 3) indicator = "⚪"; // Fair
+    else if (day.isInauspicious) indicator = "🚫";       // Avoid
+    else indicator = "⚠️";                               // Caution
+    
+    return indicator + std::to_string(day.auspiciousScore);
+}
+
+std::string AstroCalendar::getEnhancedHinduInfo(const AstroCalendarDay& day) const {
+    if (!day.hasPanchangaData) return "-";
+    
+    std::stringstream ss;
+    ss << "T" << static_cast<int>(day.panchangaData.tithi);
+    if (day.panchangaData.isEkadashi) ss << "E";
+    if (day.panchangaData.isPurnima) ss << "P";
+    if (day.panchangaData.isAmavasya) ss << "A";
+    
+    return ss.str();
+}
+
 // Utility functions
-std::string formatAstroCalendarDate(const AstroCalendarDay& day) {
+std::string AstroCalendar::formatAstroCalendarDate(const AstroCalendarDay& day) const {
     return day.gregorianDateStr;
 }
 
@@ -826,7 +885,7 @@ std::string getMoonPhaseName(double lunarPhase) {
     return "Waning Crescent";
 }
 
-std::string getPlanetaryWeather(const std::vector<PlanetaryTransition>& transitions) {
+std::string AstroCalendar::getPlanetaryWeather(const std::vector<PlanetaryTransition>& transitions) const {
     int auspiciousCount = 0;
     int inauspiciousCount = 0;
 
@@ -838,6 +897,289 @@ std::string getPlanetaryWeather(const std::vector<PlanetaryTransition>& transiti
     if (auspiciousCount > inauspiciousCount) return "Favorable planetary weather";
     if (inauspiciousCount > auspiciousCount) return "Challenging planetary weather";
     return "Neutral planetary weather";
+}
+
+// Enhanced UI helper methods for AstroCalendar
+std::string AstroCalendar::getEnhancedMyanmarInfo(const AstroCalendarDay& day) const {
+    if (!day.hasMyanmarData) return "-";
+    
+    std::stringstream ss;
+    ss << std::to_string(day.myanmarData.myanmarYear % 100) << "ME"; // Show last 2 digits
+    if (day.myanmarData.isSabbath) ss << "S";
+    if (day.myanmarData.isPyathada) ss << "P";
+    
+    return ss.str();
+}
+
+std::string AstroCalendar::getEnhancedFestivalsDisplay(const AstroCalendarDay& day) const {
+    if (day.allFestivals.empty()) return "-";
+    
+    std::string festivals;
+    int count = 0;
+    for (const auto& festival : day.allFestivals) {
+        if (count >= 2) {
+            festivals += "+";
+            break;
+        }
+        if (count > 0) festivals += ",";
+        
+        // Abbreviate common festival names
+        std::string abbrev = abbreviateFestivalName(festival);
+        festivals += abbrev;
+        count++;
+    }
+    
+    if (festivals.length() > 11) {
+        festivals = festivals.substr(0, 8) + "...";
+    }
+    
+    return festivals;
+}
+
+std::string AstroCalendar::getEnhancedPlanetaryDisplay(const AstroCalendarDay& day) const {
+    if (day.planetaryTransitions.empty()) return "-";
+    
+    std::string planetary;
+    int count = 0;
+    for (const auto& transition : day.planetaryTransitions) {
+        if (count >= 2) {
+            planetary += "+";
+            break;
+        }
+        if (count > 0) planetary += " ";
+        
+        planetary += getPlanetarySymbol(transition);
+        count++;
+    }
+    
+    return planetary;
+}
+
+std::string AstroCalendar::getDetailedDayInfo(const AstroCalendarDay& day) const {
+    std::string details;
+    
+    // Add significant astrological information
+    if (day.auspiciousScore >= 8) {
+        details += "✨ Highly Auspicious ";
+    }
+    if (day.isInauspicious) {
+        details += "⚠️ Exercise Caution ";
+    }
+    
+    // Add important festivals
+    if (!day.allFestivals.empty()) {
+        details += "🎉 " + day.allFestivals[0] + " ";
+    }
+    
+    // Add significant planetary events
+    for (const auto& transition : day.planetaryTransitions) {
+        if (transition.significance == "High") {
+            details += "🪐 " + transition.getDescription() + " ";
+            break;
+        }
+    }
+    
+    return details;
+}
+
+std::string AstroCalendar::getSeasonName(int month) const {
+    switch (month) {
+        case 12: case 1: case 2: return "Winter ❄️";
+        case 3: case 4: case 5: return "Spring 🌸";
+        case 6: case 7: case 8: return "Summer ☀️";
+        case 9: case 10: case 11: return "Autumn 🍂";
+        default: return "Unknown";
+    }
+}
+
+std::string AstroCalendar::getEnhancedMonthlySummary(const AstroCalendarMonth& monthData) const {
+    std::stringstream ss;
+    
+    // Count special days
+    int excellentDays = 0, goodDays = 0, cautionDays = 0;
+    int festivalDays = 0, planetaryEventDays = 0;
+    
+    for (const auto& day : monthData.days) {
+        if (day.auspiciousScore >= 8) excellentDays++;
+        else if (day.auspiciousScore >= 6) goodDays++;
+        else if (day.isInauspicious) cautionDays++;
+        
+        if (!day.allFestivals.empty()) festivalDays++;
+        if (!day.planetaryTransitions.empty()) planetaryEventDays++;
+    }
+    
+    ss << "║ 📈 Quality Distribution: " << excellentDays << " Excellent, " 
+       << goodDays << " Good, " << cautionDays << " Caution days" << std::string(23, ' ') << "║\n";
+    
+    ss << "║ 🎉 Festival Days: " << festivalDays 
+       << " | 🪐 Planetary Events: " << planetaryEventDays << std::string(40, ' ') << "║\n";
+    
+    // Add season and lunar information
+    std::string season = getSeasonName(monthData.month);
+    ss << "║ 🌱 Season: " << season << " | 🌙 New/Full Moons: " 
+       << countMoonPhases(monthData) << std::string(35, ' ') << "║\n";
+    
+    return ss.str();
+}
+
+std::string AstroCalendar::abbreviateFestivalName(const std::string& festival) const {
+    // Common abbreviations for festivals
+    if (festival.find("Ekadashi") != std::string::npos) return "Eka";
+    if (festival.find("Purnima") != std::string::npos) return "Pur";
+    if (festival.find("Amavasya") != std::string::npos) return "Ama";
+    if (festival.find("Sankranti") != std::string::npos) return "San";
+    if (festival.find("Festival") != std::string::npos) {
+        return festival.substr(0, 3);
+    }
+    
+    // Return first 3-4 characters for other festivals
+    return festival.substr(0, std::min(4, static_cast<int>(festival.length())));
+}
+
+std::string AstroCalendar::getPlanetarySymbol(const PlanetaryTransition& transition) const {
+    std::string symbol;
+    
+    switch (transition.type) {
+        case TransitionType::SIGN_CHANGE:
+            symbol = "🔄";
+            break;
+        case TransitionType::RETROGRADE_START:
+            symbol = "⏪";
+            break;
+        case TransitionType::RETROGRADE_END:
+            symbol = "⏩";
+            break;
+        case TransitionType::CONJUNCTION:
+            symbol = "🤝";
+            break;
+        case TransitionType::ECLIPSE:
+            symbol = "🌑";
+            break;
+        case TransitionType::NEW_MOON:
+            symbol = "🌑";
+            break;
+        case TransitionType::FULL_MOON:
+            symbol = "🌕";
+            break;
+        default:
+            symbol = "🪐";
+    }
+    
+    return symbol;
+}
+
+int AstroCalendar::countMoonPhases(const AstroCalendarMonth& monthData) const {
+    int moonPhases = 0;
+    
+    for (const auto& day : monthData.days) {
+        for (const auto& transition : day.planetaryTransitions) {
+            if (transition.type == TransitionType::NEW_MOON || 
+                transition.type == TransitionType::FULL_MOON) {
+                moonPhases++;
+            }
+        }
+    }
+    
+    return moonPhases;
+}
+
+std::string AstroCalendar::formatCalendarCell(const AstroCalendarDay& day) const {
+    std::stringstream ss;
+    
+    // Day number with quality indicator
+    ss << std::setfill(' ') << std::setw(2) << day.gregorianDay;
+    
+    // Quality symbol
+    std::string quality = getEnhancedQualityIndicator(day);
+    ss << quality.substr(0, 1); // Just the symbol
+    
+    // Hindu indicator (single letter)
+    if (day.hasPanchangaData) {
+        if (day.panchangaData.isEkadashi) ss << "E";
+        else if (day.panchangaData.isPurnima) ss << "P";
+        else if (day.panchangaData.isAmavasya) ss << "A";
+        else ss << "H";
+    } else {
+        ss << " ";
+    }
+    
+    // Myanmar indicator
+    if (day.hasMyanmarData && (day.myanmarData.isSabbath || day.myanmarData.isPyathada)) {
+        ss << "M";
+    } else {
+        ss << " ";
+    }
+    
+    // Festival indicator
+    if (!day.allFestivals.empty()) {
+        ss << "F";
+    } else {
+        ss << " ";
+    }
+    
+    return ss.str();
+}
+
+int AstroCalendar::getFirstDayOfMonth(int year, int month) const {
+    // Calculate first day of month (0=Sunday, 1=Monday, etc.)
+    double jd = gregorianToJulianDay(year, month, 1);
+    return static_cast<int>(jd + 1.5) % 7;
+}
+
+int AstroCalendar::countExcellentDays(const AstroCalendarMonth& monthData) const {
+    int count = 0;
+    for (const auto& day : monthData.days) {
+        if (day.auspiciousScore >= 8) count++;
+    }
+    return count;
+}
+
+int AstroCalendar::countFestivalDays(const AstroCalendarMonth& monthData) const {
+    int count = 0;
+    for (const auto& day : monthData.days) {
+        if (!day.allFestivals.empty()) count++;
+    }
+    return count;
+}
+
+int AstroCalendar::countPlanetaryDays(const AstroCalendarMonth& monthData) const {
+    int count = 0;
+    for (const auto& day : monthData.days) {
+        if (!day.planetaryTransitions.empty()) count++;
+    }
+    return count;
+}
+
+int AstroCalendar::countCautionDays(const AstroCalendarMonth& monthData) const {
+    int count = 0;
+    for (const auto& day : monthData.days) {
+        if (day.isInauspicious) count++;
+    }
+    return count;
+}
+
+// Enhanced daily view generation
+std::string AstroCalendar::generateDetailedDayView(const AstroCalendarDay& day) const {
+    std::stringstream ss;
+    
+    // Beautiful header for individual day
+    ss << "╔═══════════════════════════════════════════════════════════════════════════════════╗\n";
+    ss << "║                          🌟 DAILY ASTROLOGICAL OVERVIEW 🌟                       ║\n";
+    ss << "║                    " << day.gregorianDateStr << " - " << getWeekdayName(day) << "                    ║\n";
+    ss << "╠═══════════════════════════════════════════════════════════════════════════════════╣\n";
+    
+    // Day Quality Section
+    ss << "║ 🔮 DAY QUALITY                                                                    ║\n";
+    ss << "╠═══════════════════════════════════════════════════════════════════════════════════╣\n";
+    ss << "║ Overall Rating: " << getEnhancedQualityIndicator(day) << " (" << day.auspiciousScore << "/10)";
+    ss << std::string(45, ' ') << "║\n";
+    ss << "║ Status: " << (day.isAuspicious ? "✅ Auspicious Day" : 
+                          (day.isInauspicious ? "⚠️ Exercise Caution" : "⚪ Neutral Day"));
+    ss << std::string(35, ' ') << "║\n";
+    
+    ss << "╚═══════════════════════════════════════════════════════════════════════════════════╝\n";
+    
+    return ss.str();
 }
 
 } // namespace Astro

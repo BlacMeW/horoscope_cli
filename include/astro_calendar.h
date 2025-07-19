@@ -147,6 +147,31 @@ private:
     int getDaysInMonth(int year, int month) const;
     bool isLeapYear(int year) const;
 
+    // Enhanced UI/UX helper methods
+    std::string getWeekdayName(const AstroCalendarDay& day) const;
+    std::string getTithiDescription(int tithi) const;
+    std::string getEnhancedQualityIndicator(const AstroCalendarDay& day) const;
+    std::string getEnhancedHinduInfo(const AstroCalendarDay& day) const;
+    std::string getEnhancedMyanmarInfo(const AstroCalendarDay& day) const;
+    std::string getEnhancedFestivalsDisplay(const AstroCalendarDay& day) const;
+    std::string getEnhancedPlanetaryDisplay(const AstroCalendarDay& day) const;
+    std::string getDetailedDayInfo(const AstroCalendarDay& day) const;
+    std::string getEnhancedMonthlySummary(const AstroCalendarMonth& monthData) const;
+    std::string abbreviateFestivalName(const std::string& festival) const;
+    std::string getPlanetarySymbol(const PlanetaryTransition& transition) const;
+    int countMoonPhases(const AstroCalendarMonth& monthData) const;
+    std::string formatCalendarCell(const AstroCalendarDay& day) const;
+    int getFirstDayOfMonth(int year, int month) const;
+    int countExcellentDays(const AstroCalendarMonth& monthData) const;
+    int countFestivalDays(const AstroCalendarMonth& monthData) const;
+    int countPlanetaryDays(const AstroCalendarMonth& monthData) const;
+    int countCautionDays(const AstroCalendarMonth& monthData) const;
+    std::string formatAstroCalendarDate(const AstroCalendarDay& day) const;
+    std::string getPlanetaryWeather(const std::vector<PlanetaryTransition>& transitions) const;
+    std::string formatEnhancedDate(const AstroCalendarDay& day) const;
+    std::string getSeasonName(int month) const;
+    std::string generateDetailedDayView(const AstroCalendarDay& day) const;
+
 public:
     AstroCalendar();
     ~AstroCalendar();
@@ -177,6 +202,7 @@ public:
     std::string generateDetailedCalendarLayout(const AstroCalendarMonth& monthData) const;
     std::string generateCompactCalendarLayout(const AstroCalendarMonth& monthData) const;
 
+public:
     // Utility methods
     std::string getLastError() const { return lastError; }
     bool isInitialized() const { return initialized; }
