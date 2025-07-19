@@ -31,6 +31,7 @@ set(SOURCES
     src/astro_types.cpp
     src/eastern_chart_drawer.cpp
     src/solar_system_drawer.cpp
+    src/kp_system.cpp
     ${SWISSEPH_SOURCES}
 )
 
@@ -45,6 +46,7 @@ set(HEADERS
     include/astro_types.h
     include/eastern_chart_drawer.h
     include/solar_system_drawer.h
+    include/kp_system.h
 )
 
 # Create executable

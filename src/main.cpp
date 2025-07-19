@@ -6,6 +6,7 @@
 #include "eclipse_calculator.h"
 #include "conjunction_calculator.h"
 #include "ephemeris_table.h"
+#include "kp_system.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,8 +15,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <ctime>
-#include <chrono>
-#include <ctime>
+#include <algorithm>
 
 using namespace Astro;
 
@@ -25,6 +25,27 @@ SolarSystemPerspective stringToPerspective(const std::string& perspectiveStr) {
     else if (perspectiveStr == "jupiter-centric") return SolarSystemPerspective::JUPITER_CENTRIC;
     else if (perspectiveStr == "saturn-centric") return SolarSystemPerspective::SATURN_CENTRIC;
     else return SolarSystemPerspective::HELIOCENTRIC; // default
+}
+
+Planet stringToPlanet(const std::string& planetStr) {
+    std::string lower = planetStr;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    
+    if (lower == "sun") return Planet::SUN;
+    else if (lower == "moon") return Planet::MOON;
+    else if (lower == "mercury") return Planet::MERCURY;
+    else if (lower == "venus") return Planet::VENUS;
+    else if (lower == "mars") return Planet::MARS;
+    else if (lower == "jupiter") return Planet::JUPITER;
+    else if (lower == "saturn") return Planet::SATURN;
+    else if (lower == "uranus") return Planet::URANUS;
+    else if (lower == "neptune") return Planet::NEPTUNE;
+    else if (lower == "pluto") return Planet::PLUTO;
+    else if (lower == "north_node" || lower == "rahu") return Planet::NORTH_NODE;
+    else if (lower == "south_node" || lower == "ketu") return Planet::SOUTH_NODE;
+    else if (lower == "chiron") return Planet::CHIRON;
+    else if (lower == "lilith") return Planet::LILITH;
+    else return Planet::SUN; // default
 }
 
 struct CommandLineArgs {
@@ -57,6 +78,15 @@ struct CommandLineArgs {
     std::string ephemerisToDate;
     int ephemerisIntervalDays = 1;
     std::string ephemerisFormat = "table";
+
+    // KP System options
+    bool showKPTable = false;
+    bool showKPTransitions = false;
+    std::string kpTransitionFromDate;
+    std::string kpTransitionToDate;
+    std::string kpTransitionPlanet = "all";
+    std::string kpTransitionLevel = "all";
+    std::string kpOutputFormat = "table";
 };
 
 void printHelp() {
@@ -88,6 +118,13 @@ void printHelp() {
     std::cout << "  --ephemeris-range FROM TO    Date range for ephemeris (YYYY-MM-DD format)\n";
     std::cout << "  --ephemeris-interval DAYS    Interval between entries (default: 1)\n";
     std::cout << "  --ephemeris-format FORMAT    Format: table, csv, json (default: table)\n\n";
+    std::cout << "KP System Options (Krishnamurti Paddhati):\n";
+    std::cout << "  --kp-table         Show KP Sub Lord 5 Levels System table\n";
+    std::cout << "  --kp-transitions   Show KP transitions for planets\n";
+    std::cout << "  --kp-transition-range FROM TO  Show KP transitions in date range (YYYY-MM-DD format)\n";
+    std::cout << "  --kp-transition-planet PLANET  Planet for transitions: SUN, MOON, MERCURY, etc. (default: all)\n";
+    std::cout << "  --kp-transition-level LEVEL    Level for transitions: sign, star, sub, sub-sub, sub³ (default: all)\n";
+    std::cout << "  --kp-format FORMAT  KP output format: table, csv, json (default: table)\n\n";
     std::cout << "General Options:\n";
     std::cout << "  --ephe-path PATH   Path to Swiss Ephemeris data files\n";
     std::cout << "  --solar-system     Show just the solar system orbital paths (no birth data needed)\n";
@@ -105,6 +142,8 @@ void printHelp() {
     std::cout << "  horoscope_cli --eclipse-range 2024-01-01 2024-12-31 --lat 40.7128 --lon -74.0060\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system --perspective geocentric\n";
     std::cout << "  horoscope_cli --solar-system\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --kp-table\n";
+    std::cout << "  horoscope_cli --kp-transitions --kp-transition-range 2025-01-01 2025-12-31 --kp-transition-planet SUN --kp-transition-level sub\n";
 }
 
 void printVersion() {
@@ -267,6 +306,24 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 std::cerr << "Error: Ephemeris format must be 'table', 'csv', or 'json'\n";
                 return false;
             }
+        } else if (arg == "--kp-table") {
+            args.showKPTable = true;
+        } else if (arg == "--kp-transitions") {
+            args.showKPTransitions = true;
+        } else if (arg == "--kp-transition-range" && i + 2 < argc) {
+            args.kpTransitionFromDate = argv[++i];
+            args.kpTransitionToDate = argv[++i];
+            args.showKPTransitions = true;
+        } else if (arg == "--kp-transition-planet" && i + 1 < argc) {
+            args.kpTransitionPlanet = argv[++i];
+        } else if (arg == "--kp-transition-level" && i + 1 < argc) {
+            args.kpTransitionLevel = argv[++i];
+        } else if (arg == "--kp-format" && i + 1 < argc) {
+            args.kpOutputFormat = argv[++i];
+            if (args.kpOutputFormat != "table" && args.kpOutputFormat != "csv" && args.kpOutputFormat != "json") {
+                std::cerr << "Error: KP format must be 'table', 'csv', or 'json'\n";
+                return false;
+            }
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -282,7 +339,7 @@ bool validateArgs(const CommandLineArgs& args) {
     }
 
     // Eclipse and ephemeris features can work without full birth data
-    if (args.showEclipses || args.showConjunctions || args.showEphemerisTable) {
+    if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions) {
         // For eclipse and conjunction range queries, we need coordinates
         if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty()) &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
@@ -504,8 +561,88 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Handle KP system calculations
+        if (args.showKPTransitions) {
+            KPSystem kpSystem;
+            if (!kpSystem.initialize()) {
+                std::cerr << "Error: Failed to initialize KP system" << std::endl;
+                return 1;
+            }
+
+            std::string fromDate = args.kpTransitionFromDate;
+            std::string toDate = args.kpTransitionToDate;
+
+            if (fromDate.empty() || toDate.empty()) {
+                std::cerr << "Error: KP transitions require --kp-transition-range FROM TO dates" << std::endl;
+                return 1;
+            }
+
+            // Parse planet parameter
+            Planet targetPlanet = Planet::SUN; // Default
+            bool allPlanets = (args.kpTransitionPlanet == "all");
+            
+            if (!allPlanets) {
+                targetPlanet = stringToPlanet(args.kpTransitionPlanet);
+                if (targetPlanet == Planet::SUN && args.kpTransitionPlanet != "SUN" && args.kpTransitionPlanet != "sun") {
+                    std::cerr << "Error: Invalid planet '" << args.kpTransitionPlanet << "'" << std::endl;
+                    return 1;
+                }
+            }
+
+            // Parse level parameter
+            KPLevel targetLevel = KPLevel::SUB; // Default
+            bool allLevels = (args.kpTransitionLevel == "all");
+            
+            if (!allLevels) {
+                targetLevel = stringToKPLevel(args.kpTransitionLevel);
+            }
+
+            // Generate transitions
+            std::vector<KPTransition> allTransitions;
+            
+            if (allPlanets) {
+                // Calculate for all planets
+                std::vector<Planet> planets = {Planet::SUN, Planet::MOON, Planet::MERCURY, Planet::VENUS, 
+                                             Planet::MARS, Planet::JUPITER, Planet::SATURN};
+                for (Planet planet : planets) {
+                    if (allLevels) {
+                        // Calculate for all levels
+                        std::vector<KPLevel> levels = {KPLevel::SIGN, KPLevel::STAR, KPLevel::SUB, 
+                                                     KPLevel::SUB_SUB, KPLevel::SUB_SUB_SUB};
+                        for (KPLevel level : levels) {
+                            auto transitions = kpSystem.findTransitions(fromDate, toDate, planet, level);
+                            allTransitions.insert(allTransitions.end(), transitions.begin(), transitions.end());
+                        }
+                    } else {
+                        auto transitions = kpSystem.findTransitions(fromDate, toDate, planet, targetLevel);
+                        allTransitions.insert(allTransitions.end(), transitions.begin(), transitions.end());
+                    }
+                }
+            } else {
+                if (allLevels) {
+                    // Calculate for all levels of target planet
+                    std::vector<KPLevel> levels = {KPLevel::SIGN, KPLevel::STAR, KPLevel::SUB, 
+                                                 KPLevel::SUB_SUB, KPLevel::SUB_SUB_SUB};
+                    for (KPLevel level : levels) {
+                        auto transitions = kpSystem.findTransitions(fromDate, toDate, targetPlanet, level);
+                        allTransitions.insert(allTransitions.end(), transitions.begin(), transitions.end());
+                    }
+                } else {
+                    allTransitions = kpSystem.findTransitions(fromDate, toDate, targetPlanet, targetLevel);
+                }
+            }
+
+            // Output results
+            if (!allTransitions.empty()) {
+                std::string result = kpSystem.generateTransitionTable(allTransitions);
+                std::cout << result << std::endl;
+            } else {
+                std::cout << "No KP transitions found in the specified period." << std::endl;
+            }
+        }
+
         // Return early if only special features were requested
-        if (args.showEclipses || args.showConjunctions || args.showEphemerisTable) {
+        if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions) {
             return 0;
         }
     } catch (const std::exception& e) {
@@ -551,6 +688,23 @@ int main(int argc, char* argv[]) {
     if (!calculator.calculateBirthChart(birthData, args.houseSystem, chart)) {
         std::cerr << "Error: Failed to calculate birth chart: " << calculator.getLastError() << "\n";
         return 1;
+    }
+
+    // Handle KP Table if requested
+    if (args.showKPTable) {
+        KPSystem kpSystem;
+        if (!kpSystem.initialize()) {
+            std::cerr << "Error: Failed to initialize KP system" << std::endl;
+            return 1;
+        }
+
+        std::string kpTable = kpSystem.generateKPTable(chart.getPlanetPositions());
+        std::cout << kpTable << std::endl;
+
+        // If only KP table was requested, return
+        if (!args.showKPTransitions && args.outputFormat == "text" && args.chartStyle == "western") {
+            return 0;
+        }
     }
 
     // Output results

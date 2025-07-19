@@ -201,16 +201,16 @@ double calculateAspectOrb(double angle1, double angle2, AspectType aspect) {
 bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
     // Support BC era dates: "-0500-03-15" for 500 BC
     // Standard format: "1990-01-15" for 1990 AD
-
+    
     std::string processStr = dateStr;
     bool isBCEra = false;
-
+    
     // Check for BC era (negative year)
     if (processStr.length() >= 11 && processStr[0] == '-') {
         isBCEra = true;
         processStr = processStr.substr(1); // Remove leading minus
     }
-
+    
     if (processStr.length() != 10 || processStr[4] != '-' || processStr[7] != '-') {
         return false;
     }
@@ -219,16 +219,54 @@ bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
         year = std::stoi(processStr.substr(0, 4));
         month = std::stoi(processStr.substr(5, 2));
         day = std::stoi(processStr.substr(8, 2));
-
+        
         // Convert to astronomical year numbering for BC dates
         // In astronomical year numbering: 1 BC = year 0, 2 BC = year -1, etc.
         if (isBCEra) {
             year = -(year - 1);
         }
-
+        
         return true;
     } catch (const std::exception&) {
         return false;
+    }
+}
+
+Planet getSignLord(ZodiacSign sign) {
+    switch (sign) {
+        case ZodiacSign::ARIES: return Planet::MARS;
+        case ZodiacSign::TAURUS: return Planet::VENUS;
+        case ZodiacSign::GEMINI: return Planet::MERCURY;
+        case ZodiacSign::CANCER: return Planet::MOON;
+        case ZodiacSign::LEO: return Planet::SUN;
+        case ZodiacSign::VIRGO: return Planet::MERCURY;
+        case ZodiacSign::LIBRA: return Planet::VENUS;
+        case ZodiacSign::SCORPIO: return Planet::MARS;
+        case ZodiacSign::SAGITTARIUS: return Planet::JUPITER;
+        case ZodiacSign::CAPRICORN: return Planet::SATURN;
+        case ZodiacSign::AQUARIUS: return Planet::SATURN;
+        case ZodiacSign::PISCES: return Planet::JUPITER;
+        default: return Planet::SUN;
+    }
+}
+
+std::string planetToShortString(Planet planet) {
+    switch (planet) {
+        case Planet::SUN: return "Su";
+        case Planet::MOON: return "Mo";
+        case Planet::MERCURY: return "Me";
+        case Planet::VENUS: return "Ve";
+        case Planet::MARS: return "Ma";
+        case Planet::JUPITER: return "Ju";
+        case Planet::SATURN: return "Sa";
+        case Planet::URANUS: return "Ur";
+        case Planet::NEPTUNE: return "Ne";
+        case Planet::PLUTO: return "Pl";
+        case Planet::NORTH_NODE: return "NN";
+        case Planet::SOUTH_NODE: return "SN";
+        case Planet::CHIRON: return "Ch";
+        case Planet::LILITH: return "Li";
+        default: return "??";
     }
 }
 
