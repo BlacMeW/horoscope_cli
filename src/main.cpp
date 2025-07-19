@@ -10,6 +10,14 @@
 
 using namespace Astro;
 
+SolarSystemPerspective stringToPerspective(const std::string& perspectiveStr) {
+    if (perspectiveStr == "geocentric") return SolarSystemPerspective::GEOCENTRIC;
+    else if (perspectiveStr == "mars-centric") return SolarSystemPerspective::MARS_CENTRIC;
+    else if (perspectiveStr == "jupiter-centric") return SolarSystemPerspective::JUPITER_CENTRIC;
+    else if (perspectiveStr == "saturn-centric") return SolarSystemPerspective::SATURN_CENTRIC;
+    else return SolarSystemPerspective::HELIOCENTRIC; // default
+}
+
 struct CommandLineArgs {
     std::string date;
     std::string time;
@@ -20,6 +28,7 @@ struct CommandLineArgs {
     std::string outputFormat = "text";
     std::string chartStyle = "western";
     std::string ephemerisPath;
+    std::string solarSystemPerspective = "heliocentric";
     bool showHelp = false;
     bool showVersion = false;
     bool showSolarSystemOnly = false;
@@ -39,6 +48,7 @@ void printHelp() {
     std::cout << "                     C=Campanus, R=Regiomontanus (default: P)\n";
     std::cout << "  --output FORMAT    Output format: text or json (default: text)\n";
     std::cout << "  --chart-style STY  Chart style: western, north-indian, south-indian, east-indian, solar-system (default: western)\n";
+    std::cout << "  --perspective PER  Solar system perspective: heliocentric, geocentric, mars-centric, jupiter-centric, saturn-centric (default: heliocentric)\n";
     std::cout << "  --ephe-path PATH   Path to Swiss Ephemeris data files\n";
     std::cout << "  --solar-system     Show just the solar system orbital paths (no birth data needed)\n";
     std::cout << "  --help, -h         Show this help message\n";
@@ -51,6 +61,8 @@ void printHelp() {
     std::cout << "  horoscope_cli --date 1985-06-20 --time 09:15:30 --lat 51.5074 --lon -0.1278 --timezone 1 --chart-style south-indian\n";
     std::cout << "  horoscope_cli --date 1869-10-02 --time 07:45:00 --lat 21.6416 --lon 69.6293 --timezone 5.5 --chart-style east-indian\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system --perspective geocentric\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system --perspective mars-centric\n";
     std::cout << "  horoscope_cli --solar-system\n";
 }
 
@@ -158,6 +170,14 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--ephe-path" && i + 1 < argc) {
             args.ephemerisPath = argv[++i];
+        } else if (arg == "--perspective" && i + 1 < argc) {
+            args.solarSystemPerspective = argv[++i];
+            if (args.solarSystemPerspective != "heliocentric" && args.solarSystemPerspective != "geocentric" &&
+                args.solarSystemPerspective != "mars-centric" && args.solarSystemPerspective != "jupiter-centric" &&
+                args.solarSystemPerspective != "saturn-centric") {
+                std::cerr << "Error: Perspective must be 'heliocentric', 'geocentric', 'mars-centric', 'jupiter-centric', or 'saturn-centric'\n";
+                return false;
+            }
         } else if (arg == "--solar-system") {
             args.showSolarSystemOnly = true;
         } else {
@@ -275,6 +295,7 @@ int main(int argc, char* argv[]) {
             solarDrawer.setShowOrbits(true);
             solarDrawer.setShowPlanetNames(true);
             solarDrawer.setShowDistances(true);
+            solarDrawer.setPerspective(stringToPerspective(args.solarSystemPerspective));
             std::cout << solarDrawer.drawSolarSystem(chart) << std::endl;
         } else {
             // Display traditional Western chart first
