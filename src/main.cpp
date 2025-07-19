@@ -56,13 +56,14 @@ struct CommandLineArgs {
     double timezone = 0.0;
     HouseSystem houseSystem = HouseSystem::PLACIDUS;
     std::string outputFormat = "text";
-    std::string chartStyle = "western";
+    std::string chartStyle = "";
     std::string ephemerisPath;
     std::string solarSystemPerspective = "heliocentric";
     bool showHelp = false;
     bool showVersion = false;
     bool showFeatures = false;
     bool showSolarSystemOnly = false;
+    bool noDrawing = false;
 
     // New eclipse and conjunction features
     bool showEclipses = false;
@@ -138,12 +139,13 @@ void printHelp() {
     std::cout << "                       C = Campanus\n";
     std::cout << "                       R = Regiomontanus\n\n";
 
-    std::cout << "    --chart-style STY  Chart display style (default: western)\n";
+    std::cout << "    --chart-style STY  Chart display style (optional)\n";
     std::cout << "                       western      = Western wheel & rectangular\n";
     std::cout << "                       north-indian = North Indian Vedic style\n";
     std::cout << "                       south-indian = South Indian Vedic style\n";
     std::cout << "                       east-indian  = East Indian/Bengali style\n";
-    std::cout << "                       solar-system = Orbital view with perspectives\n\n";
+    std::cout << "                       solar-system = Orbital view with perspectives\n";
+    std::cout << "                       (If not specified, shows basic chart data only)\n\n";
 
     std::cout << "    --perspective PER  Solar system perspective (for solar-system style)\n";
     std::cout << "                       heliocentric   = Sun-centered (default)\n";
@@ -229,6 +231,10 @@ void printHelp() {
     std::cout << "                       • No birth data required for this option\n";
     std::cout << "                       • Displays planetary orbits around Sun\n\n";
 
+    std::cout << "    --no-drawing       Disable all chart and ASCII art drawing\n";
+    std::cout << "                       • Shows only numerical data and calculations\n";
+    std::cout << "                       • Useful for data-only output or scripting\n\n";
+
     std::cout << "    --ephe-path PATH   Custom path to Swiss Ephemeris data files\n";
     std::cout << "                       • Default: ./data/\n";
     std::cout << "                       • Required files: seas_18.se1, semo_18.se1, etc.\n\n";
@@ -260,6 +266,11 @@ void printHelp() {
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
     std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
     std::cout << "                --output json\n\n";
+
+    std::cout << "  # Data-only output without charts or ASCII art\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --no-drawing\n\n";
 
     std::cout << "HISTORICAL CHARTS (BC Era) 🏛️\n";
     std::cout << "  # Julius Caesar's assassination (44 BC)\n";
@@ -538,6 +549,8 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--solar-system") {
             args.showSolarSystemOnly = true;
+        } else if (arg == "--no-drawing") {
+            args.noDrawing = true;
         } else if (arg == "--eclipses") {
             args.showEclipses = true;
         } else if (arg == "--eclipse-range" && i + 2 < argc) {
@@ -999,7 +1012,7 @@ int main(int argc, char* argv[]) {
         std::cout << kpTable << std::endl;
 
         // If only KP table was requested, return
-        if (!args.showKPTransitions && args.outputFormat == "text" && args.chartStyle == "western") {
+        if (!args.showKPTransitions && args.outputFormat == "text" && args.chartStyle.empty()) {
             return 0;
         }
     }
@@ -1007,6 +1020,9 @@ int main(int argc, char* argv[]) {
     // Output results
     if (args.outputFormat == "json") {
         std::cout << chart.exportToJson() << std::endl;
+    } else if (args.noDrawing) {
+        // No-drawing mode: show only basic text output without charts or ASCII art
+        std::cout << chart.getFormattedChart() << std::endl;
     } else {
         // Handle different chart styles
         if (args.chartStyle == "solar-system") {
@@ -1017,25 +1033,25 @@ int main(int argc, char* argv[]) {
             solarDrawer.setShowDistances(true);
             solarDrawer.setPerspective(stringToPerspective(args.solarSystemPerspective));
             std::cout << solarDrawer.drawSolarSystem(chart) << std::endl;
-        } else {
-            // Display appropriate chart style
-            if (args.chartStyle == "western") {
-                WesternChartDrawer westernDrawer;
-                std::cout << westernDrawer.drawChartWheel(chart) << std::endl;
-                std::cout << westernDrawer.drawRectangularChart(chart) << std::endl;
-                std::cout << westernDrawer.drawAspectGrid(chart) << std::endl;
-            } else if (args.chartStyle == "north-indian" || args.chartStyle == "south-indian" || args.chartStyle == "east-indian") {
-                // Display traditional Western chart first
-                std::cout << chart.getFormattedChart() << std::endl;
+        } else if (args.chartStyle == "western") {
+            WesternChartDrawer westernDrawer;
+            std::cout << westernDrawer.drawChartWheel(chart) << std::endl;
+            std::cout << westernDrawer.drawRectangularChart(chart) << std::endl;
+            std::cout << westernDrawer.drawAspectGrid(chart) << std::endl;
+        } else if (args.chartStyle == "north-indian" || args.chartStyle == "south-indian" || args.chartStyle == "east-indian") {
+            // Display traditional Western chart first
+            std::cout << chart.getFormattedChart() << std::endl;
 
-                // Add Eastern chart
-                EasternChartDrawer chartDrawer;
-                chartDrawer.setChartStyle(args.chartStyle);
-                std::cout << chartDrawer.drawEasternChart(chart) << std::endl;
-            } else {
-                // Default to basic text output
-                std::cout << chart.getFormattedChart() << std::endl;
-            }
+            // Add Eastern chart
+            EasternChartDrawer chartDrawer;
+            chartDrawer.setChartStyle(args.chartStyle);
+            std::cout << chartDrawer.drawEasternChart(chart) << std::endl;
+        } else if (args.chartStyle.empty()) {
+            // No chart style specified: show only basic formatted chart data
+            std::cout << chart.getFormattedChart() << std::endl;
+        } else {
+            // Default to basic text output
+            std::cout << chart.getFormattedChart() << std::endl;
         }
     }
 
