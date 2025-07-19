@@ -39,6 +39,16 @@ bool HoroscopeCalculator::calculateBirthChart(const BirthData& birthData,
     // Set birth data in chart
     chart.setBirthData(birthData);
 
+    // Determine which planets to use based on date
+    // Use ancient planet set for dates before 650 AD to avoid ephemeris limitations
+    // Julian Day 1967601.5 corresponds to approximately 650 AD
+    bool isAncientDate = birthData.getJulianDay() < 1967601.5;
+    if (isAncientDate) {
+        planetCalculator.setPlanetsToCalculate(PlanetCalculator::getAncientDatePlanets());
+    } else {
+        planetCalculator.setPlanetsToCalculate(PlanetCalculator::getStandardPlanets());
+    }
+
     // Calculate planetary positions
     std::vector<PlanetPosition> planetPositions;
     if (!planetCalculator.calculateAllPlanets(birthData, planetPositions)) {

@@ -1,6 +1,7 @@
 #include "ephemeris_table.h"
 #include "ephemeris_manager.h"
 #include "planet_calculator.h"
+#include "astro_types.h"
 #include <swephexp.h>
 #include <sstream>
 #include <iomanip>
@@ -479,9 +480,9 @@ std::vector<Planet> EphemerisTable::getDefaultPlanets() const {
 std::string EphemerisTable::generateTable(const std::string& fromDate, const std::string& toDate, int intervalDays) const {
     EphemerisConfig config;
 
-    // Parse date strings
-    std::sscanf(fromDate.c_str(), "%d-%d-%d", &config.startDate.year, &config.startDate.month, &config.startDate.day);
-    std::sscanf(toDate.c_str(), "%d-%d-%d", &config.endDate.year, &config.endDate.month, &config.endDate.day);
+    // Parse date strings with BC era support
+    parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
+    parseBCDate(toDate, config.endDate.year, config.endDate.month, config.endDate.day);
 
     config.intervalDays = intervalDays;
     config.format = "table";
@@ -492,9 +493,9 @@ std::string EphemerisTable::generateTable(const std::string& fromDate, const std
 std::string EphemerisTable::generateCSVTable(const std::string& fromDate, const std::string& toDate, int intervalDays) const {
     EphemerisConfig config;
 
-    // Parse date strings
-    std::sscanf(fromDate.c_str(), "%d-%d-%d", &config.startDate.year, &config.startDate.month, &config.startDate.day);
-    std::sscanf(toDate.c_str(), "%d-%d-%d", &config.endDate.year, &config.endDate.month, &config.endDate.day);
+    // Parse date strings with BC era support
+    parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
+    parseBCDate(toDate, config.endDate.year, config.endDate.month, config.endDate.day);
 
     config.intervalDays = intervalDays;
     config.format = "csv";
@@ -505,9 +506,9 @@ std::string EphemerisTable::generateCSVTable(const std::string& fromDate, const 
 std::string EphemerisTable::generateJSONTable(const std::string& fromDate, const std::string& toDate, int intervalDays) const {
     EphemerisConfig config;
 
-    // Parse date strings
-    std::sscanf(fromDate.c_str(), "%d-%d-%d", &config.startDate.year, &config.startDate.month, &config.startDate.day);
-    std::sscanf(toDate.c_str(), "%d-%d-%d", &config.endDate.year, &config.endDate.month, &config.endDate.day);
+    // Parse date strings with BC era support
+    parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
+    parseBCDate(toDate, config.endDate.year, config.endDate.month, config.endDate.day);
 
     config.intervalDays = intervalDays;
     config.format = "json";

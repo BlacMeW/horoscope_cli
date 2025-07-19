@@ -112,7 +112,15 @@ std::string BirthData::getLocationString() const {
 std::string BirthData::getDateTimeString() const {
     std::ostringstream oss;
     oss << std::setfill('0');
-    oss << year << "-" << std::setw(2) << month << "-" << std::setw(2) << day << " ";
+    
+    // Handle BC era display (convert from astronomical year numbering)
+    if (year <= 0) {
+        int bcYear = 1 - year;  // Convert: year 0 = 1 BC, year -1 = 2 BC, etc.
+        oss << bcYear << " BC-" << std::setw(2) << month << "-" << std::setw(2) << day << " ";
+    } else {
+        oss << year << "-" << std::setw(2) << month << "-" << std::setw(2) << day << " ";
+    }
+    
     oss << std::setw(2) << hour << ":" << std::setw(2) << minute << ":" << std::setw(2) << second;
     oss << " UTC" << (timezone >= 0 ? "+" : "") << timezone;
     return oss.str();
@@ -188,6 +196,40 @@ double calculateAspectOrb(double angle1, double angle2, AspectType aspect) {
 
     double aspectAngle = static_cast<double>(aspect);
     return std::abs(diff - aspectAngle);
+}
+
+bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
+    // Support BC era dates: "-0500-03-15" for 500 BC
+    // Standard format: "1990-01-15" for 1990 AD
+    
+    std::string processStr = dateStr;
+    bool isBCEra = false;
+    
+    // Check for BC era (negative year)
+    if (processStr.length() >= 11 && processStr[0] == '-') {
+        isBCEra = true;
+        processStr = processStr.substr(1); // Remove leading minus
+    }
+    
+    if (processStr.length() != 10 || processStr[4] != '-' || processStr[7] != '-') {
+        return false;
+    }
+
+    try {
+        year = std::stoi(processStr.substr(0, 4));
+        month = std::stoi(processStr.substr(5, 2));
+        day = std::stoi(processStr.substr(8, 2));
+        
+        // Convert to astronomical year numbering for BC dates
+        // In astronomical year numbering: 1 BC = year 0, 2 BC = year -1, etc.
+        if (isBCEra) {
+            year = -(year - 1);
+        }
+        
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
 }
 
 } // namespace Astro

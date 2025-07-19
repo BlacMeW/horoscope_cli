@@ -76,6 +76,22 @@ std::vector<Planet> PlanetCalculator::getStandardPlanets() {
     };
 }
 
+std::vector<Planet> PlanetCalculator::getAncientDatePlanets() {
+    // Only include planets with reliable ephemeris data for ancient dates
+    // Excludes Chiron, Lilith, and modern outer planets discovered after antiquity
+    return {
+        Planet::SUN,
+        Planet::MOON,
+        Planet::MERCURY,
+        Planet::VENUS,
+        Planet::MARS,
+        Planet::JUPITER,
+        Planet::SATURN,
+        Planet::NORTH_NODE,
+        Planet::SOUTH_NODE
+    };
+}
+
 void PlanetCalculator::setPlanetsToCalculate(const std::vector<Planet>& planets) {
     planetsToCalculate = planets;
 }

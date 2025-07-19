@@ -63,7 +63,7 @@ void printHelp() {
     std::cout << "Horoscope CLI - Birth Chart Calculator using Swiss Ephemeris\n\n";
     std::cout << "Usage: horoscope_cli [OPTIONS]\n\n";
     std::cout << "Required Options:\n";
-    std::cout << "  --date DATE        Birth date in YYYY-MM-DD format\n";
+    std::cout << "  --date DATE        Birth date in YYYY-MM-DD format (use -YYYY-MM-DD for BC dates)\n";
     std::cout << "  --time TIME        Birth time in HH:MM:SS format (24-hour)\n";
     std::cout << "  --lat LATITUDE     Latitude in decimal degrees (-90 to 90)\n";
     std::cout << "  --lon LONGITUDE    Longitude in decimal degrees (-180 to 180)\n";
@@ -96,9 +96,12 @@ void printHelp() {
     std::cout << "Examples:\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5\n";
     std::cout << "  horoscope_cli --date 1985-06-20 --time 09:15:30 --lat 51.5074 --lon -0.1278 --timezone 1 --house-system K\n";
+    std::cout << "  horoscope_cli --date -0500-03-15 --time 12:00:00 --lat 37.9755 --lon 23.7348 --timezone 2 # 500 BC, Athens\n";
+    std::cout << "  horoscope_cli --date -0044-03-15 --time 12:00:00 --lat 41.9028 --lon 12.4964 --timezone 1 # Julius Caesar, 44 BC\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --eclipses\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --conjunctions --conjunction-orb 2.0\n";
     std::cout << "  horoscope_cli --ephemeris --ephemeris-range 2025-01-01 2025-01-31 --ephemeris-format csv\n";
+    std::cout << "  horoscope_cli --eclipse-range -0500-01-01 -0499-12-31 --lat 37.9755 --lon 23.7348 # Ancient eclipses\n";
     std::cout << "  horoscope_cli --eclipse-range 2024-01-01 2024-12-31 --lat 40.7128 --lon -74.0060\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system --perspective geocentric\n";
     std::cout << "  horoscope_cli --solar-system\n";
@@ -111,18 +114,12 @@ void printVersion() {
 }
 
 bool parseDate(const std::string& dateStr, int& year, int& month, int& day) {
-    if (dateStr.length() != 10 || dateStr[4] != '-' || dateStr[7] != '-') {
-        return false;
-    }
+    return Astro::parseBCDate(dateStr, year, month, day);
+}
 
-    try {
-        year = std::stoi(dateStr.substr(0, 4));
-        month = std::stoi(dateStr.substr(5, 2));
-        day = std::stoi(dateStr.substr(8, 2));
-        return true;
-    } catch (const std::exception&) {
-        return false;
-    }
+// Helper function to parse dates with BC support for other modules
+bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
+    return Astro::parseBCDate(dateStr, year, month, day);
 }
 
 bool parseTime(const std::string& timeStr, int& hour, int& minute, int& second) {

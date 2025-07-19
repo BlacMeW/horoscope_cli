@@ -19,6 +19,9 @@ public:
     // Get list of planets to calculate
     static std::vector<Planet> getStandardPlanets();
 
+    // Get list of planets available for ancient dates (before 650 AD)
+    static std::vector<Planet> getAncientDatePlanets();
+
     // Set which planets to include in calculations
     void setPlanetsToCalculate(const std::vector<Planet>& planets);
 

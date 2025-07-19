@@ -1,5 +1,6 @@
 #include "eclipse_calculator.h"
 #include "ephemeris_manager.h"
+#include "astro_types.h"
 #include <swephexp.h>
 #include <sstream>
 #include <iomanip>
@@ -93,9 +94,9 @@ std::vector<EclipseEvent> EclipseCalculator::findEclipses(const std::string& fro
     // Convert string dates to BirthData
     BirthData fromBirth, toBirth;
 
-    // Parse date strings (assumes YYYY-MM-DD format)
-    std::sscanf(fromDate.c_str(), "%d-%d-%d", &fromBirth.year, &fromBirth.month, &fromBirth.day);
-    std::sscanf(toDate.c_str(), "%d-%d-%d", &toBirth.year, &toBirth.month, &toBirth.day);
+    // Parse date strings with BC era support
+    parseBCDate(fromDate, fromBirth.year, fromBirth.month, fromBirth.day);
+    parseBCDate(toDate, toBirth.year, toBirth.month, toBirth.day);
 
     // Set default time values
     fromBirth.hour = 0;
