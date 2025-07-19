@@ -228,6 +228,7 @@ private:
     std::string getAdvancedPlanetaryDisplay(const AstroCalendarDay& day) const;
     std::string generateProfessionalCalendar(const AstroCalendarMonth& monthData) const;
     std::string generateProfessionalDayCell(const AstroCalendarDay& day) const;
+    std::string generateProfessionalDayCalendar(const AstroCalendarDay& day) const;
 
 public:
     AstroCalendar();
