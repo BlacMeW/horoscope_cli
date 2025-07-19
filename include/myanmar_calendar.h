@@ -174,10 +174,10 @@ private:
     void initializeExceptionData();
 
     // Core calculation methods (adapted from cemmdatetime)
-    void getMyanmarConstants(long myanmarYear, double& eraId, double& watatOffset, 
+    void getMyanmarConstants(long myanmarYear, double& eraId, double& watatOffset,
                            double& monthNumber, long& exceptionWatat) const;
     void calculateWatat(long myanmarYear, long& watat, long& fullMoonDay) const;
-    void calculateMyanmarYear(long myanmarYear, long& yearType, long& tagu1, 
+    void calculateMyanmarYear(long myanmarYear, long& yearType, long& tagu1,
                             long& fullMoonDay, long& watatError) const;
     void julianToMyanmarDate(double julianDay, long& yearType, long& myanmarYear,
                            long& month, long& dayOfMonth) const;

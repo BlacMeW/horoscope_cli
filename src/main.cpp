@@ -744,7 +744,7 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--festivals-only") {
             args.showFestivalsOnly = true;
 
-        // Myanmar Calendar options  
+        // Myanmar Calendar options
         } else if (arg == "--myanmar-calendar") {
             args.showMyanmarCalendar = true;
         } else if (arg == "--myanmar-calendar-range") {
@@ -788,7 +788,7 @@ bool validateArgs(const CommandLineArgs& args) {
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
         args.showPanchangaRange || args.showMyanmarCalendarRange) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
-        if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() || 
+        if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() ||
              !args.myanmarCalendarFromDate.empty()) &&
             args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
@@ -1371,7 +1371,7 @@ int main(int argc, char* argv[]) {
 
         try {
             std::vector<MyanmarCalendarData> myanmarDataList = myanmarCalendar.calculateMyanmarDateRange(fromDate, toDate);
-            
+
             if (myanmarDataList.empty()) {
                 std::cout << "No Myanmar calendar data found for the specified period." << std::endl;
             } else {
