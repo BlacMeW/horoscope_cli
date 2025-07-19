@@ -55,7 +55,14 @@ std::string BirthChart::getHouseCuspsString() const {
         double cusp = houseCusps.cusps[house];
         ZodiacSign sign = longitudeToSign(cusp);
 
-        oss << std::left << std::setw(12) << (std::to_string(house) + "st House:");
+        // Create proper ordinal suffix
+        std::string suffix;
+        if (house == 1) suffix = "st";
+        else if (house == 2) suffix = "nd";
+        else if (house == 3) suffix = "rd";
+        else suffix = "th";
+
+        oss << std::left << std::setw(12) << (std::to_string(house) + suffix + " House:");
         oss << formatDegreeMinute(cusp) << " " << zodiacSignToString(sign) << "\n";
     }
 

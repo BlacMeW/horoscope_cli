@@ -1,5 +1,7 @@
 #include "horoscope_calculator.h"
+#include "birth_chart.h"
 #include "eastern_chart_drawer.h"
+#include "western_chart_drawer.h"
 #include "solar_system_drawer.h"
 #include <iostream>
 #include <string>
@@ -298,14 +300,23 @@ int main(int argc, char* argv[]) {
             solarDrawer.setPerspective(stringToPerspective(args.solarSystemPerspective));
             std::cout << solarDrawer.drawSolarSystem(chart) << std::endl;
         } else {
-            // Display traditional Western chart first
-            std::cout << chart.getFormattedChart() << std::endl;
+            // Display appropriate chart style
+            if (args.chartStyle == "western") {
+                WesternChartDrawer westernDrawer;
+                std::cout << westernDrawer.drawChartWheel(chart) << std::endl;
+                std::cout << westernDrawer.drawRectangularChart(chart) << std::endl;
+                std::cout << westernDrawer.drawAspectGrid(chart) << std::endl;
+            } else if (args.chartStyle == "north-indian" || args.chartStyle == "south-indian" || args.chartStyle == "east-indian") {
+                // Display traditional Western chart first
+                std::cout << chart.getFormattedChart() << std::endl;
 
-            // Add Eastern chart if requested
-            if (args.chartStyle == "north-indian" || args.chartStyle == "south-indian" || args.chartStyle == "east-indian") {
+                // Add Eastern chart
                 EasternChartDrawer chartDrawer;
                 chartDrawer.setChartStyle(args.chartStyle);
                 std::cout << chartDrawer.drawEasternChart(chart) << std::endl;
+            } else {
+                // Default to basic text output
+                std::cout << chart.getFormattedChart() << std::endl;
             }
         }
     }
