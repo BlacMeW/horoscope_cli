@@ -113,4 +113,8 @@ Planet getSignLord(ZodiacSign sign);
 // Date parsing with BC era support
 bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day);
 
+// Date formatting with BC/AD support
+std::string formatBCDate(int year, int month, int day);
+std::string formatBCDateLong(int year, int month, int day);
+
 } // namespace Astro

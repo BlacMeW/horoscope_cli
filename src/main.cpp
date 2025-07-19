@@ -113,9 +113,11 @@ void printHelp() {
 
     std::cout << "REQUIRED OPTIONS 📅\n";
     std::cout << "    --date DATE        Birth date in YYYY-MM-DD format\n";
-    std::cout << "                       • Use -YYYY-MM-DD for BC dates (e.g., -0044-03-15)\n";
+    std::cout << "                       • Standard: 1990-01-15 (for 1990 AD)\n";
+    std::cout << "                       • BC dates: -0044-03-15 or 44BC-03-15 (for 44 BC)\n";
+    std::cout << "                       • AD dates: 1990AD-01-15 (optional AD suffix)\n";
     std::cout << "                       • Supports dates from 6000 BC to 7000 AD\n";
-    std::cout << "                       • Examples: 1990-01-15, -0500-12-25\n\n";
+    std::cout << "                       • Examples: 1990-01-15, -0500-12-25, 44BC-03-15\n\n";
 
     std::cout << "    --time TIME        Birth time in HH:MM:SS format (24-hour)\n";
     std::cout << "                       • Use local time at birth location\n";
@@ -310,10 +312,10 @@ void printHelp() {
 
     std::cout << "HISTORICAL CHARTS (BC Era) 🏛️\n";
     std::cout << "  # Julius Caesar's assassination (44 BC)\n";
-    std::cout << "  horoscope_cli --date -0044-03-15 --time 12:00:00 \\\n";
+    std::cout << "  horoscope_cli --date 44BC-03-15 --time 12:00:00 \\\n";
     std::cout << "                --lat 41.9028 --lon 12.4964 --timezone 1\n\n";
 
-    std::cout << "  # Ancient Athens (500 BC)\n";
+    std::cout << "  # Ancient Athens (500 BC) - using minus format\n";
     std::cout << "  horoscope_cli --date -0500-03-15 --time 12:00:00 \\\n";
     std::cout << "                --lat 37.9755 --lon 23.7348 --timezone 2\n\n";
 
@@ -327,8 +329,8 @@ void printHelp() {
     std::cout << "  horoscope_cli --eclipse-range 2024-01-01 2024-12-31 \\\n";
     std::cout << "                --lat 40.7128 --lon -74.0060\n\n";
 
-    std::cout << "  # Historical eclipses in ancient Greece\n";
-    std::cout << "  horoscope_cli --eclipse-range -0500-01-01 -0499-12-31 \\\n";
+    std::cout << "  # Historical eclipses in ancient Greece (500 BC)\n";
+    std::cout << "  horoscope_cli --eclipse-range 500BC-01-01 500BC-12-31 \\\n";
     std::cout << "                --lat 37.9755 --lon 23.7348\n\n";
 
     std::cout << "CONJUNCTION ANALYSIS 🔗\n";
@@ -1070,7 +1072,11 @@ int main(int argc, char* argv[]) {
     // Parse date and time
     BirthData birthData;
     if (!parseDate(args.date, birthData.year, birthData.month, birthData.day)) {
-        std::cerr << "Error: Invalid date format. Use YYYY-MM-DD\n";
+        std::cerr << "Error: Invalid date format. Supported formats:\n";
+        std::cerr << "  • YYYY-MM-DD (e.g., 1990-01-15)\n";
+        std::cerr << "  • -YYYY-MM-DD (e.g., -0044-03-15 for BC)\n";
+        std::cerr << "  • YYYYBC-MM-DD (e.g., 44BC-03-15)\n";
+        std::cerr << "  • YYYYAD-MM-DD (e.g., 1990AD-01-15)\n";
         return 1;
     }
 

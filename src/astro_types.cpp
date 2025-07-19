@@ -113,12 +113,12 @@ std::string BirthData::getDateTimeString() const {
     std::ostringstream oss;
     oss << std::setfill('0');
 
-    // Handle BC era display (convert from astronomical year numbering)
+    // Handle BC/AD era display (convert from astronomical year numbering)
     if (year <= 0) {
         int bcYear = 1 - year;  // Convert: year 0 = 1 BC, year -1 = 2 BC, etc.
-        oss << bcYear << " BC-" << std::setw(2) << month << "-" << std::setw(2) << day << " ";
+        oss << std::setw(2) << month << "/" << std::setw(2) << day << "/" << bcYear << " BC ";
     } else {
-        oss << year << "-" << std::setw(2) << month << "-" << std::setw(2) << day << " ";
+        oss << std::setw(2) << month << "/" << std::setw(2) << day << "/" << year << " AD ";
     }
 
     oss << std::setw(2) << hour << ":" << std::setw(2) << minute << ":" << std::setw(2) << second;
@@ -199,14 +199,60 @@ double calculateAspectOrb(double angle1, double angle2, AspectType aspect) {
 }
 
 bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
-    // Support BC era dates: "-0500-03-15" for 500 BC
-    // Standard format: "1990-01-15" for 1990 AD
+    // Support multiple date formats:
+    // 1. Standard format: "1990-01-15" for 1990 AD
+    // 2. BC era with minus: "-0044-03-15" for 44 BC
+    // 3. BC era with suffix: "44BC-03-15" for 44 BC
+    // 4. AD era with suffix: "1990AD-01-15" for 1990 AD
 
     std::string processStr = dateStr;
     bool isBCEra = false;
 
-    // Check for BC era (negative year)
-    if (processStr.length() >= 11 && processStr[0] == '-') {
+    // Check for BC/AD suffix format first
+    if (processStr.find("BC-") != std::string::npos) {
+        isBCEra = true;
+        size_t bcPos = processStr.find("BC-");
+        if (bcPos != std::string::npos) {
+            // Extract year before BC and date after BC-
+            std::string yearPart = processStr.substr(0, bcPos);
+            std::string datePart = processStr.substr(bcPos + 3); // Skip "BC-"
+
+            // Remove any space before BC
+            if (!yearPart.empty() && yearPart.back() == ' ') {
+                yearPart.pop_back();
+            }
+
+            // Reconstruct as standard format: YYYY-MM-DD
+            // Pad year to 4 digits
+            while (yearPart.length() < 4) {
+                yearPart = "0" + yearPart;
+            }
+
+            processStr = yearPart + "-" + datePart;
+        }
+    } else if (processStr.find("AD-") != std::string::npos) {
+        // Handle AD suffix format
+        size_t adPos = processStr.find("AD-");
+        if (adPos != std::string::npos) {
+            std::string yearPart = processStr.substr(0, adPos);
+            std::string datePart = processStr.substr(adPos + 3); // Skip "AD-"
+
+            // Remove any space before AD
+            if (!yearPart.empty() && yearPart.back() == ' ') {
+                yearPart.pop_back();
+            }
+
+            // Pad year to 4 digits if needed
+            while (yearPart.length() < 4) {
+                yearPart = "0" + yearPart;
+            }
+
+            processStr = yearPart + "-" + datePart;
+        }
+    }
+
+    // Check for BC era with minus sign (original format)
+    if (!isBCEra && processStr.length() >= 11 && processStr[0] == '-') {
         isBCEra = true;
         processStr = processStr.substr(1); // Remove leading minus
     }
@@ -268,6 +314,39 @@ std::string planetToShortString(Planet planet) {
         case Planet::LILITH: return "Li";
         default: return "??";
     }
+}
+
+std::string formatBCDate(int year, int month, int day) {
+    std::ostringstream oss;
+    oss << std::setfill('0');
+
+    if (year <= 0) {
+        int bcYear = 1 - year;  // Convert from astronomical year numbering
+        oss << bcYear << " BC-" << std::setw(2) << month << "-" << std::setw(2) << day;
+    } else {
+        oss << year << " AD-" << std::setw(2) << month << "-" << std::setw(2) << day;
+    }
+
+    return oss.str();
+}
+
+std::string formatBCDateLong(int year, int month, int day) {
+    std::ostringstream oss;
+    oss << std::setfill('0');
+
+    const std::vector<std::string> monthNames = {
+        "", "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    };
+
+    if (year <= 0) {
+        int bcYear = 1 - year;  // Convert from astronomical year numbering
+        oss << monthNames[month] << " " << day << ", " << bcYear << " BC";
+    } else {
+        oss << monthNames[month] << " " << day << ", " << year << " AD";
+    }
+
+    return oss.str();
 }
 
 } // namespace Astro
