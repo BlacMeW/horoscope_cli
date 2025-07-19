@@ -9,6 +9,7 @@ set(SWISSEPH_SOURCES
     swedate.c
     swejpl.c
     swemplan.c
+    swecl.c
 )
 
 # Swiss Ephemeris Header Files

@@ -73,19 +73,126 @@ std::vector<EclipseEvent> EclipseCalculator::findEclipses(const BirthData& fromD
         return eclipses;
     }
 
-    // Placeholder implementation - actual eclipse calculation would require full Swiss Ephemeris eclipse functions
-    EclipseEvent sampleEclipse;
-    sampleEclipse.julianDay = fromDate.getJulianDay() + 30; // 30 days later
-    sampleEclipse.type = EclipseType::SOLAR_PARTIAL;
-    sampleEclipse.magnitude = 0.5;
-    sampleEclipse.duration = 120; // 2 hours
-    sampleEclipse.isVisible = true;
-    sampleEclipse.sunLongitude = 90.0;
-    sampleEclipse.moonLongitude = 90.0;
+    double fromJD = fromDate.getJulianDay();
+    double toJD = toDate.getJulianDay();
+    double currentJD = fromJD;
 
-    eclipses.push_back(sampleEclipse);
+    char serr[256];
+    double tret[10];
+    double attr[20];
+    double geopos[3];
+    geopos[0] = longitude;
+    geopos[1] = latitude;
+    geopos[2] = 0; // Sea level
 
-    lastError = "Eclipse calculations use placeholder data (Swiss Ephemeris eclipse functions not fully available)";
+    // Find all solar eclipses in the time range
+    while (currentJD < toJD) {
+        int32 retval = swe_sol_eclipse_when_glob(currentJD, SEFLG_SWIEPH, 0, tret, 0, serr);
+
+        if (retval == ERR) {
+            break;
+        }
+
+        if (retval > 0 && tret[0] <= toJD) {
+            EclipseEvent eclipse;
+            eclipse.julianDay = tret[0];
+            eclipse.isVisible = true;
+
+            // Determine eclipse type
+            if (retval & SE_ECL_TOTAL) {
+                eclipse.type = EclipseType::SOLAR_TOTAL;
+            } else if (retval & SE_ECL_ANNULAR) {
+                eclipse.type = EclipseType::SOLAR_ANNULAR;
+            } else if (retval & SE_ECL_PARTIAL) {
+                eclipse.type = EclipseType::SOLAR_PARTIAL;
+            } else if (retval & SE_ECL_ANNULAR_TOTAL) {
+                eclipse.type = EclipseType::SOLAR_TOTAL; // Hybrid treated as total
+            }
+
+            // Get magnitude for the specified location
+            int32 localRet = swe_sol_eclipse_how(eclipse.julianDay, SEFLG_SWIEPH, geopos, attr, serr);
+            if (localRet > 0) {
+                eclipse.magnitude = attr[0];
+            } else {
+                eclipse.magnitude = 0.0; // Not visible from this location
+            }
+
+            // Get Sun/Moon positions
+            double sunpos[6], moonpos[6];
+            if (swe_calc_ut(eclipse.julianDay, SE_SUN, SEFLG_SWIEPH, sunpos, serr) >= 0) {
+                eclipse.sunLongitude = sunpos[0];
+            }
+            if (swe_calc_ut(eclipse.julianDay, SE_MOON, SEFLG_SWIEPH, moonpos, serr) >= 0) {
+                eclipse.moonLongitude = moonpos[0];
+            }
+
+            eclipse.duration = 0; // Would need more complex calculation
+            eclipses.push_back(eclipse);
+
+            // Search for next eclipse
+            currentJD = tret[0] + 1.0;
+        } else {
+            break; // No more eclipses found
+        }
+    }
+
+    // Find all lunar eclipses in the time range
+    currentJD = fromJD;
+    while (currentJD < toJD) {
+        int32 retval = swe_lun_eclipse_when(currentJD, SEFLG_SWIEPH, 0, tret, 0, serr);
+
+        if (retval == ERR) {
+            break;
+        }
+
+        if (retval > 0 && tret[0] <= toJD) {
+            EclipseEvent eclipse;
+            eclipse.julianDay = tret[0];
+            eclipse.isVisible = true;
+
+            // Determine eclipse type
+            if (retval & SE_ECL_TOTAL) {
+                eclipse.type = EclipseType::LUNAR_TOTAL;
+            } else if (retval & SE_ECL_PARTIAL) {
+                eclipse.type = EclipseType::LUNAR_PARTIAL;
+            } else if (retval & SE_ECL_PENUMBRAL) {
+                eclipse.type = EclipseType::LUNAR_PENUMBRAL;
+            }
+
+            // Get magnitude for the specified location
+            int32 localRet = swe_lun_eclipse_how(eclipse.julianDay, SEFLG_SWIEPH, geopos, attr, serr);
+            if (localRet > 0) {
+                eclipse.magnitude = attr[0]; // Umbral magnitude
+            } else {
+                eclipse.magnitude = 0.5; // Default if calculation fails
+            }
+
+            // Get Sun/Moon positions
+            double sunpos[6], moonpos[6];
+            if (swe_calc_ut(eclipse.julianDay, SE_SUN, SEFLG_SWIEPH, sunpos, serr) >= 0) {
+                eclipse.sunLongitude = sunpos[0];
+            }
+            if (swe_calc_ut(eclipse.julianDay, SE_MOON, SEFLG_SWIEPH, moonpos, serr) >= 0) {
+                eclipse.moonLongitude = moonpos[0];
+            }
+
+            eclipse.duration = 0; // Would need more complex calculation
+            eclipses.push_back(eclipse);
+
+            // Search for next eclipse
+            currentJD = tret[0] + 1.0;
+        } else {
+            break; // No more eclipses found
+        }
+    }
+
+    // Sort eclipses by date
+    std::sort(eclipses.begin(), eclipses.end(),
+              [](const EclipseEvent& a, const EclipseEvent& b) {
+                  return a.julianDay < b.julianDay;
+              });
+
+    lastError = eclipses.empty() ? "No eclipses found in the specified period" : "";
     return eclipses;
 }
 
@@ -118,44 +225,141 @@ std::vector<EclipseEvent> EclipseCalculator::findEclipses(const std::string& fro
 
 EclipseEvent EclipseCalculator::findNextSolarEclipse(const BirthData& afterDate,
                                                    double latitude, double longitude) const {
+    EclipseEvent eclipse;
+    eclipse.isVisible = false; // Default to not visible
+
     if (!isInitialized) {
         lastError = "Eclipse calculator not initialized";
-        EclipseEvent empty;
-        empty.isVisible = false;
-        return empty;
+        return eclipse;
     }
 
-    // Placeholder implementation
-    EclipseEvent eclipse;
-    eclipse.isVisible = true;
-    eclipse.magnitude = 0.8;
-    eclipse.duration = 180.0;
-    eclipse.julianDay = afterDate.getJulianDay() + 365; // Next year
-    eclipse.type = EclipseType::SOLAR_TOTAL;
-    eclipse.sunLongitude = 180.0;
-    eclipse.moonLongitude = 180.0;
+    double startJD = afterDate.getJulianDay();
+    double tret[10]; // Array to store eclipse times
+    double attr[20]; // Array to store eclipse attributes
+    char serr[256];
+
+    // Use Swiss Ephemeris to find the next solar eclipse globally
+    int32 retval = swe_sol_eclipse_when_glob(startJD, SEFLG_SWIEPH, 0, tret, 0, serr);
+
+    if (retval == ERR) {
+        lastError = std::string("Swiss Ephemeris error: ") + serr;
+        return eclipse;
+    }
+
+    if (retval > 0) {
+        eclipse.julianDay = tret[0]; // Time of maximum eclipse
+        eclipse.isVisible = true;
+
+        // Determine eclipse type from return flags
+        if (retval & SE_ECL_TOTAL) {
+            eclipse.type = EclipseType::SOLAR_TOTAL;
+        } else if (retval & SE_ECL_ANNULAR) {
+            eclipse.type = EclipseType::SOLAR_ANNULAR;
+        } else if (retval & SE_ECL_PARTIAL) {
+            eclipse.type = EclipseType::SOLAR_PARTIAL;
+        } else if (retval & SE_ECL_ANNULAR_TOTAL) {
+            eclipse.type = EclipseType::SOLAR_TOTAL; // Hybrid eclipse treated as total
+        }
+
+        // Get more detailed information for this eclipse location
+        double geopos[3];
+        geopos[0] = longitude;
+        geopos[1] = latitude;
+        geopos[2] = 0; // Sea level
+
+        int32 localRet = swe_sol_eclipse_how(eclipse.julianDay, SEFLG_SWIEPH, geopos, attr, serr);
+
+        if (localRet > 0) {
+            eclipse.magnitude = attr[0]; // Magnitude at the given location
+            eclipse.duration = 0; // Duration calculation would need more detailed implementation
+
+            // Calculate Sun and Moon positions for additional info
+            double sunpos[6], moonpos[6];
+            if (swe_calc_ut(eclipse.julianDay, SE_SUN, SEFLG_SWIEPH, sunpos, serr) >= 0 &&
+                swe_calc_ut(eclipse.julianDay, SE_MOON, SEFLG_SWIEPH, moonpos, serr) >= 0) {
+                eclipse.sunLongitude = sunpos[0];
+                eclipse.moonLongitude = moonpos[0];
+            }
+        } else {
+            // Eclipse not visible from this location, but still valid
+            eclipse.magnitude = 0.0;
+
+            // Get positions anyway
+            double sunpos[6], moonpos[6];
+            if (swe_calc_ut(eclipse.julianDay, SE_SUN, SEFLG_SWIEPH, sunpos, serr) >= 0 &&
+                swe_calc_ut(eclipse.julianDay, SE_MOON, SEFLG_SWIEPH, moonpos, serr) >= 0) {
+                eclipse.sunLongitude = sunpos[0];
+                eclipse.moonLongitude = moonpos[0];
+            }
+        }
+    } else {
+        lastError = "No solar eclipse found";
+    }
 
     return eclipse;
 }
 
 EclipseEvent EclipseCalculator::findNextLunarEclipse(const BirthData& afterDate,
                                                    double latitude, double longitude) const {
+    EclipseEvent eclipse;
+    eclipse.isVisible = false; // Default to not visible
+
     if (!isInitialized) {
         lastError = "Eclipse calculator not initialized";
-        EclipseEvent empty;
-        empty.isVisible = false;
-        return empty;
+        return eclipse;
     }
 
-    // Placeholder implementation
-    EclipseEvent eclipse;
-    eclipse.isVisible = true;
-    eclipse.magnitude = 1.2;
-    eclipse.duration = 200.0;
-    eclipse.julianDay = afterDate.getJulianDay() + 180; // 6 months later
-    eclipse.type = EclipseType::LUNAR_TOTAL;
-    eclipse.sunLongitude = 0.0;
-    eclipse.moonLongitude = 180.0;
+    double startJD = afterDate.getJulianDay();
+    double tret[10]; // Array to store eclipse times
+    double attr[20]; // Array to store eclipse attributes
+    char serr[256];
+
+    // Use Swiss Ephemeris to find the next lunar eclipse
+    int32 retval = swe_lun_eclipse_when(startJD, SEFLG_SWIEPH, 0, tret, 0, serr);
+
+    if (retval == ERR) {
+        lastError = std::string("Swiss Ephemeris error: ") + serr;
+        return eclipse;
+    }
+
+    if (retval > 0) {
+        eclipse.julianDay = tret[0]; // Time of maximum eclipse
+        eclipse.isVisible = true;
+
+        // Determine eclipse type from return flags
+        if (retval & SE_ECL_TOTAL) {
+            eclipse.type = EclipseType::LUNAR_TOTAL;
+        } else if (retval & SE_ECL_PARTIAL) {
+            eclipse.type = EclipseType::LUNAR_PARTIAL;
+        } else if (retval & SE_ECL_PENUMBRAL) {
+            eclipse.type = EclipseType::LUNAR_PENUMBRAL;
+        }
+
+        // Get more detailed information for this eclipse location
+        double geopos[3];
+        geopos[0] = longitude;
+        geopos[1] = latitude;
+        geopos[2] = 0; // Sea level
+
+        int32 localRet = swe_lun_eclipse_how(eclipse.julianDay, SEFLG_SWIEPH, geopos, attr, serr);
+
+        if (localRet > 0) {
+            eclipse.magnitude = attr[0]; // Umbral magnitude at the given location
+            eclipse.duration = 0; // Duration calculation would need more detailed implementation
+        } else {
+            eclipse.magnitude = 0.5; // Default magnitude if calculation fails
+        }
+
+        // Calculate Sun and Moon positions
+        double sunpos[6], moonpos[6];
+        if (swe_calc_ut(eclipse.julianDay, SE_SUN, SEFLG_SWIEPH, sunpos, serr) >= 0 &&
+            swe_calc_ut(eclipse.julianDay, SE_MOON, SEFLG_SWIEPH, moonpos, serr) >= 0) {
+            eclipse.sunLongitude = sunpos[0];
+            eclipse.moonLongitude = moonpos[0];
+        }
+    } else {
+        lastError = "No lunar eclipse found";
+    }
 
     return eclipse;
 }

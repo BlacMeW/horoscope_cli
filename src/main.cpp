@@ -415,8 +415,12 @@ int main(int argc, char* argv[]) {
         ephemerisManager.initialize(args.ephemerisPath);
 
         // Handle eclipse calculations
-        if (args.showEclipses) {
+        if (args.showEclipses || !args.eclipseFromDate.empty()) {
             EclipseCalculator eclipseCalc;
+            if (!eclipseCalc.initialize(args.ephemerisPath)) {
+                std::cerr << "Failed to initialize eclipse calculator" << std::endl;
+                return 1;
+            }
 
             std::string fromDate = args.eclipseFromDate;
             std::string toDate = args.eclipseToDate;
@@ -463,8 +467,12 @@ int main(int argc, char* argv[]) {
         }
 
         // Handle conjunction calculations
-        if (args.showConjunctions) {
+        if (args.showConjunctions || !args.conjunctionFromDate.empty()) {
             ConjunctionCalculator conjCalc;
+            if (!conjCalc.initialize(args.ephemerisPath)) {
+                std::cerr << "Failed to initialize conjunction calculator" << std::endl;
+                return 1;
+            }
             conjCalc.setMaximumOrb(args.conjunctionMaxOrb);
 
             std::string fromDate = args.conjunctionFromDate;
