@@ -27,6 +27,7 @@ set(SOURCES
     src/birth_chart.cpp
     src/ephemeris_manager.cpp
     src/astro_types.cpp
+    src/eastern_chart_drawer.cpp
 )
 
 # Headers
@@ -38,6 +39,7 @@ set(HEADERS
     include/birth_chart.h
     include/ephemeris_manager.h
     include/astro_types.h
+    include/eastern_chart_drawer.h
 )
 
 # Create executable

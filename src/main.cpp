@@ -1,4 +1,5 @@
 #include "horoscope_calculator.h"
+#include "eastern_chart_drawer.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,6 +17,7 @@ struct CommandLineArgs {
     double timezone = 0.0;
     HouseSystem houseSystem = HouseSystem::PLACIDUS;
     std::string outputFormat = "text";
+    std::string chartStyle = "western";
     std::string ephemerisPath;
     bool showHelp = false;
     bool showVersion = false;
@@ -34,6 +36,7 @@ void printHelp() {
     std::cout << "  --house-system SYS House system: P=Placidus, K=Koch, E=Equal, W=Whole Sign,\n";
     std::cout << "                     C=Campanus, R=Regiomontanus (default: P)\n";
     std::cout << "  --output FORMAT    Output format: text or json (default: text)\n";
+    std::cout << "  --chart-style STY  Chart style: western, north-indian, south-indian (default: western)\n";
     std::cout << "  --ephe-path PATH   Path to Swiss Ephemeris data files\n";
     std::cout << "  --help, -h         Show this help message\n";
     std::cout << "  --version, -v      Show version information\n\n";
@@ -41,6 +44,8 @@ void printHelp() {
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5\n";
     std::cout << "  horoscope_cli --date 1985-06-20 --time 09:15:30 --lat 51.5074 --lon -0.1278 --timezone 1 --house-system K\n";
     std::cout << "  horoscope_cli --date 1975-12-03 --time 22:45:00 --lat -33.8688 --lon 151.2093 --timezone 10 --output json\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style north-indian\n";
+    std::cout << "  horoscope_cli --date 1985-06-20 --time 09:15:30 --lat 51.5074 --lon -0.1278 --timezone 1 --chart-style south-indian\n";
 }
 
 void printVersion() {
@@ -135,6 +140,12 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.outputFormat = argv[++i];
             if (args.outputFormat != "text" && args.outputFormat != "json") {
                 std::cerr << "Error: Output format must be 'text' or 'json'\n";
+                return false;
+            }
+        } else if (arg == "--chart-style" && i + 1 < argc) {
+            args.chartStyle = argv[++i];
+            if (args.chartStyle != "western" && args.chartStyle != "north-indian" && args.chartStyle != "south-indian") {
+                std::cerr << "Error: Chart style must be 'western', 'north-indian', or 'south-indian'\n";
                 return false;
             }
         } else if (arg == "--ephe-path" && i + 1 < argc) {
@@ -238,7 +249,15 @@ int main(int argc, char* argv[]) {
     if (args.outputFormat == "json") {
         std::cout << chart.exportToJson() << std::endl;
     } else {
+        // Display traditional Western chart first
         std::cout << chart.getFormattedChart() << std::endl;
+        
+        // Add Eastern chart if requested
+        if (args.chartStyle == "north-indian" || args.chartStyle == "south-indian") {
+            EasternChartDrawer chartDrawer;
+            chartDrawer.setChartStyle(args.chartStyle);
+            std::cout << chartDrawer.drawEasternChart(chart) << std::endl;
+        }
     }
 
     return 0;

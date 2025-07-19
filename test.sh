@@ -54,4 +54,14 @@ $EXECUTABLE --date "2000-01-01" --time "12:00:00" --lat -33.8688 --lon 151.2093 
 echo -e "\n${YELLOW}Test 7: Error Handling (Invalid Date)${NC}"
 $EXECUTABLE --date "invalid-date" --time "12:00:00" --lat 0 --lon 0 --timezone 0 2>&1 | head -3
 
+# Test 8: North Indian Chart Style
+echo -e "\n${YELLOW}Test 8: North Indian Chart Style${NC}"
+echo "Date: October 2, 1869, 7:45 AM, Porbandar, India (Gandhi)"
+$EXECUTABLE --date "1869-10-02" --time "07:45:00" --lat 21.6416 --lon 69.6293 --timezone 5.5 --chart-style north-indian
+
+# Test 9: South Indian Chart Style
+echo -e "\n${YELLOW}Test 9: South Indian Chart Style${NC}"
+echo "Date: January 12, 1863, 6:33 AM, Kolkata, India (Swami Vivekananda)"
+$EXECUTABLE --date "1863-01-12" --time "06:33:00" --lat 22.5726 --lon 88.3639 --timezone 5.5 --chart-style south-indian
+
 echo -e "\n${GREEN}Testing completed!${NC}"
