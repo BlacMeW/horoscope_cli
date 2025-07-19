@@ -94,10 +94,10 @@ void KPSystem::initializeNakshatras() {
 void KPSystem::initializeSubDivisions() {
     subDivisions.clear();
     subDivisions.resize(27); // 27 nakshatras
-    
+
     for (int i = 0; i < 27; i++) {
         const Nakshatra& nak = nakshatras[i];
-        
+
         // Calculate sub divisions for each level (3, 4, 5)
         for (int level = 3; level <= 5; level++) {
             auto divs = calculateSubDivisions(nak, level);
@@ -108,58 +108,58 @@ void KPSystem::initializeSubDivisions() {
 
 std::vector<KPSubDivision> KPSystem::calculateSubDivisions(const Nakshatra& nakshatra, int level) const {
     std::vector<KPSubDivision> divisions;
-    
+
     double nakshatraSpan = nakshatra.endDegree - nakshatra.startDegree;
     double currentDegree = nakshatra.startDegree;
-    
+
     // For each level, calculate the subdivisions
     int numDivisions = (level == 3) ? 9 : (level == 4) ? 81 : 729; // 9^(level-2)
-    
+
     for (int i = 0; i < numDivisions; i++) {
         KPSubDivision div;
         div.level = level;
-        
+
         // Calculate the proportion for this subdivision
         double proportion = 1.0 / numDivisions;
         if (level == 3) {
             // Use Vimshottari proportions for sub level
             proportion = KP_SUB_PROPORTIONS[i % 9];
         }
-        
+
         div.startDegree = currentDegree;
         div.endDegree = currentDegree + (nakshatraSpan * proportion);
         div.lord = KP_SUB_LORDS[i % 9];
-        
+
         divisions.push_back(div);
         currentDegree = div.endDegree;
     }
-    
+
     return divisions;
 }
 
 Nakshatra KPSystem::findNakshatra(double longitude) const {
     longitude = normalizeKPLongitude(longitude);
-    
+
     for (const auto& nak : nakshatras) {
         if (longitude >= nak.startDegree && longitude < nak.endDegree) {
             return nak;
         }
     }
-    
+
     // Default to last nakshatra if not found
     return nakshatras.back();
 }
 
 Planet KPSystem::findSubLord(double longitude, const Nakshatra& nakshatra, int level) const {
     longitude = normalizeKPLongitude(longitude);
-    
+
     // Find appropriate subdivision
     for (const auto& div : subDivisions[nakshatra.number - 1]) {
         if (div.level == level && longitude >= div.startDegree && longitude < div.endDegree) {
             return div.lord;
         }
     }
-    
+
     // Default fallback
     return KP_SUB_LORDS[0];
 }
@@ -169,43 +169,43 @@ KPPosition KPSystem::calculateKPPosition(double longitude) const {
         KPPosition empty;
         return empty;
     }
-    
+
     KPPosition pos;
     pos.longitude = longitude;
-    
+
     // Level 1: Sign
     pos.sign = longitudeToSign(longitude);
     pos.signLord = getSignLord(pos.sign);
-    
+
     // Level 2: Nakshatra
     pos.nakshatra = findNakshatra(longitude);
-    
+
     // Level 3: Sub
     pos.subLord = findSubLord(longitude, pos.nakshatra, 3);
-    
+
     // Level 4: Sub-Sub
     pos.subSubLord = findSubLord(longitude, pos.nakshatra, 4);
-    
+
     // Level 5: Sub-Sub-Sub
     pos.subSubSubLord = findSubLord(longitude, pos.nakshatra, 5);
-    
+
     return pos;
 }
 
 std::vector<KPPosition> KPSystem::calculateAllKPPositions(const std::vector<PlanetPosition>& planets) const {
     std::vector<KPPosition> kpPositions;
-    
+
     for (const auto& planet : planets) {
         KPPosition kpPos = calculateKPPosition(planet.longitude);
         kpPositions.push_back(kpPos);
     }
-    
+
     return kpPositions;
 }
 
 std::string KPPosition::getFormattedPosition() const {
     std::ostringstream oss;
-    oss << zodiacSignToString(sign) << " " 
+    oss << zodiacSignToString(sign) << " "
         << nakshatra.name << " "
         << planetToString(subLord) << " "
         << planetToString(subSubLord) << " "
@@ -216,7 +216,7 @@ std::string KPPosition::getFormattedPosition() const {
 std::string KPPosition::getKPNotation() const {
     std::ostringstream oss;
     int signNum = static_cast<int>(sign) + 1;
-    oss << signNum << "-" << nakshatra.number << "-" 
+    oss << signNum << "-" << nakshatra.number << "-"
         << planetToShortString(subLord) << "-"
         << planetToShortString(subSubLord) << "-"
         << planetToShortString(subSubSubLord);
@@ -227,30 +227,30 @@ std::string KPSystem::generateKPTable(const std::vector<PlanetPosition>& planets
     if (!isInitialized) {
         return "Error: KP System not initialized";
     }
-    
+
     auto kpPositions = calculateAllKPPositions(planets);
-    
+
     std::ostringstream table;
     table << "\n=== KP SUB LORD 5 LEVELS SYSTEM ===\n";
     table << "Based on Krishnamurti Paddhati with Vimshottari Dasha proportions\n\n";
-    
+
     // Header
     table << std::left << std::setw(10) << "Planet"
           << std::setw(8) << "Sign"
           << std::setw(15) << "Nakshatra"
           << std::setw(8) << "Sub-L1"
-          << std::setw(8) << "Sub-L2" 
+          << std::setw(8) << "Sub-L2"
           << std::setw(8) << "Sub-L3"
           << std::setw(15) << "KP Notation"
           << std::setw(12) << "Longitude\n";
-    
+
     table << std::string(90, '-') << "\n";
-    
+
     // Planet data
     for (size_t i = 0; i < planets.size() && i < kpPositions.size(); i++) {
         const auto& planet = planets[i];
         const auto& kpPos = kpPositions[i];
-        
+
         table << std::left << std::setw(10) << planetToString(planet.planet)
               << std::setw(8) << zodiacSignToString(kpPos.sign)
               << std::setw(15) << kpPos.nakshatra.name
@@ -260,11 +260,11 @@ std::string KPSystem::generateKPTable(const std::vector<PlanetPosition>& planets
               << std::setw(15) << kpPos.getKPNotation()
               << std::setw(12) << std::fixed << std::setprecision(4) << planet.longitude << "°\n";
     }
-    
+
     table << std::string(90, '-') << "\n";
     table << "Legend: L1=Sub, L2=Sub-Sub, L3=Sub-Sub-Sub levels\n";
     table << "KP Notation: Sign-Nakshatra-SubL1-SubL2-SubL3\n";
-    
+
     return table.str();
 }
 
@@ -272,11 +272,11 @@ std::vector<KPTransition> KPSystem::findTransitions(const std::string& fromDate,
                                                    Planet planet, KPLevel level) const {
     // Convert string dates to BirthData
     BirthData fromBirth, toBirth;
-    
+
     // Parse date strings with BC era support
     parseBCDate(fromDate, fromBirth.year, fromBirth.month, fromBirth.day);
     parseBCDate(toDate, toBirth.year, toBirth.month, toBirth.day);
-    
+
     // Set default time values
     fromBirth.hour = 0;
     fromBirth.minute = 0;
@@ -284,41 +284,41 @@ std::vector<KPTransition> KPSystem::findTransitions(const std::string& fromDate,
     fromBirth.timezone = 0.0;
     fromBirth.latitude = 0.0;
     fromBirth.longitude = 0.0;
-    
+
     toBirth.hour = 23;
     toBirth.minute = 59;
     toBirth.second = 59;
     toBirth.timezone = 0.0;
     toBirth.latitude = 0.0;
     toBirth.longitude = 0.0;
-    
+
     return findTransitions(fromBirth, toBirth, planet, level);
 }
 
 std::vector<KPTransition> KPSystem::findTransitions(const BirthData& fromDate, const BirthData& toDate,
                                                    Planet planet, KPLevel level) const {
     std::vector<KPTransition> transitions;
-    
+
     if (!isInitialized) {
         lastError = "KP System not initialized";
         return transitions;
     }
-    
+
     // Calculate transitions by checking positions day by day
     double fromJD = fromDate.getJulianDay();
     double toJD = toDate.getJulianDay();
-    
+
     // Sample every 0.1 days for precision
     double step = 0.1;
     Planet previousLord = Planet::SUN; // Initialize with a default
     bool firstIteration = true;
-    
+
     for (double jd = fromJD; jd <= toJD; jd += step) {
         // Calculate planet position for this Julian Day
         double planetLongitude = calculatePlanetLongitudeForJD(jd, planet);
-        
+
         if (planetLongitude < 0) continue; // Skip if calculation failed
-        
+
         // Get the appropriate lord for the requested level
         Planet currentLord;
         if (level == KPLevel::SIGN) {
@@ -330,7 +330,7 @@ std::vector<KPTransition> KPSystem::findTransitions(const BirthData& fromDate, c
             Nakshatra nak = findNakshatra(planetLongitude);
             currentLord = findSubLord(planetLongitude, nak, static_cast<int>(level));
         }
-        
+
         // Check for transition
         if (!firstIteration && currentLord != previousLord) {
             KPTransition transition;
@@ -339,47 +339,47 @@ std::vector<KPTransition> KPSystem::findTransitions(const BirthData& fromDate, c
             transition.level = level;
             transition.fromLord = previousLord;
             transition.toLord = currentLord;
-            transition.description = "Transition from " + planetToString(previousLord) + 
+            transition.description = "Transition from " + planetToString(previousLord) +
                                    " to " + planetToString(currentLord);
-            
+
             transitions.push_back(transition);
         }
-        
+
         previousLord = currentLord;
         firstIteration = false;
     }
-    
+
     return transitions;
 }
 
 double KPSystem::calculatePlanetLongitudeForJD(double julianDay, Planet planet) const {
-    // Simplified planet calculation - in a real implementation, 
+    // Simplified planet calculation - in a real implementation,
     // this would use Swiss Ephemeris or similar
     double pos[6];
     char serr[256];
-    
+
     int planetNum = static_cast<int>(planet);
     if (planetNum > 11) return -1; // Skip minor bodies for now
-    
+
     int32 result = swe_calc_ut(julianDay, planetNum, SEFLG_SWIEPH, pos, serr);
     if (result < 0) {
         return -1; // Calculation failed
     }
-    
+
     return pos[0]; // Longitude in degrees
 }
 
 std::string KPSystem::generateTransitionTable(const std::vector<KPTransition>& transitions) const {
     std::ostringstream table;
-    
+
     table << "\n=== KP TRANSITION TABLE ===\n";
     table << "5 Levels Planetary Transitions\n\n";
-    
+
     if (transitions.empty()) {
         table << "No transitions found in the specified period.\n";
         return table.str();
     }
-    
+
     // Header
     table << std::left << std::setw(20) << "Date & Time"
           << std::setw(10) << "Planet"
@@ -387,9 +387,9 @@ std::string KPSystem::generateTransitionTable(const std::vector<KPTransition>& t
           << std::setw(12) << "From Lord"
           << std::setw(12) << "To Lord"
           << "Description\n";
-    
+
     table << std::string(80, '-') << "\n";
-    
+
     // Transition data
     for (const auto& trans : transitions) {
         table << std::left << std::setw(20) << trans.getDateString()
@@ -399,10 +399,10 @@ std::string KPSystem::generateTransitionTable(const std::vector<KPTransition>& t
               << std::setw(12) << planetToString(trans.toLord)
               << trans.description << "\n";
     }
-    
+
     table << std::string(80, '-') << "\n";
     table << "Total transitions found: " << transitions.size() << "\n";
-    
+
     return table.str();
 }
 
@@ -418,7 +418,7 @@ std::string formatKPDegree(double degree) {
     int deg = static_cast<int>(degree);
     int min = static_cast<int>((degree - deg) * 60);
     int sec = static_cast<int>(((degree - deg) * 60 - min) * 60);
-    
+
     std::ostringstream oss;
     oss << std::setfill('0') << std::setw(2) << deg << "°"
         << std::setw(2) << min << "'"
@@ -451,7 +451,7 @@ std::string KPTransition::getDateString() const {
     int year, month, day, hour, minute;
     double second;
     swe_jdet_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
-    
+
     std::ostringstream oss;
     if (year <= 0) {
         int bcYear = 1 - year;
@@ -467,7 +467,7 @@ std::string KPTransition::getDateString() const {
 }
 
 std::string KPTransition::getTransitionDescription() const {
-    return planetToString(planet) + " " + kpLevelToString(level) + 
+    return planetToString(planet) + " " + kpLevelToString(level) +
            " changes from " + planetToString(fromLord) + " to " + planetToString(toLord);
 }
 
