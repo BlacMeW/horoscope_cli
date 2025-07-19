@@ -54,6 +54,36 @@ enum class Rashi {
     TULA, VRISHCHIKA, DHANU, MAKARA, KUMBHA, MEENA
 };
 
+// Ayanamsa types for sidereal calculations
+enum class AyanamsaType {
+    LAHIRI = 1,        // Lahiri/Chitrapaksha (most common)
+    RAMAN = 2,         // B.V. Raman
+    KRISHNAMURTI = 3,  // K.S. Krishnamurti
+    YUKTESHWAR = 4,    // Sri Yukteshwar
+    JN_BHASIN = 5,     // J.N. Bhasin
+    SASSANIAN = 6,     // Sassanian
+    GALACTIC_CENTER = 7, // Galactic Center
+    TRUE_CHITRA = 8,   // True Chitra
+    TRUE_REVATI = 9,   // True Revati
+    TRUE_PUSHYA = 10   // True Pushya
+};
+
+// Calendar calculation methods
+enum class CalculationMethod {
+    DRIK_SIDDHANTA = 1,  // Accurate astronomical calculations
+    SURYA_SIDDHANTA = 2, // Traditional Surya Siddhanta
+    ARYA_SIDDHANTA = 3,  // Arya Siddhanta
+    BRAHMA_SIDDHANTA = 4, // Brahma Siddhanta
+    MODERN_MIXED = 5     // Modern mixed approach
+};
+
+// Calendar system types
+enum class CalendarSystem {
+    LUNAR_BASED = 1,     // Pure lunar calendar
+    SOLAR_BASED = 2,     // Solar calendar with lunar tithis
+    LUNI_SOLAR = 3       // Combined system (most common)
+};
+
 // Pancanga data structure
 struct PanchangaData {
     // Basic five elements
@@ -119,6 +149,7 @@ private:
     // Reference epochs
     static constexpr double KALI_EPOCH_JD = 588465.5; // Feb 18, 3102 BC
     static constexpr double SHAKA_EPOCH_JD = 1749994.5; // Mar 22, 79 AD
+    static constexpr double VIKRAM_EPOCH_JD = 1593829.5; // Chaitra 1, 57 BC
 
     // Nakshatra and star data
     struct NakshatraInfo {
@@ -166,6 +197,12 @@ private:
     // Festival and special event data
     std::map<std::string, std::vector<std::string>> festivalMap;
 
+    // Calculation configuration
+    AyanamsaType ayanamsa;
+    CalculationMethod calculationMethod;
+    CalendarSystem calendarSystem;
+    bool useModernCalculations;
+
     // Initialization
     void initializeNakshatraData();
     void initializeTithiData();
@@ -194,6 +231,18 @@ private:
     int calculateShakaYear(double julianDay) const;
     int calculateKaliYear(double julianDay) const;
 
+    // Date conversion utilities
+    double hinduDateToJulianDay(int year, int month, int day, bool isKrishna = false) const;
+    void julianDayToHinduDate(double jd, int& year, int& month, int& day, bool& isKrishna) const;
+    void julianDayToGregorianDate(double jd, int& year, int& month, int& day) const;
+
+    // Ayanamsa and calculation setup
+    void setAyanamsa(AyanamsaType type);
+    void setCalculationMethod(CalculationMethod method);
+    void setCalendarSystem(CalendarSystem system);
+    double getAyanamsaValue(double julianDay) const;
+    int getSweAyanamsaId() const;
+
     // Festival identification
     void identifyFestivals(PanchangaData& panchanga) const;
     void identifySpecialEvents(PanchangaData& panchanga) const;
@@ -206,10 +255,13 @@ private:
 
 public:
     HinduCalendar();
+    HinduCalendar(AyanamsaType ayanamsa, CalculationMethod method = CalculationMethod::DRIK_SIDDHANTA, 
+                  CalendarSystem system = CalendarSystem::LUNI_SOLAR);
     ~HinduCalendar();
 
     // Initialize the calendar system
     bool initialize();
+    bool initialize(AyanamsaType ayanamsa, CalculationMethod method = CalculationMethod::DRIK_SIDDHANTA);
 
     // Main calculation method
     PanchangaData calculatePanchanga(const BirthData& birthData) const;
@@ -250,6 +302,18 @@ public:
     std::string getVaraName(Vara vara) const;
     std::string getHinduMonthName(HinduMonth month) const;
     std::string getRashiName(Rashi rashi) const;
+
+    // Date conversion functions
+    std::string hinduDateToGregorian(int hinduYear, int hinduMonth, int hinduDay, bool isKrishna = false) const;
+    std::string gregorianDateToHindu(int gregYear, int gregMonth, int gregDay) const;
+    double gregorianDateToJulianDay(int year, int month, int day, double hour = 12.0) const;
+    
+    // Configuration getters/setters
+    AyanamsaType getAyanamsa() const { return ayanamsa; }
+    CalculationMethod getCalculationMethod() const { return calculationMethod; }
+    CalendarSystem getCalendarSystem() const { return calendarSystem; }
+    std::string getAyanamsaName() const;
+    std::string getCalculationMethodName() const;
 
     // Error handling
     std::string getLastError() const { return lastError; }

@@ -14,7 +14,17 @@ extern "C" {
 
 namespace Astro {
 
-HinduCalendar::HinduCalendar() : initialized(false) {
+HinduCalendar::HinduCalendar() : 
+    ayanamsa(AyanamsaType::LAHIRI), 
+    calculationMethod(CalculationMethod::DRIK_SIDDHANTA),
+    calendarSystem(CalendarSystem::LUNI_SOLAR),
+    useModernCalculations(true),
+    initialized(false) {
+}
+
+HinduCalendar::HinduCalendar(AyanamsaType ayanamsa, CalculationMethod method, CalendarSystem system) 
+    : ayanamsa(ayanamsa), calculationMethod(method), 
+      calendarSystem(system), useModernCalculations(true), initialized(false) {
 }
 
 HinduCalendar::~HinduCalendar() {
@@ -22,6 +32,9 @@ HinduCalendar::~HinduCalendar() {
 
 bool HinduCalendar::initialize() {
     try {
+        // Set the ayanamsa for Swiss Ephemeris
+        swe_set_sid_mode(getSweAyanamsaId(), 0, 0);
+        
         initializeNakshatraData();
         initializeTithiData();
         initializeYogaData();
@@ -34,6 +47,12 @@ bool HinduCalendar::initialize() {
         lastError = "Failed to initialize Hindu Calendar: " + std::string(e.what());
         return false;
     }
+}
+
+bool HinduCalendar::initialize(AyanamsaType ayanamsaType, CalculationMethod method) {
+    ayanamsa = ayanamsaType;
+    calculationMethod = method;
+    return initialize();
 }
 
 void HinduCalendar::initializeNakshatraData() {
@@ -372,9 +391,150 @@ double HinduCalendar::calculateKaranaEndTime(double currentPhase, double sunSpee
 
 int HinduCalendar::calculateVikramYear(double julianDay) const {
     // Vikram Samvat epoch (57 BC)
-    const double VIKRAM_EPOCH = 1593829.5; // Julian day for Chaitra 1, 57 BC
-    int year = static_cast<int>((julianDay - VIKRAM_EPOCH) / SIDEREAL_YEAR) + 1;
+    int year = static_cast<int>((julianDay - VIKRAM_EPOCH_JD) / SIDEREAL_YEAR) + 1;
     return year;
+}
+
+int HinduCalendar::calculateShakaYear(double julianDay) const {
+    // Shaka Samvat epoch (79 AD)
+    int year = static_cast<int>((julianDay - SHAKA_EPOCH_JD) / SIDEREAL_YEAR) + 1;
+    return year;
+}
+
+int HinduCalendar::calculateKaliYear(double julianDay) const {
+    // Kali Yuga epoch (3102 BC)
+    int year = static_cast<int>((julianDay - KALI_EPOCH_JD) / SIDEREAL_YEAR) + 1;
+    return year;
+}
+
+void HinduCalendar::setAyanamsa(AyanamsaType type) {
+    ayanamsa = type;
+    if (initialized) {
+        swe_set_sid_mode(getSweAyanamsaId(), 0, 0);
+    }
+}
+
+void HinduCalendar::setCalculationMethod(CalculationMethod method) {
+    calculationMethod = method;
+}
+
+void HinduCalendar::setCalendarSystem(CalendarSystem system) {
+    calendarSystem = system;
+}
+
+int HinduCalendar::getSweAyanamsaId() const {
+    switch (ayanamsa) {
+        case AyanamsaType::LAHIRI: return SE_SIDM_LAHIRI;
+        case AyanamsaType::RAMAN: return SE_SIDM_RAMAN;
+        case AyanamsaType::KRISHNAMURTI: return SE_SIDM_KRISHNAMURTI;
+        case AyanamsaType::YUKTESHWAR: return SE_SIDM_YUKTESHWAR;
+        case AyanamsaType::JN_BHASIN: return SE_SIDM_JN_BHASIN;
+        case AyanamsaType::SASSANIAN: return SE_SIDM_SASSANIAN;
+        case AyanamsaType::GALACTIC_CENTER: return SE_SIDM_GALCENT_0SAG;
+        case AyanamsaType::TRUE_CHITRA: return SE_SIDM_TRUE_CITRA;
+        case AyanamsaType::TRUE_REVATI: return SE_SIDM_TRUE_REVATI;
+        case AyanamsaType::TRUE_PUSHYA: return SE_SIDM_TRUE_PUSHYA;
+        default: return SE_SIDM_LAHIRI;
+    }
+}
+
+double HinduCalendar::getAyanamsaValue(double julianDay) const {
+    return swe_get_ayanamsa_ut(julianDay);
+}
+
+std::string HinduCalendar::getAyanamsaName() const {
+    switch (ayanamsa) {
+        case AyanamsaType::LAHIRI: return "Lahiri/Chitrapaksha";
+        case AyanamsaType::RAMAN: return "B.V. Raman";
+        case AyanamsaType::KRISHNAMURTI: return "K.S. Krishnamurti";
+        case AyanamsaType::YUKTESHWAR: return "Sri Yukteshwar";
+        case AyanamsaType::JN_BHASIN: return "J.N. Bhasin";
+        case AyanamsaType::SASSANIAN: return "Sassanian";
+        case AyanamsaType::GALACTIC_CENTER: return "Galactic Center";
+        case AyanamsaType::TRUE_CHITRA: return "True Chitra";
+        case AyanamsaType::TRUE_REVATI: return "True Revati";
+        case AyanamsaType::TRUE_PUSHYA: return "True Pushya";
+        default: return "Unknown";
+    }
+}
+
+std::string HinduCalendar::getCalculationMethodName() const {
+    switch (calculationMethod) {
+        case CalculationMethod::DRIK_SIDDHANTA: return "Drik Siddhanta (Modern Astronomical)";
+        case CalculationMethod::SURYA_SIDDHANTA: return "Surya Siddhanta";
+        case CalculationMethod::ARYA_SIDDHANTA: return "Arya Siddhanta";
+        case CalculationMethod::BRAHMA_SIDDHANTA: return "Brahma Siddhanta";
+        case CalculationMethod::MODERN_MIXED: return "Modern Mixed Approach";
+        default: return "Unknown";
+    }
+}
+
+double HinduCalendar::hinduDateToJulianDay(int year, int month, int day, bool isKrishna) const {
+    // Convert Hindu date to Julian Day
+    // This is a simplified conversion - more complex algorithms exist
+    double baseJD = VIKRAM_EPOCH_JD + (year - 1) * SIDEREAL_YEAR;
+    double monthDays = (month - 1) * 30.0; // Approximate month length
+    double dayOffset = day;
+    
+    if (isKrishna) {
+        dayOffset += 15.0; // Krishna paksha starts after day 15
+    }
+    
+    return baseJD + monthDays + dayOffset;
+}
+
+void HinduCalendar::julianDayToHinduDate(double jd, int& year, int& month, int& day, bool& isKrishna) const {
+    // Convert Julian Day to Hindu date
+    double daysSinceEpoch = jd - VIKRAM_EPOCH_JD;
+    year = static_cast<int>(daysSinceEpoch / SIDEREAL_YEAR) + 1;
+    
+    double remainingDays = std::fmod(daysSinceEpoch, SIDEREAL_YEAR);
+    month = static_cast<int>(remainingDays / 30.0) + 1;
+    
+    double dayInMonth = std::fmod(remainingDays, 30.0);
+    if (dayInMonth > 15) {
+        isKrishna = true;
+        day = static_cast<int>(dayInMonth - 15);
+    } else {
+        isKrishna = false;
+        day = static_cast<int>(dayInMonth);
+    }
+    
+    if (day == 0) day = 1; // Ensure valid day
+}
+
+void HinduCalendar::julianDayToGregorianDate(double jd, int& year, int& month, int& day) const {
+    swe_jdut1_to_utc(jd, SE_GREG_CAL, &year, &month, &day, nullptr, nullptr, nullptr);
+}
+
+double HinduCalendar::gregorianDateToJulianDay(int year, int month, int day, double hour) const {
+    return swe_julday(year, month, day, hour, SE_GREG_CAL);
+}
+
+std::string HinduCalendar::hinduDateToGregorian(int hinduYear, int hinduMonth, int hinduDay, bool isKrishna) const {
+    double jd = hinduDateToJulianDay(hinduYear, hinduMonth, hinduDay, isKrishna);
+    int year, month, day;
+    julianDayToGregorianDate(jd, year, month, day);
+    
+    std::ostringstream oss;
+    oss << year << "-";
+    if (month < 10) oss << "0";
+    oss << month << "-";
+    if (day < 10) oss << "0"; 
+    oss << day;
+    return oss.str();
+}
+
+std::string HinduCalendar::gregorianDateToHindu(int gregYear, int gregMonth, int gregDay) const {
+    double jd = gregorianDateToJulianDay(gregYear, gregMonth, gregDay);
+    int year, month, day;
+    bool isKrishna;
+    julianDayToHinduDate(jd, year, month, day, isKrishna);
+    
+    std::ostringstream oss;
+    oss << getHinduMonthName(static_cast<HinduMonth>(month)) << " " << day 
+        << " (" << (isKrishna ? "Krishna" : "Shukla") << "), " << year << " VS";
+    return oss.str();
 }
 
 void HinduCalendar::identifyFestivals(PanchangaData& panchanga) const {
@@ -472,7 +632,14 @@ std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga
     oss << "                          🕉️  HINDU PANCHANGA  🕉️\n";
     oss << "═══════════════════════════════════════════════════════════════════\n\n";
 
-    oss << "📅 DATE INFORMATION:\n";
+    oss << "� CALCULATION SETTINGS:\n";
+    oss << "   Ayanamsa: " << getAyanamsaName() << "\n";
+    oss << "   Method: " << getCalculationMethodName() << "\n";
+    oss << "   System: " << (calendarSystem == CalendarSystem::LUNAR_BASED ? "Lunar-based" : 
+                              calendarSystem == CalendarSystem::SOLAR_BASED ? "Solar-based" : 
+                              "Luni-Solar") << "\n\n";
+
+    oss << "�📅 DATE INFORMATION:\n";
     oss << "   Hindu Year (Vikram Samvat): " << panchanga.year << "\n";
     oss << "   Hindu Month: " << getHinduMonthName(panchanga.month) << "\n";
     oss << "   Paksha: " << (panchanga.isShukla ? "Shukla (Bright)" : "Krishna (Dark)") << "\n\n";
