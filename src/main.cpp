@@ -7,6 +7,7 @@
 #include "conjunction_calculator.h"
 #include "ephemeris_table.h"
 #include "kp_system.h"
+#include "location_manager.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -64,6 +65,11 @@ struct CommandLineArgs {
     bool showFeatures = false;
     bool showSolarSystemOnly = false;
     bool noDrawing = false;
+
+    // Location search options
+    std::string locationName = "";
+    std::string searchLocation = "";
+    bool listLocations = false;
 
     // New eclipse and conjunction features
     bool showEclipses = false;
@@ -235,6 +241,21 @@ void printHelp() {
     std::cout << "                       • Shows only numerical data and calculations\n";
     std::cout << "                       • Useful for data-only output or scripting\n\n";
 
+    std::cout << "    --location NAME    Search for location by name instead of coordinates\n";
+    std::cout << "                       • Use city name, e.g., \"New York\", \"London\", \"Tokyo\"\n";
+    std::cout << "                       • Automatically sets lat, lon, and timezone\n";
+    std::cout << "                       • Supports major world cities\n\n";
+
+    std::cout << "    --search-location NAME  Search and list matching locations\n";
+    std::cout << "                       • Shows all locations matching the search term\n";
+    std::cout << "                       • Displays coordinates and timezone info\n";
+    std::cout << "                       • No calculations performed\n\n";
+
+    std::cout << "    --list-locations   Show all available predefined locations\n";
+    std::cout << "                       • Lists major cities with coordinates\n";
+    std::cout << "                       • Useful for finding exact spelling\n";
+    std::cout << "                       • No calculations performed\n\n";
+
     std::cout << "    --ephe-path PATH   Custom path to Swiss Ephemeris data files\n";
     std::cout << "                       • Default: ./data/\n";
     std::cout << "                       • Required files: seas_18.se1, semo_18.se1, etc.\n\n";
@@ -271,6 +292,21 @@ void printHelp() {
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
     std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
     std::cout << "                --no-drawing\n\n";
+
+    std::cout << "LOCATION-BASED CHARTS 🌍\n";
+    std::cout << "  # Use city name instead of coordinates\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --location \"New York\"\n\n";
+
+    std::cout << "  # Birth in London using location name\n";
+    std::cout << "  horoscope_cli --date 1985-06-20 --time 09:15:30 \\\n";
+    std::cout << "                --location \"London\" --chart-style north-indian\n\n";
+
+    std::cout << "  # Search for available locations\n";
+    std::cout << "  horoscope_cli --search-location \"Paris\"\n\n";
+
+    std::cout << "  # List all available cities\n";
+    std::cout << "  horoscope_cli --list-locations\n\n";
 
     std::cout << "HISTORICAL CHARTS (BC Era) 🏛️\n";
     std::cout << "  # Julius Caesar's assassination (44 BC)\n";
@@ -551,6 +587,12 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.showSolarSystemOnly = true;
         } else if (arg == "--no-drawing") {
             args.noDrawing = true;
+        } else if (arg == "--location" && i + 1 < argc) {
+            args.locationName = argv[++i];
+        } else if (arg == "--search-location" && i + 1 < argc) {
+            args.searchLocation = argv[++i];
+        } else if (arg == "--list-locations") {
+            args.listLocations = true;
         } else if (arg == "--eclipses") {
             args.showEclipses = true;
         } else if (arg == "--eclipse-range" && i + 2 < argc) {
@@ -631,17 +673,19 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
 }
 
 bool validateArgs(const CommandLineArgs& args) {
-    if (args.showHelp || args.showVersion || args.showFeatures || args.showSolarSystemOnly) {
+    if (args.showHelp || args.showVersion || args.showFeatures || args.showSolarSystemOnly ||
+        args.listLocations || !args.searchLocation.empty()) {
         return true;
     }
 
     // Eclipse and ephemeris features can work without full birth data
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions) {
-        // For eclipse and conjunction range queries, we need coordinates
+        // For eclipse and conjunction range queries, we need coordinates (can come from location)
         if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty()) &&
+            args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
              args.longitude < -180.0 || args.longitude > 180.0)) {
-            std::cerr << "Error: Valid latitude (-90 to 90) and longitude (-180 to 180) required for eclipse/conjunction searches\n";
+            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction searches\n";
             return false;
         }
 
@@ -666,18 +710,22 @@ bool validateArgs(const CommandLineArgs& args) {
         return false;
     }
 
-    if (args.latitude < -90.0 || args.latitude > 90.0) {
-        std::cerr << "Error: Latitude must be between -90 and 90 degrees\n";
+    // Coordinates can come from location or direct input
+    if (args.locationName.empty() &&
+        (args.latitude < -90.0 || args.latitude > 90.0)) {
+        std::cerr << "Error: Valid latitude (-90 to 90) or location (--location) required\n";
         return false;
     }
 
-    if (args.longitude < -180.0 || args.longitude > 180.0) {
-        std::cerr << "Error: Longitude must be between -180 and 180 degrees\n";
+    if (args.locationName.empty() &&
+        (args.longitude < -180.0 || args.longitude > 180.0)) {
+        std::cerr << "Error: Valid longitude (-180 to 180) or location (--location) required\n";
         return false;
     }
 
-    if (args.timezone < -12.0 || args.timezone > 14.0) {
-        std::cerr << "Error: Timezone must be between -12 and +14 hours\n";
+    if (args.locationName.empty() &&
+        (args.timezone < -12.0 || args.timezone > 14.0)) {
+        std::cerr << "Error: Valid timezone (-12 to +14) or location (--location) required\n";
         return false;
     }
 
@@ -704,6 +752,56 @@ int main(int argc, char* argv[]) {
     if (args.showFeatures) {
         printFeatures();
         return 0;
+    }
+
+    // Handle location search operations
+    LocationManager locationManager;
+
+    if (args.listLocations) {
+        std::cout << "Available Predefined Locations:\n";
+        std::cout << std::string(80, '=') << std::endl;
+        auto locations = locationManager.getAllLocations();
+        for (const auto& location : locations) {
+            std::cout << "📍 " << location.name << " (" << location.country << ")\n";
+            std::cout << "   Coordinates: " << location.latitude << "°, " << location.longitude << "°\n";
+            std::cout << "   Timezone: UTC" << (location.timezone >= 0 ? "+" : "") << location.timezone << "\n\n";
+        }
+        return 0;
+    }
+
+    if (!args.searchLocation.empty()) {
+        std::cout << "Searching for locations matching: \"" << args.searchLocation << "\"\n";
+        std::cout << std::string(80, '=') << std::endl;
+        auto matches = locationManager.searchLocations(args.searchLocation);
+        if (matches.empty()) {
+            std::cout << "No locations found matching \"" << args.searchLocation << "\"\n";
+            std::cout << "Try using --list-locations to see all available locations.\n";
+        } else {
+            for (const auto& location : matches) {
+                std::cout << "📍 " << location.name << " (" << location.country << ")\n";
+                std::cout << "   Coordinates: " << location.latitude << "°, " << location.longitude << "°\n";
+                std::cout << "   Timezone: UTC" << (location.timezone >= 0 ? "+" : "") << location.timezone << "\n\n";
+            }
+        }
+        return 0;
+    }
+
+    // Resolve location if specified
+    if (!args.locationName.empty()) {
+        auto location = locationManager.getLocationByName(args.locationName);
+        if (!location.name.empty()) {
+            args.latitude = location.latitude;
+            args.longitude = location.longitude;
+            args.timezone = location.timezone;
+            std::cout << "🌍 Using location: " << location.name << " (" << location.country << ")\n";
+            std::cout << "   Coordinates: " << location.latitude << "°, " << location.longitude << "°\n";
+            std::cout << "   Timezone: UTC" << (location.timezone >= 0 ? "+" : "") << location.timezone << "\n\n";
+        } else {
+            std::cerr << "Error: Location \"" << args.locationName << "\" not found\n";
+            std::cerr << "Use --search-location \"" << args.locationName << "\" to find similar locations\n";
+            std::cerr << "Or use --list-locations to see all available locations\n";
+            return 1;
+        }
     }
 
     if (!validateArgs(args)) {
