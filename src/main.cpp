@@ -3,12 +3,19 @@
 #include "eastern_chart_drawer.h"
 #include "western_chart_drawer.h"
 #include "solar_system_drawer.h"
+#include "eclipse_calculator.h"
+#include "conjunction_calculator.h"
+#include "ephemeris_table.h"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <map>
 #include <cstring>
 #include <cstdlib>
+#include <chrono>
+#include <ctime>
+#include <chrono>
+#include <ctime>
 
 using namespace Astro;
 
@@ -34,6 +41,22 @@ struct CommandLineArgs {
     bool showHelp = false;
     bool showVersion = false;
     bool showSolarSystemOnly = false;
+
+    // New eclipse and conjunction features
+    bool showEclipses = false;
+    bool showConjunctions = false;
+    bool showEphemerisTable = false;
+    std::string eclipseFromDate;
+    std::string eclipseToDate;
+    int eclipseYearsBefore = 1;
+    int eclipseYearsAfter = 1;
+    std::string conjunctionFromDate;
+    std::string conjunctionToDate;
+    double conjunctionMaxOrb = 3.0;
+    std::string ephemerisFromDate;
+    std::string ephemerisToDate;
+    int ephemerisIntervalDays = 1;
+    std::string ephemerisFormat = "table";
 };
 
 void printHelp() {
@@ -45,12 +68,27 @@ void printHelp() {
     std::cout << "  --lat LATITUDE     Latitude in decimal degrees (-90 to 90)\n";
     std::cout << "  --lon LONGITUDE    Longitude in decimal degrees (-180 to 180)\n";
     std::cout << "  --timezone HOURS   Timezone offset from UTC in hours\n\n";
-    std::cout << "Optional:\n";
+    std::cout << "Chart Options:\n";
     std::cout << "  --house-system SYS House system: P=Placidus, K=Koch, E=Equal, W=Whole Sign,\n";
     std::cout << "                     C=Campanus, R=Regiomontanus (default: P)\n";
     std::cout << "  --output FORMAT    Output format: text or json (default: text)\n";
     std::cout << "  --chart-style STY  Chart style: western, north-indian, south-indian, east-indian, solar-system (default: western)\n";
-    std::cout << "  --perspective PER  Solar system perspective: heliocentric, geocentric, mars-centric, jupiter-centric, saturn-centric (default: heliocentric)\n";
+    std::cout << "  --perspective PER  Solar system perspective: heliocentric, geocentric, mars-centric, jupiter-centric, saturn-centric (default: heliocentric)\n\n";
+    std::cout << "Eclipse Options:\n";
+    std::cout << "  --eclipses         Show eclipses near birth date\n";
+    std::cout << "  --eclipse-range FROM TO  Show eclipses in date range (YYYY-MM-DD format)\n";
+    std::cout << "  --eclipse-years-before N Years before birth to search (default: 1)\n";
+    std::cout << "  --eclipse-years-after N  Years after birth to search (default: 1)\n\n";
+    std::cout << "Conjunction Options:\n";
+    std::cout << "  --conjunctions     Show planetary conjunctions near birth date\n";
+    std::cout << "  --conjunction-range FROM TO  Show conjunctions in date range (YYYY-MM-DD format)\n";
+    std::cout << "  --conjunction-orb DEGREES    Maximum orb for conjunctions (default: 3.0)\n\n";
+    std::cout << "Ephemeris Table Options:\n";
+    std::cout << "  --ephemeris        Generate ephemeris table\n";
+    std::cout << "  --ephemeris-range FROM TO    Date range for ephemeris (YYYY-MM-DD format)\n";
+    std::cout << "  --ephemeris-interval DAYS    Interval between entries (default: 1)\n";
+    std::cout << "  --ephemeris-format FORMAT    Format: table, csv, json (default: table)\n\n";
+    std::cout << "General Options:\n";
     std::cout << "  --ephe-path PATH   Path to Swiss Ephemeris data files\n";
     std::cout << "  --solar-system     Show just the solar system orbital paths (no birth data needed)\n";
     std::cout << "  --help, -h         Show this help message\n";
@@ -58,13 +96,11 @@ void printHelp() {
     std::cout << "Examples:\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5\n";
     std::cout << "  horoscope_cli --date 1985-06-20 --time 09:15:30 --lat 51.5074 --lon -0.1278 --timezone 1 --house-system K\n";
-    std::cout << "  horoscope_cli --date 1975-12-03 --time 22:45:00 --lat -33.8688 --lon 151.2093 --timezone 10 --output json\n";
-    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style north-indian\n";
-    std::cout << "  horoscope_cli --date 1985-06-20 --time 09:15:30 --lat 51.5074 --lon -0.1278 --timezone 1 --chart-style south-indian\n";
-    std::cout << "  horoscope_cli --date 1869-10-02 --time 07:45:00 --lat 21.6416 --lon 69.6293 --timezone 5.5 --chart-style east-indian\n";
-    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --eclipses\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --conjunctions --conjunction-orb 2.0\n";
+    std::cout << "  horoscope_cli --ephemeris --ephemeris-range 2025-01-01 2025-01-31 --ephemeris-format csv\n";
+    std::cout << "  horoscope_cli --eclipse-range 2024-01-01 2024-12-31 --lat 40.7128 --lon -74.0060\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system --perspective geocentric\n";
-    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 --lat 40.7128 --lon -74.0060 --timezone -5 --chart-style solar-system --perspective mars-centric\n";
     std::cout << "  horoscope_cli --solar-system\n";
 }
 
@@ -182,6 +218,58 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--solar-system") {
             args.showSolarSystemOnly = true;
+        } else if (arg == "--eclipses") {
+            args.showEclipses = true;
+        } else if (arg == "--eclipse-range" && i + 2 < argc) {
+            args.eclipseFromDate = argv[++i];
+            args.eclipseToDate = argv[++i];
+            args.showEclipses = true;
+        } else if (arg == "--eclipse-years-before" && i + 1 < argc) {
+            try {
+                args.eclipseYearsBefore = std::stoi(argv[++i]);
+            } catch (const std::exception&) {
+                std::cerr << "Error: Invalid eclipse years before value\n";
+                return false;
+            }
+        } else if (arg == "--eclipse-years-after" && i + 1 < argc) {
+            try {
+                args.eclipseYearsAfter = std::stoi(argv[++i]);
+            } catch (const std::exception&) {
+                std::cerr << "Error: Invalid eclipse years after value\n";
+                return false;
+            }
+        } else if (arg == "--conjunctions") {
+            args.showConjunctions = true;
+        } else if (arg == "--conjunction-range" && i + 2 < argc) {
+            args.conjunctionFromDate = argv[++i];
+            args.conjunctionToDate = argv[++i];
+            args.showConjunctions = true;
+        } else if (arg == "--conjunction-orb" && i + 1 < argc) {
+            try {
+                args.conjunctionMaxOrb = std::stod(argv[++i]);
+            } catch (const std::exception&) {
+                std::cerr << "Error: Invalid conjunction orb value\n";
+                return false;
+            }
+        } else if (arg == "--ephemeris") {
+            args.showEphemerisTable = true;
+        } else if (arg == "--ephemeris-range" && i + 2 < argc) {
+            args.ephemerisFromDate = argv[++i];
+            args.ephemerisToDate = argv[++i];
+            args.showEphemerisTable = true;
+        } else if (arg == "--ephemeris-interval" && i + 1 < argc) {
+            try {
+                args.ephemerisIntervalDays = std::stoi(argv[++i]);
+            } catch (const std::exception&) {
+                std::cerr << "Error: Invalid ephemeris interval value\n";
+                return false;
+            }
+        } else if (arg == "--ephemeris-format" && i + 1 < argc) {
+            args.ephemerisFormat = argv[++i];
+            if (args.ephemerisFormat != "table" && args.ephemerisFormat != "csv" && args.ephemerisFormat != "json") {
+                std::cerr << "Error: Ephemeris format must be 'table', 'csv', or 'json'\n";
+                return false;
+            }
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -193,6 +281,27 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
 
 bool validateArgs(const CommandLineArgs& args) {
     if (args.showHelp || args.showVersion || args.showSolarSystemOnly) {
+        return true;
+    }
+
+    // Eclipse and ephemeris features can work without full birth data
+    if (args.showEclipses || args.showConjunctions || args.showEphemerisTable) {
+        // For eclipse and conjunction range queries, we need coordinates
+        if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty()) &&
+            (args.latitude < -90.0 || args.latitude > 90.0 ||
+             args.longitude < -180.0 || args.longitude > 180.0)) {
+            std::cerr << "Error: Valid latitude (-90 to 90) and longitude (-180 to 180) required for eclipse/conjunction searches\n";
+            return false;
+        }
+
+        // For ephemeris tables, coordinates are optional
+        // For birth-related eclipse searches, we need birth data
+        if (args.showEclipses && args.eclipseFromDate.empty() &&
+            (args.date.empty() || args.time.empty())) {
+            std::cerr << "Error: Birth date and time required for eclipse searches around birth\n";
+            return false;
+        }
+
         return true;
     }
 
@@ -243,6 +352,167 @@ int main(int argc, char* argv[]) {
 
     if (!validateArgs(args)) {
         std::cerr << "Use --help for usage information\n";
+        return 1;
+    }
+
+    try {
+        // Initialize ephemeris for special features
+        EphemerisManager ephemerisManager;
+        ephemerisManager.initialize(args.ephemerisPath);
+
+        // Handle eclipse calculations
+        if (args.showEclipses) {
+            EclipseCalculator eclipseCalc;
+
+            std::string fromDate = args.eclipseFromDate;
+            std::string toDate = args.eclipseToDate;
+
+            // If no range specified, use birth date
+            if (fromDate.empty()) {
+                fromDate = args.date;
+                // Default to 1 year after birth if no end date
+                if (toDate.empty()) {
+                    struct tm tm = {};
+                    if (strptime(fromDate.c_str(), "%Y-%m-%d", &tm)) {
+                        tm.tm_year += 1;  // Add 1 year
+                        char buffer[16];
+                        strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm);
+                        toDate = std::string(buffer);
+                    }
+                }
+            }
+
+            if (toDate.empty()) {
+                // Default to 1 year from start date
+                struct tm tm = {};
+                if (strptime(fromDate.c_str(), "%Y-%m-%d", &tm)) {
+                    tm.tm_year += 1;
+                    char buffer[16];
+                    strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm);
+                    toDate = std::string(buffer);
+                }
+            }
+
+            std::vector<EclipseEvent> eclipses = eclipseCalc.findEclipses(fromDate, toDate, args.latitude, args.longitude);
+
+            std::cout << "\nEclipse Events (" << fromDate << " to " << toDate << "):\n";
+            std::cout << std::string(80, '=') << std::endl;
+
+            for (const auto& eclipse : eclipses) {
+                eclipseCalc.printEclipseEvent(eclipse);
+                std::cout << std::string(80, '-') << std::endl;
+            }
+
+            if (eclipses.empty()) {
+                std::cout << "No eclipses found in the specified period.\n";
+            }
+        }
+
+        // Handle conjunction calculations
+        if (args.showConjunctions) {
+            ConjunctionCalculator conjCalc;
+            conjCalc.setMaximumOrb(args.conjunctionMaxOrb);
+
+            std::string fromDate = args.conjunctionFromDate;
+            std::string toDate = args.conjunctionToDate;
+
+            // If no range specified, use birth date
+            if (fromDate.empty()) {
+                fromDate = args.date;
+                if (toDate.empty()) {
+                    struct tm tm = {};
+                    if (strptime(fromDate.c_str(), "%Y-%m-%d", &tm)) {
+                        tm.tm_year += 1;  // Add 1 year
+                        char buffer[16];
+                        strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm);
+                        toDate = std::string(buffer);
+                    }
+                }
+            }
+
+            if (toDate.empty()) {
+                struct tm tm = {};
+                if (strptime(fromDate.c_str(), "%Y-%m-%d", &tm)) {
+                    tm.tm_year += 1;
+                    char buffer[16];
+                    strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm);
+                    toDate = std::string(buffer);
+                }
+            }
+
+            std::vector<ConjunctionEvent> conjunctions = conjCalc.findConjunctions(fromDate, toDate);
+
+            std::cout << "\nPlanetary Conjunctions (" << fromDate << " to " << toDate << "):\n";
+            std::cout << "Orb: " << args.conjunctionMaxOrb << "°\n";
+            std::cout << std::string(80, '=') << std::endl;
+
+            for (const auto& conjunction : conjunctions) {
+                conjCalc.printConjunctionEvent(conjunction);
+                std::cout << std::string(80, '-') << std::endl;
+            }
+
+            if (conjunctions.empty()) {
+                std::cout << "No conjunctions found in the specified period.\n";
+            }
+        }
+
+        // Handle ephemeris table generation
+        if (args.showEphemerisTable) {
+            EphemerisTable ephemTable;
+
+            // Initialize ephemeris table
+            if (!ephemTable.initialize(args.ephemerisPath.empty() ? "data" : args.ephemerisPath)) {
+                std::cerr << "Error: Failed to initialize ephemeris table" << std::endl;
+                return 1;
+            }
+
+            std::string fromDate = args.ephemerisFromDate;
+            std::string toDate = args.ephemerisToDate;
+
+            // Default to current month if no dates specified
+            if (fromDate.empty()) {
+                auto now = std::chrono::system_clock::now();
+                auto time_t = std::chrono::system_clock::to_time_t(now);
+                struct tm* tm = gmtime(&time_t);
+
+                char buffer[16];
+                strftime(buffer, sizeof(buffer), "%Y-%m-01", tm);
+                fromDate = std::string(buffer);
+
+                if (toDate.empty()) {
+                    tm->tm_mon += 1;
+                    if (tm->tm_mon > 11) {
+                        tm->tm_mon = 0;
+                        tm->tm_year++;
+                    }
+                    strftime(buffer, sizeof(buffer), "%Y-%m-01", tm);
+                    toDate = std::string(buffer);
+                }
+            }
+
+            // Generate ephemeris table
+            std::string result;
+            if (args.ephemerisFormat == "csv") {
+                result = ephemTable.generateCSVTable(fromDate, toDate, args.ephemerisIntervalDays);
+            } else if (args.ephemerisFormat == "json") {
+                result = ephemTable.generateJSONTable(fromDate, toDate, args.ephemerisIntervalDays);
+            } else {
+                result = ephemTable.generateTable(fromDate, toDate, args.ephemerisIntervalDays);
+            }
+
+            if (!result.empty()) {
+                std::cout << result << std::endl;
+            } else {
+                std::cout << "Failed to generate ephemeris table" << std::endl;
+            }
+        }
+
+        // Return early if only special features were requested
+        if (args.showEclipses || args.showConjunctions || args.showEphemerisTable) {
+            return 0;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error in astronomical calculations: " << e.what() << std::endl;
         return 1;
     }
 
