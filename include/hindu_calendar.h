@@ -291,6 +291,8 @@ public:
     // Output formatting
     std::string generatePanchangaTable(const PanchangaData& panchanga) const;
     std::string generatePanchangaTable(const std::vector<PanchangaData>& panchangaList) const;
+    std::string generatePanchangaTableFormat(const std::vector<PanchangaData>& panchangaList,
+                                           const std::vector<double>& julianDays) const;
     std::string generateJSON(const PanchangaData& panchanga) const;
     std::string generateCSV(const std::vector<PanchangaData>& panchangaList) const;
 

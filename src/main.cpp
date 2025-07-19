@@ -277,6 +277,7 @@ void printHelp() {
     std::cout << "    --panchanga-format FORMAT\n";
     std::cout << "                       Panchanga output format\n";
     std::cout << "                       table = Detailed ASCII table (default)\n";
+    std::cout << "                       compact = Traditional tabular format (like Pancanga3.14.pl)\n";
     std::cout << "                       csv   = Comma-separated values\n";
     std::cout << "                       json  = JSON structure\n\n";
 
@@ -780,8 +781,9 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.showPanchangaRange = true;
         } else if (arg == "--panchanga-format" && i + 1 < argc) {
             args.panchangaFormat = argv[++i];
-            if (args.panchangaFormat != "table" && args.panchangaFormat != "csv" && args.panchangaFormat != "json") {
-                std::cerr << "Error: Panchanga format must be 'table', 'csv', or 'json'\n";
+            if (args.panchangaFormat != "table" && args.panchangaFormat != "compact" &&
+                args.panchangaFormat != "csv" && args.panchangaFormat != "json") {
+                std::cerr << "Error: Panchanga format must be 'table', 'compact', 'csv', or 'json'\n";
                 return false;
             }
         } else if (arg == "--festivals-only") {
@@ -1264,6 +1266,24 @@ int main(int argc, char* argv[]) {
                         std::cout << "\n";
                     }
                     std::cout << "]\n";
+                } else if (args.panchangaFormat == "compact") {
+                    // Generate Julian days for compact format - simple calculation
+                    std::vector<double> julianDays;
+
+                    // Parse start date
+                    int startYear = std::stoi(fromDate.substr(0, 4));
+                    int startMonth = std::stoi(fromDate.substr(5, 2));
+                    int startDay = std::stoi(fromDate.substr(8, 2));
+
+                    // Simple Julian day calculation for demonstration
+                    double startJD = 2451545.0 + (startYear - 2000) * 365.25 + (startMonth - 1) * 30.4 + startDay - 1;
+
+                    for (size_t i = 0; i < panchangaList.size(); ++i) {
+                        julianDays.push_back(startJD + i);
+                    }
+
+                    std::string result = hinduCalendar.generatePanchangaTableFormat(panchangaList, julianDays);
+                    std::cout << result << std::endl;
                 } else {
                     std::string result = hinduCalendar.generatePanchangaTable(panchangaList);
                     std::cout << result << std::endl;
