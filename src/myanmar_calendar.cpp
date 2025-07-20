@@ -150,7 +150,12 @@ void MyanmarCalendar::calculateMyanmarYear(long my, long& myt, long& tg1, long& 
 
 // Julian day number to Myanmar date - yan9a/mmcal algorithm
 void MyanmarCalendar::julianToMyanmar(double jd, long& myt, long& my, long& mm, long& md) {
-    long jdn = static_cast<long>(round(jd)); // convert jdn to integer
+    // Apply Myanmar timezone offset (UTC+6.5) + additional 0.5 day adjustment
+    // This matches the yan9a/mmcal expectation for jdn_mm (Julian Day Number for MMT)
+    double myanmarJD = jd + 6.5 / 24.0 + 0.5;
+
+    // Convert jdn to integer - exact match with yan9a/mmcal algorithm
+    long jdn = static_cast<long>(round(myanmarJD)); // convert jdn to integer
     double SY = SOLAR_YEAR; // solar year (365.2587565)
     double MO = MYANMAR_EPOCH; // beginning of 0 ME
     long dd, myl, mmt, a, b, c, e, f;
@@ -401,7 +406,7 @@ MyanmarCalendarData MyanmarCalendar::calculateMyanmarCalendar(const BirthData& b
         throw std::runtime_error("Myanmar calendar not initialized");
     }
 
-    // Convert birth data to Julian Day
+    // Convert birth data to Julian Day (in UTC)
     double jd = birthData.getJulianDay();
 
     return calculateMyanmarCalendar(jd);

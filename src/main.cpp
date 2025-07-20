@@ -2987,7 +2987,11 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        MyanmarCalendarData myanmarData = myanmarCalendar.calculateMyanmarDate(birthData);
+        // Create a copy of birthData with Myanmar timezone for accurate calendar calculation
+        BirthData myanmarBirthData = birthData;
+        myanmarBirthData.timezone = 6.5; // Myanmar Standard Time (UTC+6:30)
+
+        MyanmarCalendarData myanmarData = myanmarCalendar.calculateMyanmarDate(myanmarBirthData);
 
         if (args.myanmarCalendarFormat == "json") {
             std::cout << myanmarCalendar.generateJSON(myanmarData) << std::endl;
