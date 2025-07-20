@@ -108,6 +108,23 @@ struct CommandLineArgs {
     std::string panchangaFormat = "table";
     bool showFestivalsOnly = false;
 
+    // Hindu Calendar Search options
+    bool showHinduSearch = false;
+    int searchYear = -1;
+    int searchYearStart = -1;
+    int searchYearEnd = -1;
+    int searchMonth = -1;
+    int searchMonthStart = -1;
+    int searchMonthEnd = -1;
+    int searchTithi = -1;
+    int searchTithiStart = -1;
+    int searchTithiEnd = -1;
+    int searchWeekday = -1;
+    bool searchExactMatch = true;
+    int searchNearTolerance = 1;
+    std::string searchStartDate;
+    std::string searchEndDate;
+
     // Myanmar Calendar options
     bool showMyanmarCalendar = false;
     bool showMyanmarCalendarRange = false;
@@ -286,6 +303,39 @@ void printHelp() {
     std::cout << "                       • Filters output to show religious observances\n";
     std::cout << "                       • Includes Ekadashi, Purnima, Amavasya\n";
     std::cout << "                       • Shows major Hindu festivals\n\n";
+
+    std::cout << "HINDU CALENDAR SEARCH OPTIONS 🔍🕉️\n";
+    std::cout << "    --hindu-search FROM TO  Search Hindu calendar by criteria\n";
+    std::cout << "                            • Format: YYYY-MM-DD YYYY-MM-DD (date range)\n";
+    std::cout << "                            • Combine with search criteria below\n";
+    std::cout << "                            • Results sorted by match score\n\n";
+
+    std::cout << "    --search-year YEAR      Search for specific year\n";
+    std::cout << "                            • Example: --search-year 2025\n\n";
+
+    std::cout << "    --search-year-range START END  Search for year range\n";
+    std::cout << "                                    • Example: --search-year-range 2025 2027\n\n";
+
+    std::cout << "    --search-month MONTH    Search for specific month (1-12)\n";
+    std::cout << "                            • Example: --search-month 5 (May)\n\n";
+
+    std::cout << "    --search-month-range START END  Search for month range (1-12)\n";
+    std::cout << "                                     • Example: --search-month-range 4 6\n\n";
+
+    std::cout << "    --search-tithi TITHI    Search for specific tithi (1-30)\n";
+    std::cout << "                            • 1-15: Shukla Paksha, 16-30: Krishna Paksha\n";
+    std::cout << "                            • Example: --search-tithi 15 (Purnima)\n\n";
+
+    std::cout << "    --search-tithi-range START END  Search for tithi range (1-30)\n";
+    std::cout << "                                     • Example: --search-tithi-range 14 16\n\n";
+
+    std::cout << "    --search-weekday DAY    Search for specific weekday (0-6)\n";
+    std::cout << "                            • 0=Sunday, 1=Monday, ..., 6=Saturday\n";
+    std::cout << "                            • Example: --search-weekday 0 (Sundays)\n\n";
+
+    std::cout << "    --search-exact          Use exact matching (default)\n";
+    std::cout << "    --search-near TOL       Use near matching with tolerance\n";
+    std::cout << "                            • Example: --search-near 2\n\n";
 
     std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
     std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
@@ -790,6 +840,34 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--festivals-only") {
             args.showFestivalsOnly = true;
 
+        // Hindu Calendar Search options
+        } else if (arg == "--hindu-search" && i + 2 < argc) {
+            args.showHinduSearch = true;
+            args.searchStartDate = argv[++i];
+            args.searchEndDate = argv[++i];
+        } else if (arg == "--search-year" && i + 1 < argc) {
+            args.searchYear = std::stoi(argv[++i]);
+        } else if (arg == "--search-year-range" && i + 2 < argc) {
+            args.searchYearStart = std::stoi(argv[++i]);
+            args.searchYearEnd = std::stoi(argv[++i]);
+        } else if (arg == "--search-month" && i + 1 < argc) {
+            args.searchMonth = std::stoi(argv[++i]);
+        } else if (arg == "--search-month-range" && i + 2 < argc) {
+            args.searchMonthStart = std::stoi(argv[++i]);
+            args.searchMonthEnd = std::stoi(argv[++i]);
+        } else if (arg == "--search-tithi" && i + 1 < argc) {
+            args.searchTithi = std::stoi(argv[++i]);
+        } else if (arg == "--search-tithi-range" && i + 2 < argc) {
+            args.searchTithiStart = std::stoi(argv[++i]);
+            args.searchTithiEnd = std::stoi(argv[++i]);
+        } else if (arg == "--search-weekday" && i + 1 < argc) {
+            args.searchWeekday = std::stoi(argv[++i]);
+        } else if (arg == "--search-exact") {
+            args.searchExactMatch = true;
+        } else if (arg == "--search-near" && i + 1 < argc) {
+            args.searchExactMatch = false;
+            args.searchNearTolerance = std::stoi(argv[++i]);
+
         // Myanmar Calendar options
         } else if (arg == "--myanmar-calendar") {
             args.showMyanmarCalendar = true;
@@ -862,16 +940,16 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    // Eclipse, ephemeris, panchanga, and Myanmar calendar features can work without full birth data
+    // Eclipse, ephemeris, panchanga, Myanmar calendar, and Hindu search features can work without full birth data
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
-        args.showPanchangaRange || args.showMyanmarCalendarRange) {
+        args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
         if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() ||
-             !args.myanmarCalendarFromDate.empty()) &&
+             !args.myanmarCalendarFromDate.empty() || !args.searchStartDate.empty()) &&
             args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
              args.longitude < -180.0 || args.longitude > 180.0)) {
-            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar searches\n";
+            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar/Hindu search\n";
             return false;
         }
 
@@ -1294,6 +1372,118 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Handle Hindu Calendar Search
+        if (args.showHinduSearch) {
+            HinduCalendar hinduCalendar;
+            if (!hinduCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Hindu Calendar system: " << hinduCalendar.getLastError() << std::endl;
+                return 1;
+            }
+
+            std::string fromDate = args.searchStartDate;
+            std::string toDate = args.searchEndDate;
+
+            if (fromDate.empty() || toDate.empty()) {
+                std::cerr << "Error: Hindu calendar search requires --hindu-search FROM TO dates" << std::endl;
+                return 1;
+            }
+
+            // Build search criteria
+            HinduCalendar::SearchCriteria criteria;
+            criteria.searchStartDate = fromDate;
+            criteria.searchEndDate = toDate;
+            criteria.exactMatch = args.searchExactMatch;
+            criteria.nearMatchTolerance = args.searchNearTolerance;
+
+            // Set search parameters
+            if (args.searchYear > 0) {
+                criteria.exactYear = args.searchYear;
+            } else if (args.searchYearStart > 0) {
+                criteria.yearRangeStart = args.searchYearStart;
+                criteria.yearRangeEnd = args.searchYearEnd;
+            }
+
+            if (args.searchMonth > 0) {
+                criteria.exactMonth = args.searchMonth;
+            } else if (args.searchMonthStart > 0) {
+                criteria.monthRangeStart = args.searchMonthStart;
+                criteria.monthRangeEnd = args.searchMonthEnd;
+            }
+
+            if (args.searchTithi > 0) {
+                criteria.exactTithi = args.searchTithi;
+            } else if (args.searchTithiStart > 0) {
+                criteria.tithiRangeStart = args.searchTithiStart;
+                criteria.tithiRangeEnd = args.searchTithiEnd;
+            }
+
+            if (args.searchWeekday >= 0) {
+                criteria.exactWeekday = args.searchWeekday;
+            }
+
+            // Perform search
+            std::vector<HinduCalendar::SearchResult> searchResults = hinduCalendar.searchHinduCalendar(criteria, args.latitude, args.longitude);
+
+            if (!searchResults.empty()) {
+                std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
+                std::cout << "═══════════════════════════════════════════════\n\n";
+                std::cout << "Found " << searchResults.size() << " matching dates\n";
+                std::cout << "Search criteria: ";
+
+                bool first = true;
+                if (criteria.exactYear > 0) {
+                    if (!first) std::cout << ", ";
+                    std::cout << "Year=" << criteria.exactYear;
+                    first = false;
+                } else if (criteria.yearRangeStart > 0) {
+                    if (!first) std::cout << ", ";
+                    std::cout << "Year=" << criteria.yearRangeStart << "-" << criteria.yearRangeEnd;
+                    first = false;
+                }
+                if (criteria.exactMonth > 0) {
+                    if (!first) std::cout << ", ";
+                    std::cout << "Month=" << criteria.exactMonth;
+                    first = false;
+                } else if (criteria.monthRangeStart > 0) {
+                    if (!first) std::cout << ", ";
+                    std::cout << "Month=" << criteria.monthRangeStart << "-" << criteria.monthRangeEnd;
+                    first = false;
+                }
+                if (criteria.exactTithi > 0) {
+                    if (!first) std::cout << ", ";
+                    std::cout << "Tithi=" << criteria.exactTithi;
+                    first = false;
+                } else if (criteria.tithiRangeStart > 0) {
+                    if (!first) std::cout << ", ";
+                    std::cout << "Tithi=" << criteria.tithiRangeStart << "-" << criteria.tithiRangeEnd;
+                    first = false;
+                }
+                if (criteria.exactWeekday >= 0) {
+                    if (!first) std::cout << ", ";
+                    std::string weekdayNames[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+                    std::cout << "Weekday=" << weekdayNames[criteria.exactWeekday];
+                    first = false;
+                }
+                std::cout << "\n";
+                std::cout << "Match type: " << (criteria.exactMatch ? "Exact" : "Near (tolerance=" + std::to_string(criteria.nearMatchTolerance) + ")") << "\n\n";
+
+                for (size_t i = 0; i < searchResults.size(); ++i) {
+                    const auto& result = searchResults[i];
+                    std::cout << "Result #" << (i + 1) << " (Score: " << result.matchScore << ")\n";
+                    std::cout << "Date: " << result.gregorianDate << "\n";
+                    std::cout << hinduCalendar.generatePanchangaTable(result.panchangaData) << "\n";
+                    if (i < searchResults.size() - 1) {
+                        std::cout << "───────────────────────────────────────────────\n\n";
+                    }
+                }
+            } else {
+                std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
+                std::cout << "═══════════════════════════════════════════════\n\n";
+                std::cout << "No matching dates found for the specified criteria.\n";
+                std::cout << "Try adjusting your search parameters or using --search-near with a higher tolerance.\n";
+            }
+        }
+
         // Handle Myanmar Calendar calculations
         if (args.showMyanmarCalendarRange) {
             MyanmarCalendar myanmarCalendar;
@@ -1336,7 +1526,7 @@ int main(int argc, char* argv[]) {
 
         // Return early if only special features were requested
         if (args.showEclipses || args.showConjunctions || args.showEphemerisTable ||
-            args.showKPTransitions || args.showPanchangaRange || args.showMyanmarCalendarRange) {
+            args.showKPTransitions || args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch) {
             return 0;
         }
     } catch (const std::exception& e) {

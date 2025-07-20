@@ -1114,4 +1114,196 @@ bool HinduCalendar::parseDate(const std::string& dateStr, int& year, int& month,
     }
 }
 
+// Main search function - comprehensive Hindu calendar search
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchHinduCalendar(const SearchCriteria& criteria, double latitude, double longitude) const {
+    std::vector<SearchResult> results;
+
+    if (!initialized) {
+        return results;
+    }
+
+    // Parse search date range
+    int startYear, startMonth, startDay;
+    int endYear, endMonth, endDay;
+
+    if (!parseDate(criteria.searchStartDate, startYear, startMonth, startDay) ||
+        !parseDate(criteria.searchEndDate, endYear, endMonth, endDay)) {
+        return results; // Invalid date range
+    }
+
+    // Calculate Julian day range
+    double startJD = gregorianDateToJulianDay(startYear, startMonth, startDay, 0.0);
+    double endJD = gregorianDateToJulianDay(endYear, endMonth, endDay, 0.0);
+
+    // Search each day in the range
+    for (double jd = startJD; jd <= endJD; jd += 1.0) {
+        try {
+            // Calculate panchanga for this day
+            PanchangaData panchanga = calculatePanchanga(jd, latitude, longitude);
+
+            // Calculate weekday (0=Sunday, 6=Saturday)
+            int weekday = static_cast<int>(jd + 1.5) % 7;
+
+            // Convert to Gregorian date for result
+            int gregYear, gregMonth, gregDay;
+            int gregHour, gregMin;
+            double gregSec;
+            swe_jdet_to_utc(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gregHour, &gregMin, &gregSec);
+
+            char dateBuffer[32];
+            snprintf(dateBuffer, sizeof(dateBuffer), "%04d-%02d-%02d", gregYear, gregMonth, gregDay);
+
+            // Check all criteria and calculate match score
+            double matchScore = 0.0;
+            std::string matchDescription;
+            int matchCount = 0;
+            int totalCriteria = 0;
+
+            // Year criteria
+            if (criteria.exactYear != -1) {
+                totalCriteria++;
+                if (gregYear == criteria.exactYear) {
+                    matchCount++;
+                    matchDescription += "Year(" + std::to_string(gregYear) + ") ";
+                }
+            }
+
+            if (criteria.yearRangeStart != -1 && criteria.yearRangeEnd != -1) {
+                totalCriteria++;
+                if (gregYear >= criteria.yearRangeStart && gregYear <= criteria.yearRangeEnd) {
+                    matchCount++;
+                    matchDescription += "YearRange(" + std::to_string(gregYear) + ") ";
+                }
+            }
+
+            // Month criteria
+            if (criteria.exactMonth != -1) {
+                totalCriteria++;
+                if (gregMonth == criteria.exactMonth) {
+                    matchCount++;
+                    matchDescription += "Month(" + std::to_string(gregMonth) + ") ";
+                }
+            }
+
+            if (criteria.monthRangeStart != -1 && criteria.monthRangeEnd != -1) {
+                totalCriteria++;
+                if (gregMonth >= criteria.monthRangeStart && gregMonth <= criteria.monthRangeEnd) {
+                    matchCount++;
+                    matchDescription += "MonthRange(" + std::to_string(gregMonth) + ") ";
+                }
+            }
+
+            // Tithi criteria
+            int currentTithi = static_cast<int>(panchanga.tithi);
+            if (criteria.exactTithi != -1) {
+                totalCriteria++;
+                if (criteria.exactMatch) {
+                    if (currentTithi == criteria.exactTithi) {
+                        matchCount++;
+                        matchDescription += "Tithi(" + getTithiName(panchanga.tithi) + ") ";
+                    }
+                } else {
+                    // Near match for tithi
+                    int diff = abs(currentTithi - criteria.exactTithi);
+                    if (diff <= criteria.nearMatchTolerance || (diff >= 29 && criteria.nearMatchTolerance >= 1)) {
+                        matchCount++;
+                        matchDescription += "TithiNear(" + getTithiName(panchanga.tithi) + ") ";
+                    }
+                }
+            }
+
+            if (criteria.tithiRangeStart != -1 && criteria.tithiRangeEnd != -1) {
+                totalCriteria++;
+                if (currentTithi >= criteria.tithiRangeStart && currentTithi <= criteria.tithiRangeEnd) {
+                    matchCount++;
+                    matchDescription += "TithiRange(" + getTithiName(panchanga.tithi) + ") ";
+                }
+            }
+
+            // Weekday criteria
+            if (criteria.exactWeekday != -1) {
+                totalCriteria++;
+                if (weekday == criteria.exactWeekday) {
+                    matchCount++;
+                    matchDescription += "Weekday(" + getVaraName(static_cast<Vara>(weekday)) + ") ";
+                }
+            }
+
+            // Calculate match score
+            if (totalCriteria > 0) {
+                matchScore = static_cast<double>(matchCount) / totalCriteria;
+            }
+
+            // Add to results if there's a match
+            if (matchScore > 0.0) {
+                SearchResult result;
+                result.gregorianDate = std::string(dateBuffer);
+                result.panchangaData = panchanga;
+                result.julianDay = jd;
+                result.weekday = weekday;
+                result.matchScore = matchScore;
+                result.matchDescription = matchDescription;
+
+                results.push_back(result);
+            }
+
+        } catch (const std::exception&) {
+            // Skip this day if calculation fails
+            continue;
+        }
+    }
+
+    // Sort results by match score (highest first), then by date
+    std::sort(results.begin(), results.end(), [](const SearchResult& a, const SearchResult& b) {
+        if (a.matchScore != b.matchScore) {
+            return a.matchScore > b.matchScore;
+        }
+        return a.julianDay < b.julianDay;
+    });
+
+    return results;
+}
+
+// Search by specific tithi
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByTithi(int tithi, const std::string& startDate, const std::string& endDate, double latitude, double longitude, bool exactMatch) const {
+    SearchCriteria criteria;
+    criteria.exactTithi = tithi;
+    criteria.exactMatch = exactMatch;
+    criteria.nearMatchTolerance = 1;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Search by weekday
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByWeekday(int weekday, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactWeekday = weekday;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Search by month
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByMonth(int month, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactMonth = month;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Search by year
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByYear(int year, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactYear = year;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
 } // namespace Astro

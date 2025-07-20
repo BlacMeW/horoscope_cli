@@ -321,6 +321,51 @@ public:
     std::string getLastError() const { return lastError; }
     bool isInitialized() const { return initialized; }
 
+    // Search functionality
+    struct SearchCriteria {
+        // Year criteria
+        int exactYear = -1;           // Search for specific year (-1 = ignore)
+        int yearRangeStart = -1;      // Year range start (-1 = ignore)
+        int yearRangeEnd = -1;        // Year range end (-1 = ignore)
+
+        // Month criteria
+        int exactMonth = -1;          // Search for specific month (1-12, -1 = ignore)
+        int monthRangeStart = -1;     // Month range start (1-12, -1 = ignore)
+        int monthRangeEnd = -1;       // Month range end (1-12, -1 = ignore)
+
+        // Tithi criteria
+        int exactTithi = -1;          // Search for specific tithi (1-30, -1 = ignore)
+        int tithiRangeStart = -1;     // Tithi range start (1-30, -1 = ignore)
+        int tithiRangeEnd = -1;       // Tithi range end (1-30, -1 = ignore)
+
+        // Weekday criteria
+        int exactWeekday = -1;        // Search for specific weekday (0=Sun, 6=Sat, -1 = ignore)
+
+        // Search options
+        bool exactMatch = true;       // true = exact match, false = near match
+        int nearMatchTolerance = 1;   // For near match, tolerance in days
+
+        // Date range for search
+        std::string searchStartDate;  // Start date for search (YYYY-MM-DD)
+        std::string searchEndDate;    // End date for search (YYYY-MM-DD)
+    };
+
+    struct SearchResult {
+        std::string gregorianDate;    // Gregorian date (YYYY-MM-DD)
+        PanchangaData panchangaData;  // Full panchanga data for this date
+        double julianDay;             // Julian day number
+        int weekday;                  // Weekday (0=Sunday, 6=Saturday)
+        double matchScore;            // Match score (1.0 = perfect match, 0.0 = no match)
+        std::string matchDescription; // Description of what matched
+    };
+
+    // Search methods
+    std::vector<SearchResult> searchHinduCalendar(const SearchCriteria& criteria, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByTithi(int tithi, const std::string& startDate, const std::string& endDate, double latitude, double longitude, bool exactMatch = true) const;
+    std::vector<SearchResult> searchByWeekday(int weekday, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByMonth(int month, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByYear(int year, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
 private:
     // Utility method for parsing dates
     bool parseDate(const std::string& dateStr, int& year, int& month, int& day) const;
