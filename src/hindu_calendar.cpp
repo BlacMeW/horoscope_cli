@@ -2,6 +2,7 @@
 #include "ephemeris_manager.h"
 #include "planet_calculator.h"
 #include "myanmar_calendar.h"
+#include "astro_types.h"
 #include <cmath>
 #include <sstream>
 #include <iomanip>
@@ -790,8 +791,8 @@ std::vector<PanchangaData> HinduCalendar::calculatePanchangaRange(const std::str
         int fromYear, fromMonth, fromDay;
         int toYear, toMonth, toDay;
 
-        if (!parseDate(fromDate, fromYear, fromMonth, fromDay) ||
-            !parseDate(toDate, toYear, toMonth, toDay)) {
+        if (!Astro::parseBCDate(fromDate, fromYear, fromMonth, fromDay) ||
+            !Astro::parseBCDate(toDate, toYear, toMonth, toDay)) {
             lastError = "Invalid date format in range";
             return results;
         }
@@ -1126,8 +1127,8 @@ std::vector<HinduCalendar::SearchResult> HinduCalendar::searchHinduCalendar(cons
     int startYear, startMonth, startDay;
     int endYear, endMonth, endDay;
 
-    if (!parseDate(criteria.searchStartDate, startYear, startMonth, startDay) ||
-        !parseDate(criteria.searchEndDate, endYear, endMonth, endDay)) {
+    if (!Astro::parseBCDate(criteria.searchStartDate, startYear, startMonth, startDay) ||
+        !Astro::parseBCDate(criteria.searchEndDate, endYear, endMonth, endDay)) {
         return results; // Invalid date range
     }
 

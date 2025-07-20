@@ -368,7 +368,8 @@ void printHelp() {
     std::cout << "                            Hindu search results output format\n";
     std::cout << "                            table = Detailed ASCII table (default)\n";
     std::cout << "                            csv   = Comma-separated values\n";
-    std::cout << "                            json  = JSON structure for integration\n\n";
+    std::cout << "                            json  = JSON structure for integration\n";
+    std::cout << "                            list  = Simple date list for scripts\n\n";
 
     std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
     std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
@@ -442,7 +443,8 @@ void printHelp() {
     std::cout << "    --myanmar-search-format FORMAT  Myanmar search results output format\n";
     std::cout << "                                     table = Detailed ASCII table (default)\n";
     std::cout << "                                     csv   = Comma-separated values\n";
-    std::cout << "                                     json  = JSON structure for integration\n\n";
+    std::cout << "                                     json  = JSON structure for integration\n";
+    std::cout << "                                     list  = Simple date list for scripts\n\n";
 
     std::cout << "ASTRO CALENDAR OPTIONS (Combined Calendar System) 📅🌟🇮🇳🇲🇲\n";
     std::cout << "    --astro-calendar   Show comprehensive astro-calendar for birth date\n";
@@ -650,6 +652,16 @@ void printHelp() {
     std::cout << "                --myanmar-search-thamanyo \\\n";
     std::cout << "                --lat 16.8661 --lon 96.1951 \\\n";
     std::cout << "                --myanmar-search-format json\n\n";
+
+    std::cout << "  # Hindu calendar search - simple date list format for scripts\n";
+    std::cout << "  horoscope_cli --hindu-search 2025-01-01 2025-03-31 \\\n";
+    std::cout << "                --search-tithi 15 \\\n";
+    std::cout << "                --hindu-search-format list\n\n";
+
+    std::cout << "  # Myanmar calendar search - simple date list format\n";
+    std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
+    std::cout << "                --myanmar-search-moon-phase 1 \\\n";
+    std::cout << "                --myanmar-search-format list\n\n";
 
     std::cout << "COORDINATE EXAMPLES 🌍\n";
     std::cout << "  # Major cities coordinates for reference:\n";
@@ -980,8 +992,9 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.searchNearTolerance = std::stoi(argv[++i]);
         } else if (arg == "--hindu-search-format" && i + 1 < argc) {
             args.hinduSearchFormat = argv[++i];
-            if (args.hinduSearchFormat != "table" && args.hinduSearchFormat != "csv" && args.hinduSearchFormat != "json") {
-                std::cerr << "Error: Invalid Hindu search format. Must be 'table', 'csv', or 'json'\n";
+            if (args.hinduSearchFormat != "table" && args.hinduSearchFormat != "csv" &&
+                args.hinduSearchFormat != "json" && args.hinduSearchFormat != "list") {
+                std::cerr << "Error: Invalid Hindu search format. Must be 'table', 'csv', 'json', or 'list'\n";
                 return false;
             }
 
@@ -1055,8 +1068,9 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.myanmarSearchNearTolerance = std::stoi(argv[++i]);
         } else if (arg == "--myanmar-search-format" && i + 1 < argc) {
             args.myanmarSearchFormat = argv[++i];
-            if (args.myanmarSearchFormat != "table" && args.myanmarSearchFormat != "csv" && args.myanmarSearchFormat != "json") {
-                std::cerr << "Error: Invalid Myanmar search format. Must be 'table', 'csv', or 'json'\n";
+            if (args.myanmarSearchFormat != "table" && args.myanmarSearchFormat != "csv" &&
+                args.myanmarSearchFormat != "json" && args.myanmarSearchFormat != "list") {
+                std::cerr << "Error: Invalid Myanmar search format. Must be 'table', 'csv', 'json', or 'list'\n";
                 return false;
             }
         } else if (arg == "--astro-calendar") {
@@ -1626,6 +1640,17 @@ int main(int argc, char* argv[]) {
                                   << static_cast<int>(result.panchangaData.yoga) << ","
                                   << static_cast<int>(result.panchangaData.karana) << "\n";
                     }
+                } else if (args.hinduSearchFormat == "list") {
+                    // Generate simple list output
+                    std::cout << "# Hindu Calendar Search Results\n";
+                    std::cout << "# Found " << searchResults.size() << " matching dates\n";
+                    for (const auto& result : searchResults) {
+                        std::cout << result.gregorianDate;
+                        if (result.matchScore < 1.0) {
+                            std::cout << " (score: " << result.matchScore << ")";
+                        }
+                        std::cout << "\n";
+                    }
                 } else {
                     // Default table format
                     std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
@@ -1828,6 +1853,17 @@ int main(int argc, char* argv[]) {
                                   << static_cast<int>(result.myanmarData.moonPhase) << ","
                                   << result.myanmarData.fortnightDay << ","
                                   << static_cast<int>(result.myanmarData.weekday) << "\n";
+                    }
+                } else if (args.myanmarSearchFormat == "list") {
+                    // Generate simple list output
+                    std::cout << "# Myanmar Calendar Search Results\n";
+                    std::cout << "# Found " << searchResults.size() << " matching dates\n";
+                    for (const auto& result : searchResults) {
+                        std::cout << result.gregorianDate;
+                        if (result.matchScore < 1.0) {
+                            std::cout << " (score: " << result.matchScore << ")";
+                        }
+                        std::cout << "\n";
                     }
                 } else {
                     // Default table format
