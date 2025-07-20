@@ -11,6 +11,7 @@
 #include "hindu_calendar.h"
 #include "myanmar_calendar.h"
 #include "astro_calendar.h"
+#include "professional_table.h"
 #include "swephexp.h"
 #include <iostream>
 #include <string>
@@ -1857,187 +1858,138 @@ int main(int argc, char* argv[]) {
                                   << static_cast<int>(result.panchangaData.karana) << "\n";
                     }
                 } else if (args.hinduSearchFormat == "list") {
-                    // Generate professional-grade tabular output with enhanced design
-                    std::cout << "\n";
-                    std::cout << "+------------------------------------------------------------------------------------------------------------------------------------+\n";
-                    std::cout << "|                                         �️  HINDU CALENDAR SEARCH RESULTS - PROFESSIONAL VIEW  🕉️                                                       |\n";
-                    std::cout << "+------------------------------------------------------------------------------------------------------------------------------------+\n";
-                    std::cout << "| " << std::setw(3) << std::right << searchResults.size() << " Results Found"
-                              << " | Location: " << std::fixed << std::setprecision(2) << args.latitude << "°N, " << args.longitude << "°E"
-                              << " | Period: " << args.searchStartDate << " ↔ " << args.searchEndDate;
+                    // Use Professional Table System inspired by p-ranav/tabulate
+                    Astro::ProfessionalTable table;
 
-                    // Calculate padding for right alignment
-                    size_t contentLength = std::to_string(searchResults.size()).length() + 15 +
-                                         (args.latitude >= 0 ? std::to_string((int)args.latitude).length() + 3 : std::to_string((int)args.latitude).length() + 3) +
-                                         (args.longitude >= 0 ? std::to_string((int)args.longitude).length() + 3 : std::to_string((int)args.longitude).length() + 3) +
-                                         args.searchStartDate.length() + args.searchEndDate.length() + 19;
-                    size_t padding = (172 > contentLength) ? (172 - contentLength) : 0;
-                    std::cout << std::string(padding, ' ') << " |\n";
+                    // Apply Hindu calendar styling
+                    table.applyHinduCalendarStyle();
 
-                    std::cout << "+-------------+----------+------------+------------+----------+----------+------------+--------+------+-----+------------------+------+\n";
-                    std::cout << "|    DATE     | WEEKDAY  |   TITHI    | NAKSHATRA  |   YOGA   |  KARANA  |  H.MONTH   | PAKSHA | YEAR | MUH | SPECIAL EVENTS   |SCORE |\n";
-                    std::cout << "+-------------+----------+------------+------------+----------+----------+------------+--------+------+-----+------------------+------+\n";
+                    // Set table title and subtitle with metadata
+                    table.setTitle("Hindu Calendar Search Results - Professional View");
 
-                    // Professional table rows with enhanced formatting
-                    size_t rowCount = 0;
+                    std::stringstream subtitleStream;
+                    subtitleStream << searchResults.size() << " Results | Location: "
+                                  << std::fixed << std::setprecision(2) << args.latitude << "°N, "
+                                  << args.longitude << "°E | Period: " << args.searchStartDate
+                                  << " ↔ " << args.searchEndDate;
+                    table.setSubtitle(subtitleStream.str());
+
+                    // Define headers with astrological context
+                    std::vector<std::string> headers = {
+                        "DATE", "WEEKDAY", "TITHI", "NAKSHATRA", "YOGA",
+                        "KARANA", "H.MONTH", "PAKSHA", "YEAR", "MUH", "SPECIAL EVENTS", "SCORE"
+                    };
+                    table.addRow(headers);
+
+                    // Add data rows with cultural formatting
                     for (const auto& result : searchResults) {
-                        rowCount++;
+                        std::vector<std::string> row;
 
-                        // Date column with center alignment
-                        std::cout << "| " << std::setw(11) << std::left << result.gregorianDate << " | ";
+                        // Date column
+                        row.push_back(result.gregorianDate);
 
-                        // Weekday column with color concept indicators
+                        // Weekday with auspiciousness indicator
                         std::string weekday = hinduCalendar.getVaraName(result.panchangaData.vara);
-                        if (weekday.length() > 8) weekday = weekday.substr(0, 6) + "..";
-                        // Add auspiciousness indicator
-                        std::string weekdayDisplay = weekday;
                         if (weekday == "Sunday" || weekday == "Monday" || weekday == "Thursday") {
-                            weekdayDisplay = "★" + weekday.substr(0, 7);  // Auspicious days
+                            weekday = "*" + weekday;  // Auspicious days
                         }
-                        std::cout << std::setw(8) << std::left << weekdayDisplay << " | ";
+                        row.push_back(weekday);
 
-                        // Tithi column with lunar phase indicators
+                        // Tithi with lunar phase indicators
                         std::string tithi = hinduCalendar.getTithiName(result.panchangaData.tithi);
-                        if (tithi.length() > 10) tithi = tithi.substr(0, 8) + "..";
-                        // Add special tithi indicators
-                        if (tithi.find("Purnima") != std::string::npos) tithi = "🌕" + tithi.substr(0, 9);
-                        else if (tithi.find("Amavasya") != std::string::npos) tithi = "🌑" + tithi.substr(0, 8);
-                        else if (tithi.find("Ekadashi") != std::string::npos) tithi = "⚡" + tithi.substr(0, 8);
-                        std::cout << std::setw(10) << std::left << tithi << " | ";
+                        if (tithi.find("Purnima") != std::string::npos) tithi = "O" + tithi;
+                        else if (tithi.find("Amavasya") != std::string::npos) tithi = "@" + tithi;
+                        else if (tithi.find("Ekadashi") != std::string::npos) tithi = "!" + tithi;
+                        row.push_back(tithi);
 
-                        // Nakshatra column with constellation grouping
+                        // Nakshatra with constellation grouping
                         std::string nakshatra = hinduCalendar.getNakshatraName(result.panchangaData.nakshatra);
-                        if (nakshatra.length() > 10) nakshatra = nakshatra.substr(0, 8) + "..";
-                        // Add nakshatra quality indicators
                         std::vector<std::string> devaGanas = {"Ashwini", "Mrigashirsha", "Punarvasu", "Pushya", "Hasta", "Swati", "Anuradha", "Shravana", "Revati"};
-                        std::vector<std::string> manushyaGanas = {"Bharani", "Rohini", "Ardra", "Ashlesha", "Magha", "Purva", "Uttara", "Chitra", "Vishakha", "Jyeshtha", "Purva Ashadha", "Uttara Ashadha", "Purva Bhadrapada", "Uttara Bhadrapada"};
-
-                        std::string nakshatraDisplay = nakshatra;
                         for (const auto& deva : devaGanas) {
                             if (nakshatra.find(deva.substr(0, 4)) != std::string::npos) {
-                                nakshatraDisplay = "✧" + nakshatra.substr(0, 9);
+                                nakshatra = "+" + nakshatra;
                                 break;
                             }
                         }
-                        std::cout << std::setw(10) << std::left << nakshatraDisplay << " | ";
+                        row.push_back(nakshatra);
 
-                        // Yoga column with auspiciousness
+                        // Yoga with benefic indicators
                         std::string yoga = hinduCalendar.getYogaName(result.panchangaData.yoga);
-                        if (yoga.length() > 8) yoga = yoga.substr(0, 6) + "..";
-                        // Mark beneficial yogas
-                        std::vector<std::string> beneficYogas = {"Vishkumbha", "Priti", "Ayushman", "Saubhagya", "Shobhana", "Atiganda", "Sukarman", "Dhriti", "Shula", "Ganda", "Vriddhi", "Dhruva", "Vyaghata", "Harshana", "Vajra", "Siddhi", "Vyatipata", "Variyana", "Parigha", "Shiva", "Siddha", "Sadhya", "Shubha", "Shukla", "Brahma", "Indra", "Vaidhriti"};
                         if (yoga == "Siddhi" || yoga == "Shubha" || yoga == "Amrita") {
-                            yoga = "◆" + yoga.substr(0, 7);
+                            yoga = "#" + yoga;
                         }
-                        std::cout << std::setw(8) << std::left << yoga << " | ";
+                        row.push_back(yoga);
 
-                        // Karana column
-                        std::string karana = hinduCalendar.getKaranaName(result.panchangaData.karana);
-                        if (karana.length() > 8) karana = karana.substr(0, 6) + "..";
-                        std::cout << std::setw(8) << std::left << karana << " | ";
+                        // Karana
+                        row.push_back(hinduCalendar.getKaranaName(result.panchangaData.karana));
 
-                        // Hindu Month column with season indicators
+                        // Hindu Month with seasonal indicators
                         std::string hmonth = hinduCalendar.getHinduMonthName(result.panchangaData.month);
-                        if (hmonth.length() > 10) hmonth = hmonth.substr(0, 8) + "..";
-                        // Add seasonal context
                         std::vector<std::string> springMonths = {"Chaitra", "Vaishakha"};
-                        std::vector<std::string> summerMonths = {"Jyeshtha", "Ashadha"};
-                        std::vector<std::string> monsoonMonths = {"Shravana", "Bhadrapada"};
-                        std::vector<std::string> autumnMonths = {"Ashwin", "Kartika"};
-                        std::vector<std::string> winterMonths = {"Margashirsha", "Pausha", "Magha", "Phalguna"};
-
-                        std::string monthDisplay = hmonth;
                         for (const auto& spring : springMonths) {
                             if (hmonth.find(spring.substr(0, 4)) != std::string::npos) {
-                                monthDisplay = "🌸" + hmonth.substr(0, 9);
+                                hmonth = "~" + hmonth;
                                 break;
                             }
                         }
-                        std::cout << std::setw(10) << std::left << monthDisplay << " | ";
+                        row.push_back(hmonth);
 
-                        // Paksha column with moon phase visual
-                        std::string paksha = result.panchangaData.isShukla ? "🌖Shukla" : "🌘Krishna";
-                        if (paksha.length() > 6) paksha = paksha.substr(0, 6);
-                        std::cout << std::setw(6) << std::left << paksha << " | ";
+                        // Paksha with moon phase visual
+                        std::string paksha = result.panchangaData.isShukla ? ">Shukla" : "<Krishna";
+                        row.push_back(paksha);
 
-                        // Year column - right aligned
-                        std::cout << std::setw(4) << std::right << result.panchangaData.year << " | ";
+                        // Year
+                        row.push_back(std::to_string(result.panchangaData.year));
 
-                        // Muhurta column with enhanced indicators
+                        // Muhurta with indicators
                         std::string muhurta;
-                        if (result.panchangaData.isShubhaMuhurta) muhurta = " ✅ ";
-                        else if (result.panchangaData.isAshubhaMuhurta) muhurta = " ⚠️ ";
-                        else muhurta = " ⚪ ";
-                        std::cout << muhurta << " | ";
+                        if (result.panchangaData.isShubhaMuhurta) muhurta = "Good";
+                        else if (result.panchangaData.isAshubhaMuhurta) muhurta = "Warn";
+                        else muhurta = "Neut";
+                        row.push_back(muhurta);
 
-                        // Special Events column with priority display
-                        std::vector<std::string> events;
-                        std::vector<std::string> priorityEvents;
+                        // Special Events with priority display
+                        std::string specialEvents;
+                        if (result.panchangaData.isEkadashi) specialEvents += "Eka ";
+                        if (result.panchangaData.isPurnima) specialEvents += "Pur ";
+                        if (result.panchangaData.isAmavasya) specialEvents += "Ama ";
+                        if (result.panchangaData.isSankranti) specialEvents += "San ";
 
-                        if (result.panchangaData.isEkadashi) priorityEvents.push_back("🔱Eka");
-                        if (result.panchangaData.isPurnima) priorityEvents.push_back("🌕Pur");
-                        if (result.panchangaData.isAmavasya) priorityEvents.push_back("🌑Ama");
-                        if (result.panchangaData.isSankranti) priorityEvents.push_back("☀San");
-
-                        // Add first festival name if any
                         if (!result.panchangaData.festivals.empty()) {
                             std::string fest = result.panchangaData.festivals[0];
-                            if (fest.length() > 6) fest = fest.substr(0, 4) + "..";
-                            events.push_back("🎭" + fest);
+                            if (fest.length() > 8) fest = fest.substr(0, 6) + "..";
+                            specialEvents += fest;
                         }
 
-                        // Combine priority events first
-                        std::string specialEvents;
-                        for (size_t i = 0; i < priorityEvents.size() && specialEvents.length() < 14; ++i) {
-                            if (i > 0) specialEvents += " ";
-                            specialEvents += priorityEvents[i];
-                        }
+                        if (specialEvents.empty()) specialEvents = "-";
+                        row.push_back(specialEvents);
 
-                        // Add regular events if space
-                        for (size_t i = 0; i < events.size() && specialEvents.length() < 14; ++i) {
-                            if (!specialEvents.empty()) specialEvents += " ";
-                            specialEvents += events[i];
-                        }
-
-                        if (specialEvents.empty()) specialEvents = "       -       ";
-                        if (specialEvents.length() > 16) specialEvents = specialEvents.substr(0, 13) + "...";
-                        std::cout << std::setw(16) << std::left << specialEvents << "| ";
-
-                        // Score column with quality indicator
+                        // Score with quality indicator
                         std::string scoreDisplay = std::to_string(result.matchScore);
-                        if (scoreDisplay.length() > 4) scoreDisplay = scoreDisplay.substr(0, 4);
-                        if (result.matchScore >= 0.90) scoreDisplay = "★" + scoreDisplay;
-                        else if (result.matchScore >= 0.75) scoreDisplay = "◆" + scoreDisplay;
-                        std::cout << std::setw(4) << std::right << scoreDisplay << " |";
+                        if (scoreDisplay.length() > 5) scoreDisplay = scoreDisplay.substr(0, 5);
+                        if (result.matchScore >= 0.90) scoreDisplay = "*" + scoreDisplay;
+                        else if (result.matchScore >= 0.75) scoreDisplay = "#" + scoreDisplay;
+                        row.push_back(scoreDisplay);
 
-                        std::cout << "\n";
-
-                        // Add subtle row separators every 5 rows
-                        if (rowCount % 5 == 0 && rowCount < searchResults.size()) {
-                            std::cout << "+-------------+----------+------------+------------+----------+----------+------------+--------+------+-----+------------------+------+\n";
-                        }
+                        table.addRow(row);
                     }
 
-                    std::cout << "+-------------+----------+------------+------------+----------+----------+------------+--------+------+-----+------------------+------+\n";
+                    // Output the professional table
+                    std::cout << "\n" << table.toString() << std::endl;
 
-                    // Enhanced professional legend with detailed explanations
-                    std::cout << "+========================================= LEGEND & SYMBOLS ==========================================+\n";
-                    std::cout << "| MUHURTA: ✅=Shubha(Auspicious) ⚠️=Ashubha(Inauspicious) ⚪=Samanya(Neutral)                          |\n";
-                    std::cout << "| WEEKDAY: ★=Highly Auspicious (Sun/Mon/Thu) • Others=Normal                                       |\n";
-                    std::cout << "| TITHI: 🌕=Purnima(Full Moon) 🌑=Amavasya(New Moon) ⚡=Ekadashi(Sacred) • Others=Regular          |\n";
-                    std::cout << "| NAKSHATRA: ✧=Deva Gana(Divine) • Others=Manushya/Rakshasa Gana                                  |\n";
-                    std::cout << "| YOGA: ◆=Highly Beneficial • Others=Regular Combinations                                          |\n";
-                    std::cout << "| MONTH: 🌸=Spring Season • Others=Summer/Monsoon/Autumn/Winter                                    |\n";
-                    std::cout << "| PAKSHA: 🌖=Shukla(Bright Fortnight) 🌘=Krishna(Dark Fortnight)                                  |\n";
-                    std::cout << "| EVENTS: 🔱=Ekadashi 🌕=Purnima 🌑=Amavasya ☀=Sankranti 🎭=Festival                              |\n";
-                    std::cout << "| SCORE: ★=Excellent(≥0.9) ◆=Good(≥0.75) •=Standard(<0.75)                                        |\n";
-                    std::cout << "+---------------------------------------------------------------------------------------------------+\n";
-                    std::cout << "| ASTRONOMICAL DATA (First Result): Sun " << std::fixed << std::setprecision(1)
-                              << searchResults[0].panchangaData.sunLongitude << "° • Moon " << searchResults[0].panchangaData.moonLongitude
-                              << "° • Phase " << (searchResults[0].panchangaData.moonLongitude - searchResults[0].panchangaData.sunLongitude) << "°       |\n";
-                    std::cout << "| Full detailed analysis available using 'table' format • Timezone: UTC"
-                              << (args.timezone >= 0 ? "+" : "") << args.timezone << "                    |\n";
-                    std::cout << "+---------------------------------------------------------------------------------------------------+\n";
+                    // Add legend
+                    std::cout << "\n========================================= LEGEND & SYMBOLS ==========================================\n";
+                    std::cout << "MUHURTA: Good=Shubha(Auspicious) Warn=Ashubha(Inauspicious) Neut=Samanya(Neutral)\n";
+                    std::cout << "WEEKDAY: *=Highly Auspicious (Sun/Mon/Thu) • Others=Normal\n";
+                    std::cout << "TITHI: O=Purnima(Full Moon) @=Amavasya(New Moon) !=Ekadashi(Sacred)\n";
+                    std::cout << "NAKSHATRA: +=Deva Gana(Divine) • Others=Manushya/Rakshasa Gana\n";
+                    std::cout << "YOGA: #=Highly Beneficial • Others=Regular Combinations\n";
+                    std::cout << "MONTH: ~=Spring Season • Others=Summer/Monsoon/Autumn/Winter\n";
+                    std::cout << "PAKSHA: >=Shukla(Bright Fortnight) <=Krishna(Dark Fortnight)\n";
+                    std::cout << "EVENTS: Eka=Ekadashi Pur=Purnima Ama=Amavasya San=Sankranti + Festival names\n";
+                    std::cout << "SCORE: *=Excellent(>=0.9) #=Good(>=0.75) •=Standard(<0.75)\n";
+                    std::cout << "========================================================================================================\n";
+
                 } else {
                     // Default table format
                     std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
