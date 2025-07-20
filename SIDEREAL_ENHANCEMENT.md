@@ -35,7 +35,7 @@ Enhanced precision and coordinate system options:
 
 **Coordinate Systems:**
 - `geocentric` (default) - Earth-centered
-- `heliocentric` - Sun-centered  
+- `heliocentric` - Sun-centered
 - `barycentric` - Solar system barycenter
 - `topocentric` - Observer location-centered
 
@@ -160,7 +160,7 @@ horoscope_cli --date 1990-01-15 --time 14:30:00 \
 ```
 
 ## 📊 Precision & Accuracy
-- Arc-second precision maintained for all calculations  
+- Arc-second precision maintained for all calculations
 - Swiss Ephemeris provides NASA-quality accuracy
 - Support for historical dates (6000 BC - 7000 AD)
 - Multiple calculation methods for different precision needs

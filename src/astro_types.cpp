@@ -428,7 +428,7 @@ std::string calculationFlagToString(CalculationFlag flag) {
 AyanamsaType stringToAyanamsaType(const std::string& ayanamsaStr) {
     std::string lower = ayanamsaStr;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-    
+
     if (lower == "fagan-bradley" || lower == "fagan_bradley" || lower == "fagan") return AyanamsaType::FAGAN_BRADLEY;
     else if (lower == "lahiri" || lower == "chitrapaksha") return AyanamsaType::LAHIRI;
     else if (lower == "deluce" || lower == "de_luce") return AyanamsaType::DELUCE;
@@ -456,7 +456,7 @@ AyanamsaType stringToAyanamsaType(const std::string& ayanamsaStr) {
 ZodiacMode stringToZodiacMode(const std::string& modeStr) {
     std::string lower = modeStr;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-    
+
     if (lower == "sidereal" || lower == "sid") return ZodiacMode::SIDEREAL;
     else return ZodiacMode::TROPICAL; // default
 }
@@ -464,30 +464,30 @@ ZodiacMode stringToZodiacMode(const std::string& modeStr) {
 CalculationFlag stringToCalculationFlag(const std::string& flagStr) {
     std::string lower = flagStr;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-    
+
     // Coordinate system
     if (lower == "geocentric" || lower == "geo") return CalculationFlag::GEOCENTRIC;
     else if (lower == "heliocentric" || lower == "helio") return CalculationFlag::HELIOCENTRIC;
     else if (lower == "barycentric" || lower == "bary") return CalculationFlag::BARYCENTRIC;
     else if (lower == "topocentric" || lower == "topo") return CalculationFlag::TOPOCENTRIC;
-    
+
     // Position type
     else if (lower == "apparent" || lower == "app") return CalculationFlag::APPARENT;
     else if (lower == "true_geometric" || lower == "true" || lower == "geometric") return CalculationFlag::TRUE_GEOMETRIC;
     else if (lower == "astrometric" || lower == "astro") return CalculationFlag::ASTROMETRIC;
-    
+
     // Precession/Nutation
     else if (lower == "standard_equinox" || lower == "standard" || lower == "date") return CalculationFlag::STANDARD_EQUINOX;
     else if (lower == "j2000_equinox" || lower == "j2000" || lower == "no_precession") return CalculationFlag::J2000_EQUINOX;
     else if (lower == "mean_equinox" || lower == "mean" || lower == "no_nutation") return CalculationFlag::MEAN_EQUINOX;
-    
+
     // Speed
     else if (lower == "high_precision_speed" || lower == "high_speed" || lower == "speed") return CalculationFlag::HIGH_PRECISION_SPEED;
-    
+
     // Coordinates
     else if (lower == "ecliptic" || lower == "ecl") return CalculationFlag::ECLIPTIC;
     else if (lower == "equatorial" || lower == "equ") return CalculationFlag::EQUATORIAL;
-    
+
     else return CalculationFlag::GEOCENTRIC; // default
 }
 

@@ -31,7 +31,7 @@ bool PlanetCalculator::calculateAllPlanets(const BirthData& birthData, std::vect
 
 bool PlanetCalculator::calculatePlanet(const BirthData& birthData, Planet planet, PlanetPosition& position) {
     double julianDay = birthData.getJulianDay();
-    
+
     bool success = ephemerisManager.calculatePlanetPosition(julianDay, planet, position, zodiacMode, ayanamsa, calculationFlags);
 
     if (!success) {

@@ -116,21 +116,21 @@ bool HoroscopeCalculator::calculateBirthChart(const BirthData& birthData,
     // Set zodiac mode and ayanamsa temporarily
     ZodiacMode originalMode = this->zodiacMode;
     AyanamsaType originalAyanamsa = this->ayanamsa;
-    
+
     this->zodiacMode = zodiacMode;
     this->ayanamsa = ayanamsa;
-    
+
     // Set zodiac mode and ayanamsa in chart
     chart.setZodiacMode(zodiacMode);
     chart.setAyanamsa(ayanamsa);
-    
+
     // Call the main calculation method
     bool result = calculateBirthChart(birthData, houseSystem, chart);
-    
+
     // Restore original settings
     this->zodiacMode = originalMode;
     this->ayanamsa = originalAyanamsa;
-    
+
     return result;
 }
 

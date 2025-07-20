@@ -750,10 +750,11 @@ void printHelp() {
 }
 
 void printVersion() {
-    std::cout << "🌟 Horoscope CLI v1.0.0 ⭐\n";
+    std::cout << "🌟 Horoscope CLI v1.1.0 ⭐\n";
     std::cout << "✨ Built with Swiss Ephemeris 🔮\n";
     std::cout << "📅 Copyright (c) 2025 🏛️\n";
     std::cout << "🚀 Professional Astrology Tool 🌌\n";
+    std::cout << "🆕 Sidereal Zodiac & 21 Ayanamsa Types 🕉️\n";
 }
 
 void printFeatures() {

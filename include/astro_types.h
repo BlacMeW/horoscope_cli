@@ -66,20 +66,20 @@ enum class CalculationFlag {
     HELIOCENTRIC = 2,        // Heliocentric
     BARYCENTRIC = 3,         // Barycentric
     TOPOCENTRIC = 4,         // Topocentric (requires observer coordinates)
-    
+
     // Position type flags
     APPARENT = 10,           // Apparent position (default, includes aberration/deflection)
     TRUE_GEOMETRIC = 11,     // True/geometric position
     ASTROMETRIC = 12,        // Astrometric position (no aberration/deflection)
-    
+
     // Precession/Nutation flags
     STANDARD_EQUINOX = 20,   // Standard equinox of date (default)
     J2000_EQUINOX = 21,      // J2000.0 equinox (no precession)
     MEAN_EQUINOX = 22,       // Mean equinox of date (no nutation)
-    
+
     // Speed calculation flags
     HIGH_PRECISION_SPEED = 30,  // High precision speed calculation
-    
+
     // Coordinate format flags
     ECLIPTIC = 40,           // Ecliptic coordinates (default)
     EQUATORIAL = 41          // Equatorial coordinates

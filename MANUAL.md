@@ -1917,6 +1917,7 @@ The application uses the Swiss Ephemeris library for astronomical calculations:
 
 - **v2.0.0** - Complete Hindu Panchanga system, enhanced manual
 - **v1.5.0** - Added KP system support and ancient date calculations
+- **v1.1.0** - Sidereal zodiac support with 21 ayanamsa types and advanced calculation flags
 - **v1.0.0** - Initial release with Swiss Ephemeris integration
 
 ---
