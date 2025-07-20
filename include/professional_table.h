@@ -274,6 +274,18 @@ void addKPSystemRow(ProfessionalTable& table,
                    const std::string& kpNotation,
                    const std::string& signification);
 
+// Utility functions for Graha Yuddha Events
+void addGrahaYuddhaRow(ProfessionalTable& table,
+                      const std::string& date,
+                      const std::string& time,
+                      const std::string& combatants,
+                      const std::string& separation,
+                      const std::string& winner,
+                      const std::string& loser,
+                      const std::string& victoryMargin,
+                      const std::string& effects,
+                      const std::string& significance);
+
 // Factory functions for new table types
 ProfessionalTable createEclipseTable();
 ProfessionalTable createConjunctionTable();

@@ -833,6 +833,21 @@ void addKPSystemRow(ProfessionalTable& table,
     table.addRow(rowData);
 }
 
+void addGrahaYuddhaRow(ProfessionalTable& table,
+                      const std::string& date,
+                      const std::string& time,
+                      const std::string& combatants,
+                      const std::string& separation,
+                      const std::string& winner,
+                      const std::string& loser,
+                      const std::string& victoryMargin,
+                      const std::string& effects,
+                      const std::string& significance) {
+    std::vector<std::string> rowData = {date, time, combatants, separation, winner,
+                                       loser, victoryMargin, effects, significance};
+    table.addRow(rowData);
+}
+
 // Factory functions for new table types
 ProfessionalTable createEclipseTable() {
     ProfessionalTable table;

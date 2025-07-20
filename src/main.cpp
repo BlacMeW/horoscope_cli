@@ -1745,7 +1745,97 @@ int main(int argc, char* argv[]) {
                 parseDateStringToBirthData(toDate),
                 args.grahaYuddhaMaxOrb);
 
-            std::cout << conjCalc.generateGrahaYuddhaReport(wars);
+            if (args.grahaYuddhaFormat == "table") {
+                // Professional table format for Graha Yuddha events
+                ProfessionalTable table = createGrahaYuddhaTable();
+
+                std::ostringstream subtitle;
+                subtitle << wars.size() << " planetary wars found | Period: " << fromDate
+                        << " ↔ " << toDate << " | Max Orb: " << args.grahaYuddhaMaxOrb << "°";
+                table.setSubtitle(subtitle.str());
+
+                for (const auto& war : wars) {
+                    std::string date = war.getDateString();
+                    std::string time = "12:00"; // Placeholder - could extract from julianDay
+                    std::string combatants = war.getPlanetsString();
+                    std::string separation = std::to_string(war.orb) + "°";
+
+                    // Get winner and loser
+                    std::string winner = "Unknown";
+                    std::string loser = "Unknown";
+                    if (war.isGrahaYuddha && war.planets.size() >= 2) {
+                        winner = planetToString(war.grahaYuddhaWinner);
+                        // Determine loser (the other planet)
+                        for (const auto& planet : war.planets) {
+                            if (planet != war.grahaYuddhaWinner) {
+                                loser = planetToString(planet);
+                                break;
+                            }
+                        }
+                    }
+
+                    std::string victoryMargin = std::to_string(war.orb) + "°";
+                    std::string effects = war.grahaYuddhaEffect;
+                    std::string significance = war.getDescription();
+
+                    addGrahaYuddhaRow(table, date, time, combatants, separation, winner,
+                                     loser, victoryMargin, effects, significance);
+                }
+
+                std::cout << table.toString();
+            } else if (args.grahaYuddhaFormat == "csv") {
+                std::cout << "Date,Combatants,Separation,Winner,Loser,Effects\n";
+                for (const auto& war : wars) {
+                    std::string winner = "Unknown";
+                    std::string loser = "Unknown";
+                    if (war.isGrahaYuddha && war.planets.size() >= 2) {
+                        winner = planetToString(war.grahaYuddhaWinner);
+                        for (const auto& planet : war.planets) {
+                            if (planet != war.grahaYuddhaWinner) {
+                                loser = planetToString(planet);
+                                break;
+                            }
+                        }
+                    }
+
+                    std::cout << war.getDateString() << ","
+                             << war.getPlanetsString() << ","
+                             << war.orb << "°,"
+                             << winner << ","
+                             << loser << ","
+                             << war.grahaYuddhaEffect << "\n";
+                }
+            } else if (args.grahaYuddhaFormat == "json") {
+                std::cout << "{\n  \"graha_yuddha_events\": [\n";
+                for (size_t i = 0; i < wars.size(); ++i) {
+                    const auto& war = wars[i];
+                    std::string winner = "Unknown";
+                    std::string loser = "Unknown";
+                    if (war.isGrahaYuddha && war.planets.size() >= 2) {
+                        winner = planetToString(war.grahaYuddhaWinner);
+                        for (const auto& planet : war.planets) {
+                            if (planet != war.grahaYuddhaWinner) {
+                                loser = planetToString(planet);
+                                break;
+                            }
+                        }
+                    }
+
+                    std::cout << "    {\n";
+                    std::cout << "      \"date\": \"" << war.getDateString() << "\",\n";
+                    std::cout << "      \"combatants\": \"" << war.getPlanetsString() << "\",\n";
+                    std::cout << "      \"separation\": " << war.orb << ",\n";
+                    std::cout << "      \"winner\": \"" << winner << "\",\n";
+                    std::cout << "      \"loser\": \"" << loser << "\",\n";
+                    std::cout << "      \"effects\": \"" << war.grahaYuddhaEffect << "\",\n";
+                    std::cout << "      \"significance\": \"" << war.getDescription() << "\"\n";
+                    std::cout << "    }" << (i < wars.size() - 1 ? "," : "") << "\n";
+                }
+                std::cout << "  ]\n}\n";
+            } else {
+                // Default text format (original behavior)
+                std::cout << conjCalc.generateGrahaYuddhaReport(wars);
+            }
         }
 
         // Handle ephemeris table generation
