@@ -65,9 +65,9 @@ bool HoroscopeCalculator::calculateBirthChart(const BirthData& birthData,
         return false;
     }
 
-    // Calculate house cusps
+    // Calculate house cusps with zodiac mode and ayanamsa
     HouseCusps houseCusps;
-    if (!houseCalculator.calculateHouses(birthData, houseSystem, houseCusps)) {
+    if (!houseCalculator.calculateHouses(birthData, houseSystem, houseCusps, zodiacMode, ayanamsa)) {
         lastError = "Failed to calculate houses: " + houseCalculator.getLastError();
         return false;
     }

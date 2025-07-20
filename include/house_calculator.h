@@ -12,6 +12,10 @@ public:
     // Calculate house cusps for given birth data
     bool calculateHouses(const BirthData& birthData, HouseSystem system, HouseCusps& cusps);
 
+    // Calculate house cusps with zodiac mode and ayanamsa
+    bool calculateHouses(const BirthData& birthData, HouseSystem system, HouseCusps& cusps,
+                        ZodiacMode zodiacMode, AyanamsaType ayanamsa);
+
     // Assign house numbers to planet positions
     void assignHousesToPlanets(const HouseCusps& cusps, std::vector<PlanetPosition>& positions);
 

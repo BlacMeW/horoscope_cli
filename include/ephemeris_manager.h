@@ -28,6 +28,11 @@ public:
     bool calculateHouseCusps(double julianDay, double latitude, double longitude,
                            HouseSystem system, HouseCusps& cusps);
 
+    // Calculate house cusps with zodiac mode and ayanamsa
+    bool calculateHouseCusps(double julianDay, double latitude, double longitude,
+                           HouseSystem system, HouseCusps& cusps,
+                           ZodiacMode zodiacMode, AyanamsaType ayanamsa);
+
     // Get error message if calculation fails
     std::string getLastError() const;
 

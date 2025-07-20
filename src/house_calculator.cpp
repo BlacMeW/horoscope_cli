@@ -21,6 +21,22 @@ bool HouseCalculator::calculateHouses(const BirthData& birthData, HouseSystem sy
     return true;
 }
 
+bool HouseCalculator::calculateHouses(const BirthData& birthData, HouseSystem system, HouseCusps& cusps,
+                                     ZodiacMode zodiacMode, AyanamsaType ayanamsa) {
+    double julianDay = birthData.getJulianDay();
+
+    bool success = ephemerisManager.calculateHouseCusps(julianDay, birthData.latitude,
+                                                       birthData.longitude, system, cusps,
+                                                       zodiacMode, ayanamsa);
+
+    if (!success) {
+        lastError = ephemerisManager.getLastError();
+        return false;
+    }
+
+    return true;
+}
+
 void HouseCalculator::assignHousesToPlanets(const HouseCusps& cusps, std::vector<PlanetPosition>& positions) {
     for (auto& position : positions) {
         position.house = getHouseNumber(cusps, position.longitude);

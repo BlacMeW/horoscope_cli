@@ -144,6 +144,44 @@ bool EphemerisManager::calculateHouseCusps(double julianDay, double latitude, do
     return true;
 }
 
+bool EphemerisManager::calculateHouseCusps(double julianDay, double latitude, double longitude,
+                                         HouseSystem system, HouseCusps& cusps,
+                                         ZodiacMode zodiacMode, AyanamsaType ayanamsa) {
+    if (!initialized) {
+        lastError = "EphemerisManager not initialized";
+        return false;
+    }
+
+    // Set ayanamsa if using sidereal zodiac
+    if (zodiacMode == ZodiacMode::SIDEREAL) {
+        swe_set_sid_mode(ayanamsaTypeToSwissEphId(ayanamsa), 0, 0);
+    }
+
+    double hcusps[13];
+    double ascmc[10];
+    char hsys = houseSystemToSwissEph(system);
+    int32 iflag = (zodiacMode == ZodiacMode::SIDEREAL) ? SEFLG_SIDEREAL : 0;
+
+    int ret = swe_houses_ex(julianDay, iflag, latitude, longitude, hsys, hcusps, ascmc);
+
+    if (ret < 0) {
+        lastError = "Failed to calculate house cusps";
+        return false;
+    }
+
+    // Copy house cusps
+    for (int i = 1; i <= 12; i++) {
+        cusps.cusps[i] = hcusps[i];
+    }
+
+    cusps.ascendant = ascmc[0];
+    cusps.midheaven = ascmc[1];
+    cusps.vertex = ascmc[3];
+    cusps.eastPoint = ascmc[4];
+
+    return true;
+}
+
 std::string EphemerisManager::getLastError() const {
     return lastError;
 }
@@ -203,11 +241,17 @@ int EphemerisManager::buildSwissEphFlags(ZodiacMode zodiacMode, const std::vecto
             case CalculationFlag::TOPOCENTRIC:
                 iflag |= SEFLG_TOPOCTR;
                 break;
+            case CalculationFlag::APPARENT:
+                // Apparent position is default, no additional flag needed
+                break;
             case CalculationFlag::TRUE_GEOMETRIC:
                 iflag |= SEFLG_TRUEPOS;
                 break;
             case CalculationFlag::ASTROMETRIC:
                 iflag |= SEFLG_ASTROMETRIC;
+                break;
+            case CalculationFlag::STANDARD_EQUINOX:
+                // Standard equinox of date is default, no flag needed
                 break;
             case CalculationFlag::J2000_EQUINOX:
                 iflag |= SEFLG_J2000;
