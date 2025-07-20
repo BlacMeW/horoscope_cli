@@ -141,6 +141,19 @@ struct CommandLineArgs {
     std::string searchStartDate;
     std::string searchEndDate;
     std::string hinduSearchFormat = "table";
+    std::string hinduSearchLogic = "and"; // "and" or "or" logic mode
+
+    // Hindu Calendar Search Extended Criteria
+    int searchNakshatra = -1;
+    int searchNakshatraStart = -1;
+    int searchNakshatraEnd = -1;
+    int searchYoga = -1;
+    int searchYogaStart = -1;
+    int searchYogaEnd = -1;
+    bool searchEkadashi = false;
+    bool searchPurnima = false;
+    bool searchAmavasya = false;
+    bool searchSankranti = false;
 
     // Myanmar Calendar options
     bool showMyanmarCalendar = false;
@@ -172,6 +185,7 @@ struct CommandLineArgs {
     bool myanmarSearchThamanyo = false;
     bool myanmarSearchExactMatch = true;
     int myanmarSearchNearTolerance = 1;
+    std::string myanmarSearchLogic = "and"; // "and" or "or"
     std::string myanmarSearchStartDate;
     std::string myanmarSearchEndDate;
     std::string myanmarSearchFormat = "table";
@@ -453,6 +467,19 @@ void printHelp() {
     std::cout << "                            json  = JSON structure for integration\n";
     std::cout << "                            list  = Simple date list for scripts\n\n";
 
+    std::cout << "    --hindu-search-logic MODE\n";
+    std::cout << "                            Logic mode for combining search criteria\n";
+    std::cout << "                            and = All criteria must match (default)\n";
+    std::cout << "                            or  = Any criteria can match\n";
+    std::cout << "                            • Example: --hindu-search-logic or\n\n";
+
+    std::cout << "    --hindu-search-ekadashi Search for Ekadashi days\n";
+    std::cout << "    --hindu-search-purnima  Search for Purnima (full moon) days\n";
+    std::cout << "    --hindu-search-amavasya Search for Amavasya (new moon) days\n";
+    std::cout << "    --hindu-search-sankranti Search for Sankranti days\n";
+    std::cout << "    --hindu-search-nakshatra N Search for specific Nakshatra (1-27)\n";
+    std::cout << "    --hindu-search-yoga N   Search for specific Yoga (1-27)\n\n";
+
     std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
     std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
     std::cout << "                       • Displays Myanmar Era (ME) and Sasana Era (SE) years\n";
@@ -517,6 +544,11 @@ void printHelp() {
     std::cout << "    --myanmar-search-yatyaza        Search for yatyaza (inauspicious) days\n";
     std::cout << "    --myanmar-search-pyathada       Search for pyathada (inauspicious) days\n";
     std::cout << "    --myanmar-search-thamanyo       Search for thamanyo (auspicious) days\n\n";
+
+    std::cout << "    --myanmar-search-logic MODE     Combine criteria with logical operators\n";
+    std::cout << "                                     and = All criteria must match (default)\n";
+    std::cout << "                                     or  = Any criteria can match\n";
+    std::cout << "                                     • Example: --myanmar-search-logic or\n\n";
 
     std::cout << "    --myanmar-search-exact          Use exact matching (default)\n";
     std::cout << "    --myanmar-search-near TOL       Use near matching with tolerance\n";
@@ -753,10 +785,19 @@ void printHelp() {
     std::cout << "                --lat 19.0760 --lon 72.8777 \\\n";
     std::cout << "                --hindu-search-format csv\n\n";
 
-    std::cout << "  # Myanmar calendar search for Full Moon Sabbath days\n";
+    std::cout << "  # Myanmar calendar search for Full Moon Sabbath days (AND logic)\n";
     std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
     std::cout << "                --myanmar-search-moon-phase 1 \\\n";
     std::cout << "                --myanmar-search-sabbath \\\n";
+    std::cout << "                --myanmar-search-logic and \\\n";
+    std::cout << "                --lat 16.8661 --lon 96.1951 \\\n";
+    std::cout << "                --myanmar-search-format table\n\n";
+
+    std::cout << "  # Myanmar calendar search for Full Moon OR Yatyaza days (OR logic)\n";
+    std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-01-31 \\\n";
+    std::cout << "                --myanmar-search-moon-phase 1 \\\n";
+    std::cout << "                --myanmar-search-yatyaza \\\n";
+    std::cout << "                --myanmar-search-logic or \\\n";
     std::cout << "                --lat 16.8661 --lon 96.1951 \\\n";
     std::cout << "                --myanmar-search-format table\n\n";
 
@@ -771,6 +812,20 @@ void printHelp() {
     std::cout << "  horoscope_cli --hindu-search 2025-01-01 2025-03-31 \\\n";
     std::cout << "                --search-tithi 15 \\\n";
     std::cout << "                --hindu-search-format list\n\n";
+
+    std::cout << "  # Hindu calendar search with OR logic - find Purnima OR Ekadashi\n";
+    std::cout << "  horoscope_cli --hindu-search 2025-01-01 2025-03-31 \\\n";
+    std::cout << "                --hindu-search-purnima \\\n";
+    std::cout << "                --hindu-search-ekadashi \\\n";
+    std::cout << "                --hindu-search-logic or \\\n";
+    std::cout << "                --hindu-search-format table\n\n";
+
+    std::cout << "  # Hindu calendar search with AND logic - find specific Nakshatra AND Yoga\n";
+    std::cout << "  horoscope_cli --hindu-search 2025-01-01 2025-06-30 \\\n";
+    std::cout << "                --hindu-search-nakshatra 1 \\\n";
+    std::cout << "                --hindu-search-yoga 5 \\\n";
+    std::cout << "                --hindu-search-logic and \\\n";
+    std::cout << "                --hindu-search-format json\n\n";
 
     std::cout << "  # Myanmar calendar search - simple date list format\n";
     std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
@@ -1170,6 +1225,24 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 std::cerr << "Error: Invalid Hindu search format. Must be 'table', 'csv', 'json', or 'list'\n";
                 return false;
             }
+        } else if (arg == "--hindu-search-logic" && i + 1 < argc) {
+            args.hinduSearchLogic = argv[++i];
+            if (args.hinduSearchLogic != "and" && args.hinduSearchLogic != "or") {
+                std::cerr << "Error: Invalid Hindu search logic. Must be 'and' or 'or'\n";
+                return false;
+            }
+        } else if (arg == "--hindu-search-ekadashi") {
+            args.searchEkadashi = true;
+        } else if (arg == "--hindu-search-purnima") {
+            args.searchPurnima = true;
+        } else if (arg == "--hindu-search-amavasya") {
+            args.searchAmavasya = true;
+        } else if (arg == "--hindu-search-sankranti") {
+            args.searchSankranti = true;
+        } else if (arg == "--hindu-search-nakshatra" && i + 1 < argc) {
+            args.searchNakshatra = std::stoi(argv[++i]);
+        } else if (arg == "--hindu-search-yoga" && i + 1 < argc) {
+            args.searchYoga = std::stoi(argv[++i]);
 
         // Myanmar Calendar options
         } else if (arg == "--myanmar-calendar") {
@@ -1234,6 +1307,14 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.myanmarSearchPyathada = true;
         } else if (arg == "--myanmar-search-thamanyo") {
             args.myanmarSearchThamanyo = true;
+        } else if (arg == "--myanmar-search-logic" && i + 1 < argc) {
+            std::string logic = argv[++i];
+            if (logic == "and" || logic == "or") {
+                args.myanmarSearchLogic = logic;
+            } else {
+                std::cerr << "❌ Error: Invalid logic mode '" << logic << "'. Use 'and' or 'or'.\n";
+                return 1;
+            }
         } else if (arg == "--myanmar-search-exact") {
             args.myanmarSearchExactMatch = true;
         } else if (arg == "--myanmar-search-near" && i + 1 < argc) {
@@ -2163,6 +2244,9 @@ int main(int argc, char* argv[]) {
             criteria.exactMatch = args.searchExactMatch;
             criteria.nearMatchTolerance = args.searchNearTolerance;
 
+            // Set logic mode
+            criteria.logicMode = (args.hinduSearchLogic == "or") ? HinduCalendar::LogicMode::OR : HinduCalendar::LogicMode::AND;
+
             // Set search parameters
             if (args.searchYear > 0) {
                 criteria.exactYear = args.searchYear;
@@ -2188,6 +2272,27 @@ int main(int argc, char* argv[]) {
             if (args.searchWeekday >= 0) {
                 criteria.exactWeekday = args.searchWeekday;
             }
+
+            // Extended Panchanga criteria
+            if (args.searchNakshatra > 0) {
+                criteria.exactNakshatra = args.searchNakshatra;
+            } else if (args.searchNakshatraStart > 0) {
+                criteria.nakshatraRangeStart = args.searchNakshatraStart;
+                criteria.nakshatraRangeEnd = args.searchNakshatraEnd;
+            }
+
+            if (args.searchYoga > 0) {
+                criteria.exactYoga = args.searchYoga;
+            } else if (args.searchYogaStart > 0) {
+                criteria.yogaRangeStart = args.searchYogaStart;
+                criteria.yogaRangeEnd = args.searchYogaEnd;
+            }
+
+            // Special day criteria
+            criteria.searchEkadashi = args.searchEkadashi;
+            criteria.searchPurnima = args.searchPurnima;
+            criteria.searchAmavasya = args.searchAmavasya;
+            criteria.searchSankranti = args.searchSankranti;
 
             // Perform search
             std::vector<HinduCalendar::SearchResult> searchResults = hinduCalendar.searchHinduCalendar(criteria, args.latitude, args.longitude);
@@ -2382,6 +2487,13 @@ int main(int argc, char* argv[]) {
             criteria.searchYatyaza = args.myanmarSearchYatyaza;
             criteria.searchPyathada = args.myanmarSearchPyathada;
             criteria.searchThamanyo = args.myanmarSearchThamanyo;
+
+            // Set logic mode
+            if (args.myanmarSearchLogic == "or") {
+                criteria.logicMode = MyanmarCalendar::LogicMode::OR;
+            } else {
+                criteria.logicMode = MyanmarCalendar::LogicMode::AND;
+            }
 
             // Set matching mode
             criteria.exactMatch = args.myanmarSearchExactMatch;

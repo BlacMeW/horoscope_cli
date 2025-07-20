@@ -1156,84 +1156,191 @@ std::vector<HinduCalendar::SearchResult> HinduCalendar::searchHinduCalendar(cons
             std::string matchDescription;
             int matchCount = 0;
             int totalCriteria = 0;
+            bool isMatch = (criteria.logicMode == LogicMode::AND);
 
             // Year criteria
             if (criteria.exactYear != -1) {
                 totalCriteria++;
-                if (gregYear == criteria.exactYear) {
+                bool match = (gregYear == criteria.exactYear);
+                if (match) {
                     matchCount++;
-                    matchDescription += "Year(" + std::to_string(gregYear) + ") ";
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Year=" + std::to_string(gregYear);
                 }
-            }
-
-            if (criteria.yearRangeStart != -1 && criteria.yearRangeEnd != -1) {
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            } else if (criteria.yearRangeStart != -1 && criteria.yearRangeEnd != -1) {
                 totalCriteria++;
-                if (gregYear >= criteria.yearRangeStart && gregYear <= criteria.yearRangeEnd) {
+                bool match = (gregYear >= criteria.yearRangeStart && gregYear <= criteria.yearRangeEnd);
+                if (match) {
                     matchCount++;
-                    matchDescription += "YearRange(" + std::to_string(gregYear) + ") ";
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Year=" + std::to_string(criteria.yearRangeStart) + "-" + std::to_string(criteria.yearRangeEnd);
                 }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
             }
 
             // Month criteria
             if (criteria.exactMonth != -1) {
                 totalCriteria++;
-                if (gregMonth == criteria.exactMonth) {
+                bool match = (gregMonth == criteria.exactMonth);
+                if (match) {
                     matchCount++;
-                    matchDescription += "Month(" + std::to_string(gregMonth) + ") ";
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Month=" + std::to_string(gregMonth);
                 }
-            }
-
-            if (criteria.monthRangeStart != -1 && criteria.monthRangeEnd != -1) {
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            } else if (criteria.monthRangeStart != -1 && criteria.monthRangeEnd != -1) {
                 totalCriteria++;
-                if (gregMonth >= criteria.monthRangeStart && gregMonth <= criteria.monthRangeEnd) {
+                bool match = (gregMonth >= criteria.monthRangeStart && gregMonth <= criteria.monthRangeEnd);
+                if (match) {
                     matchCount++;
-                    matchDescription += "MonthRange(" + std::to_string(gregMonth) + ") ";
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Month=" + std::to_string(criteria.monthRangeStart) + "-" + std::to_string(criteria.monthRangeEnd);
                 }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
             }
 
             // Tithi criteria
             int currentTithi = static_cast<int>(panchanga.tithi);
             if (criteria.exactTithi != -1) {
                 totalCriteria++;
+                bool match = false;
                 if (criteria.exactMatch) {
-                    if (currentTithi == criteria.exactTithi) {
-                        matchCount++;
-                        matchDescription += "Tithi(" + getTithiName(panchanga.tithi) + ") ";
-                    }
+                    match = (currentTithi == criteria.exactTithi);
                 } else {
                     // Near match for tithi
                     int diff = abs(currentTithi - criteria.exactTithi);
-                    if (diff <= criteria.nearMatchTolerance || (diff >= 29 && criteria.nearMatchTolerance >= 1)) {
-                        matchCount++;
-                        matchDescription += "TithiNear(" + getTithiName(panchanga.tithi) + ") ";
-                    }
+                    match = (diff <= criteria.nearMatchTolerance || (diff >= 29 && criteria.nearMatchTolerance >= 1));
                 }
-            }
-
-            if (criteria.tithiRangeStart != -1 && criteria.tithiRangeEnd != -1) {
-                totalCriteria++;
-                if (currentTithi >= criteria.tithiRangeStart && currentTithi <= criteria.tithiRangeEnd) {
+                if (match) {
                     matchCount++;
-                    matchDescription += "TithiRange(" + getTithiName(panchanga.tithi) + ") ";
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Tithi=" + getTithiName(panchanga.tithi);
                 }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            } else if (criteria.tithiRangeStart != -1 && criteria.tithiRangeEnd != -1) {
+                totalCriteria++;
+                bool match = (currentTithi >= criteria.tithiRangeStart && currentTithi <= criteria.tithiRangeEnd);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Tithi=" + std::to_string(criteria.tithiRangeStart) + "-" + std::to_string(criteria.tithiRangeEnd);
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
             }
 
             // Weekday criteria
             if (criteria.exactWeekday != -1) {
                 totalCriteria++;
-                if (weekday == criteria.exactWeekday) {
+                bool match = (weekday == criteria.exactWeekday);
+                if (match) {
                     matchCount++;
-                    matchDescription += "Weekday(" + getVaraName(static_cast<Vara>(weekday)) + ") ";
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Weekday=" + getVaraName(static_cast<Vara>(weekday));
                 }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            // Nakshatra criteria
+            int currentNakshatra = static_cast<int>(panchanga.nakshatra);
+            if (criteria.exactNakshatra != -1) {
+                totalCriteria++;
+                bool match = (currentNakshatra == criteria.exactNakshatra);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Nakshatra=" + getNakshatraName(panchanga.nakshatra);
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            } else if (criteria.nakshatraRangeStart != -1 && criteria.nakshatraRangeEnd != -1) {
+                totalCriteria++;
+                bool match = (currentNakshatra >= criteria.nakshatraRangeStart && currentNakshatra <= criteria.nakshatraRangeEnd);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Nakshatra=" + std::to_string(criteria.nakshatraRangeStart) + "-" + std::to_string(criteria.nakshatraRangeEnd);
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            // Yoga criteria
+            int currentYoga = static_cast<int>(panchanga.yoga);
+            if (criteria.exactYoga != -1) {
+                totalCriteria++;
+                bool match = (currentYoga == criteria.exactYoga);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Yoga=" + getYogaName(panchanga.yoga);
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            } else if (criteria.yogaRangeStart != -1 && criteria.yogaRangeEnd != -1) {
+                totalCriteria++;
+                bool match = (currentYoga >= criteria.yogaRangeStart && currentYoga <= criteria.yogaRangeEnd);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Yoga=" + std::to_string(criteria.yogaRangeStart) + "-" + std::to_string(criteria.yogaRangeEnd);
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            // Special day criteria
+            if (criteria.searchEkadashi) {
+                totalCriteria++;
+                bool match = panchanga.isEkadashi;
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Ekadashi";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (criteria.searchPurnima) {
+                totalCriteria++;
+                bool match = panchanga.isPurnima;
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Purnima";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (criteria.searchAmavasya) {
+                totalCriteria++;
+                bool match = panchanga.isAmavasya;
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Amavasya";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (criteria.searchSankranti) {
+                totalCriteria++;
+                bool match = panchanga.isSankranti;
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Sankranti";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
             }
 
             // Calculate match score
             if (totalCriteria > 0) {
-                matchScore = static_cast<double>(matchCount) / totalCriteria;
+                matchScore = static_cast<double>(matchCount) / static_cast<double>(totalCriteria);
+            } else {
+                // If no specific criteria are provided, return all days with base score
+                matchScore = 0.5;
+                matchDescription = "All days (no specific criteria)";
             }
 
-            // Add to results if there's a match
-            if (matchScore > 0.0) {
+            // Add to results if there's a match (or if no criteria specified)
+            if (isMatch && matchScore > 0.0) {
                 SearchResult result;
                 result.gregorianDate = std::string(dateBuffer);
                 result.panchangaData = panchanga;
@@ -1302,6 +1409,50 @@ std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByYear(int year, c
     criteria.searchEndDate = endDate;
 
     return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Multi-criteria search: Ekadashi AND Purnima
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchEkadashiAndPurnima(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchEkadashi = true;
+    criteria.searchPurnima = true;
+    criteria.logicMode = LogicMode::AND;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Multi-criteria search: Purnima OR Amavasya
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchPurnimaOrAmavasya(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchPurnima = true;
+    criteria.searchAmavasya = true;
+    criteria.logicMode = LogicMode::OR;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Search by specific nakshatra
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByNakshatra(int nakshatra, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactNakshatra = nakshatra;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Generic multi-criteria search with specified logic mode
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchMultiCriteria(const SearchCriteria& criteria, LogicMode logicMode, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria modifiedCriteria = criteria;
+    modifiedCriteria.logicMode = logicMode;
+    modifiedCriteria.searchStartDate = startDate;
+    modifiedCriteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(modifiedCriteria, latitude, longitude);
 }
 
 } // namespace Astro

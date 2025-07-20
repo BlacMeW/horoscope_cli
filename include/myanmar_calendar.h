@@ -229,7 +229,12 @@ public:
     std::string getLastError() const { return lastError; }
     bool isInitialized() const { return initialized; }
 
-    // Search functionality
+    // Search functionality - enums and structs
+    enum class LogicMode {
+        AND,
+        OR
+    };
+
     struct SearchCriteria {
         // Year criteria
         int exactYear = -1;           // Search for specific Myanmar year (-1 = ignore)
@@ -265,6 +270,9 @@ public:
         bool exactMatch = true;       // true = exact match, false = near match
         int nearMatchTolerance = 1;   // For near match, tolerance in days
 
+        // Logic mode for combining criteria (AND/OR)
+        LogicMode logicMode = LogicMode::AND;
+
         // Date range for search
         std::string searchStartDate;  // Start date for search (YYYY-MM-DD)
         std::string searchEndDate;    // End date for search (YYYY-MM-DD)
@@ -286,6 +294,11 @@ public:
     std::vector<SearchResult> searchByMonth(int month, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchByYear(int year, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchBySabbath(bool includeSabbathEve, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+    // Multi-criteria search with logical operators
+    std::vector<SearchResult> searchFullMoonOrYatyaza(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchSabbathAndFullMoon(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchMultiCriteria(const SearchCriteria& criteria, LogicMode logicMode, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
 
 private:
     // Utility method for parsing dates (shared with main search)

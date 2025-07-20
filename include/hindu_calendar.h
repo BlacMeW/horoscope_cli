@@ -307,6 +307,12 @@ public:
     std::string getLastError() const { return lastError; }
     bool isInitialized() const { return initialized; }
 
+    // Logic mode for combining search criteria
+    enum class LogicMode {
+        AND = 0,    // All criteria must match
+        OR = 1      // Any criteria can match
+    };
+
     // Search functionality
     struct SearchCriteria {
         // Year criteria
@@ -326,6 +332,25 @@ public:
 
         // Weekday criteria
         int exactWeekday = -1;        // Search for specific weekday (0=Sun, 6=Sat, -1 = ignore)
+
+        // Nakshatra criteria
+        int exactNakshatra = -1;      // Search for specific nakshatra (1-27, -1 = ignore)
+        int nakshatraRangeStart = -1; // Nakshatra range start (1-27, -1 = ignore)
+        int nakshatraRangeEnd = -1;   // Nakshatra range end (1-27, -1 = ignore)
+
+        // Yoga criteria
+        int exactYoga = -1;           // Search for specific yoga (1-27, -1 = ignore)
+        int yogaRangeStart = -1;      // Yoga range start (1-27, -1 = ignore)
+        int yogaRangeEnd = -1;        // Yoga range end (1-27, -1 = ignore)
+
+        // Special day criteria
+        bool searchEkadashi = false;  // Search for Ekadashi days
+        bool searchPurnima = false;   // Search for Purnima (full moon) days
+        bool searchAmavasya = false;  // Search for Amavasya (new moon) days
+        bool searchSankranti = false; // Search for Sankranti days
+
+        // Logical combination mode
+        LogicMode logicMode = LogicMode::AND; // How to combine multiple criteria
 
         // Search options
         bool exactMatch = true;       // true = exact match, false = near match
@@ -351,6 +376,12 @@ public:
     std::vector<SearchResult> searchByWeekday(int weekday, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchByMonth(int month, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchByYear(int year, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+    // Multi-criteria search helper methods
+    std::vector<SearchResult> searchEkadashiAndPurnima(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchPurnimaOrAmavasya(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByNakshatra(int nakshatra, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchMultiCriteria(const SearchCriteria& criteria, LogicMode logicMode, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
 
 private:
     // Utility method for parsing dates

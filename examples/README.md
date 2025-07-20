@@ -34,7 +34,17 @@ This directory contains comprehensive examples demonstrating the calendar search
 
 **Run it**: `./myanmar_calendar_search_examples.sh`
 
-### 4. `combined_calendar_search_examples.sh` 🌏
+### 4. `myanmar_multi_criteria_search_examples.sh` 🌙
+**Purpose**: Advanced multi-criteria search with AND/OR logic
+**What it does**:
+- Demonstrates combining multiple search criteria using logical operators
+- Examples of "Full Moon OR Yatyaza", "Sabbath AND Full Moon"
+- Complex searches for auspicious/inauspicious day combinations
+- Perfect for advanced astrology and religious planning
+
+**Run it**: `./myanmar_multi_criteria_search_examples.sh`
+
+### 5. `combined_calendar_search_examples.sh` 🌏
 **Purpose**: Comparative analysis of both calendar systems
 **What it does**:
 - 10 side-by-side comparisons of Hindu vs Myanmar calendar searches
@@ -93,7 +103,16 @@ This directory contains comprehensive examples demonstrating the calendar search
 - **Fortnight**: `--myanmar-search-fortnight-day N`, `--myanmar-search-fortnight-day-range START END`
 - **Religious**: `--myanmar-search-sabbath`, `--myanmar-search-sabbath-eve`
 - **Astrological**: `--myanmar-search-yatyaza`, `--myanmar-search-pyathada`, `--myanmar-search-thamanyo`
+- **Logic**: `--myanmar-search-logic and|or` (combine criteria with AND/OR logic)
 - **Matching**: `--myanmar-search-exact`, `--myanmar-search-near N`
+
+### 🔗 Multi-Criteria Search Logic
+- **AND Logic** (default): All specified criteria must match
+  - Example: `--myanmar-search-sabbath --myanmar-search-moon-phase 1 --myanmar-search-logic and`
+  - Finds dates that are BOTH sabbath AND full moon
+- **OR Logic**: Any of the specified criteria can match
+  - Example: `--myanmar-search-yatyaza --myanmar-search-moon-phase 1 --myanmar-search-logic or`
+  - Finds dates that are EITHER yatyaza OR full moon
 
 ## 📍 Location Requirements
 
