@@ -742,7 +742,7 @@ The application uses authentic Swiss Ephemeris eclipse algorithms to calculate:
 ##### 📏 **Latitude Range Filtering**
 Filter conjunctions based on planetary ecliptic latitudes:
 - **Purpose**: Find planets aligned in the same orbital plane
-- **Range**: -90° (South) to +90° (North) 
+- **Range**: -90° (South) to +90° (North)
 - **Use Cases**:
   - `--conjunction-latitude-range -2.0 2.0`: Planets close to ecliptic
   - `--conjunction-latitude-range -0.5 0.5`: Very tight alignment
@@ -758,7 +758,7 @@ Traditional Vedic analysis of very close planetary conjunctions:
 
 **🏆 Winner Determination Rules:**
 1. **Primary**: Planet with higher ecliptic latitude (more southward) wins
-2. **Secondary**: If latitudes equal, brighter (closer) planet wins  
+2. **Secondary**: If latitudes equal, brighter (closer) planet wins
 3. **Tertiary**: Traditional hierarchy → Jupiter > Saturn > Mars > Venus > Mercury
 
 **✨ Astrological Effects:**
@@ -768,7 +768,7 @@ Traditional Vedic analysis of very close planetary conjunctions:
 
 **🔮 Traditional Interpretations:**
 - **Jupiter Wins**: Enhances wisdom, righteousness, and fortune
-- **Saturn Wins**: Brings discipline, delays, and karmic lessons  
+- **Saturn Wins**: Brings discipline, delays, and karmic lessons
 - **Mars Wins**: Increases energy, courage, and potential conflicts
 - **Venus Wins**: Enhances beauty, arts, and relationships
 - **Mercury Wins**: Strengthens intellect, communication, and commerce
@@ -1870,7 +1870,7 @@ The application uses the Swiss Ephemeris library for astronomical calculations:
 
 ### New Feature Notes
 
-**Latitude Range Filtering**: 
+**Latitude Range Filtering**:
 - Uses ecliptic latitude (not geographic latitude)
 - Filters based on planets' distance from ecliptic plane
 - Useful for finding orbital alignments
