@@ -14,6 +14,10 @@
 #include <regex>
 #include <algorithm>
 
+extern "C" {
+#include "swephexp.h"
+}
+
 namespace Astro {
 
 /////////////////////////////////////////////////////////////////////////////
@@ -875,6 +879,305 @@ std::string MyanmarCalendar::generateMyanmarCalendarTable(const MyanmarCalendarD
 
 std::string MyanmarCalendar::generateMyanmarCalendarTable(const std::vector<MyanmarCalendarData>& dataList) const {
     return generateTable(dataList);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Search functionality implementation
+/////////////////////////////////////////////////////////////////////////////
+
+// Utility method for parsing dates
+bool MyanmarCalendar::parseDate(const std::string& dateStr, int& year, int& month, int& day) const {
+    try {
+        if (dateStr.length() != 10 || dateStr[4] != '-' || dateStr[7] != '-') {
+            return false;
+        }
+
+        year = std::stoi(dateStr.substr(0, 4));
+        month = std::stoi(dateStr.substr(5, 2));
+        day = std::stoi(dateStr.substr(8, 2));
+
+        // Basic validation
+        if (month < 1 || month > 12 || day < 1 || day > 31) {
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+// Convert Gregorian date to Julian day
+double MyanmarCalendar::gregorianDateToJulianDay(int year, int month, int day, double hour) const {
+    // Use standard Julian day calculation
+    int a = (14 - month) / 12;
+    int y = year + 4800 - a;
+    int m = month + 12 * a - 3;
+
+    double jd = day + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
+    jd += hour / 24.0;
+
+    return jd;
+}
+
+// Main search function - comprehensive Myanmar calendar search
+std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchMyanmarCalendar(const SearchCriteria& criteria, double latitude, double longitude) const {
+    std::vector<SearchResult> results;
+
+    if (!initialized) {
+        return results;
+    }
+
+    // Parse search date range
+    int startYear, startMonth, startDay;
+    int endYear, endMonth, endDay;
+
+    if (!parseDate(criteria.searchStartDate, startYear, startMonth, startDay) ||
+        !parseDate(criteria.searchEndDate, endYear, endMonth, endDay)) {
+        return results; // Invalid date range
+    }
+
+    // Calculate Julian day range
+    double startJD = gregorianDateToJulianDay(startYear, startMonth, startDay, 0.0);
+    double endJD = gregorianDateToJulianDay(endYear, endMonth, endDay, 0.0);
+
+    // Search each day in the range
+    for (double jd = startJD; jd <= endJD; jd += 1.0) {
+        try {
+            // Calculate Myanmar calendar for this day
+            MyanmarCalendarData myanmarData = calculateMyanmarCalendar(jd);
+
+            // Calculate weekday (0=Saturday, 6=Friday for Myanmar calendar)
+            int weekday = static_cast<int>(jd + 1.5) % 7; // 0=Saturday in Myanmar calendar
+
+            // Convert to Gregorian date for result
+            int gregYear, gregMonth, gregDay;
+            int gregHour, gregMin;
+            double gregSec;
+            swe_jdet_to_utc(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gregHour, &gregMin, &gregSec);
+
+            char dateBuffer[32];
+            snprintf(dateBuffer, sizeof(dateBuffer), "%04d-%02d-%02d", gregYear, gregMonth, gregDay);
+
+            // Check all criteria and calculate match score
+            double matchScore = 0.0;
+            std::string matchDescription;
+            int matchCount = 0;
+            int totalCriteria = 0;
+
+            // Year criteria
+            if (criteria.exactYear > 0) {
+                totalCriteria++;
+                if (myanmarData.myanmarYear == criteria.exactYear) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Year=" + std::to_string(criteria.exactYear);
+                }
+            } else if (criteria.yearRangeStart > 0) {
+                totalCriteria++;
+                if (myanmarData.myanmarYear >= criteria.yearRangeStart && myanmarData.myanmarYear <= criteria.yearRangeEnd) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Year=" + std::to_string(criteria.yearRangeStart) + "-" + std::to_string(criteria.yearRangeEnd);
+                }
+            }
+
+            // Month criteria
+            if (criteria.exactMonth >= 0) {
+                totalCriteria++;
+                if (static_cast<int>(myanmarData.month) == criteria.exactMonth) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Month=" + getMyanmarMonthName(myanmarData.month);
+                }
+            } else if (criteria.monthRangeStart >= 0) {
+                totalCriteria++;
+                int monthValue = static_cast<int>(myanmarData.month);
+                if (monthValue >= criteria.monthRangeStart && monthValue <= criteria.monthRangeEnd) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Month=" + std::to_string(criteria.monthRangeStart) + "-" + std::to_string(criteria.monthRangeEnd);
+                }
+            }
+
+            // Moon phase criteria
+            if (criteria.exactMoonPhase >= 0) {
+                totalCriteria++;
+                if (static_cast<int>(myanmarData.moonPhase) == criteria.exactMoonPhase) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "MoonPhase=" + getMoonPhaseName(myanmarData.moonPhase);
+                }
+            } else if (criteria.moonPhaseRangeStart >= 0) {
+                totalCriteria++;
+                int moonPhaseValue = static_cast<int>(myanmarData.moonPhase);
+                if (moonPhaseValue >= criteria.moonPhaseRangeStart && moonPhaseValue <= criteria.moonPhaseRangeEnd) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "MoonPhase=" + std::to_string(criteria.moonPhaseRangeStart) + "-" + std::to_string(criteria.moonPhaseRangeEnd);
+                }
+            }
+
+            // Weekday criteria
+            if (criteria.exactWeekday >= 0) {
+                totalCriteria++;
+                if (weekday == criteria.exactWeekday) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Weekday=" + getMyanmarWeekdayName(static_cast<MyanmarWeekday>(weekday));
+                }
+            }
+
+            // Fortnight day criteria
+            if (criteria.exactFortnightDay > 0) {
+                totalCriteria++;
+                if (myanmarData.fortnightDay == criteria.exactFortnightDay) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "FortnightDay=" + std::to_string(criteria.exactFortnightDay);
+                }
+            } else if (criteria.fortnightDayRangeStart > 0) {
+                totalCriteria++;
+                if (myanmarData.fortnightDay >= criteria.fortnightDayRangeStart &&
+                    myanmarData.fortnightDay <= criteria.fortnightDayRangeEnd) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "FortnightDay=" + std::to_string(criteria.fortnightDayRangeStart) + "-" + std::to_string(criteria.fortnightDayRangeEnd);
+                }
+            }
+
+            // Astrological criteria
+            if (criteria.searchSabbath) {
+                totalCriteria++;
+                if (myanmarData.isSabbath) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Sabbath";
+                }
+            }
+
+            if (criteria.searchSabbathEve) {
+                totalCriteria++;
+                if (myanmarData.isSabbathEve) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "SabbathEve";
+                }
+            }
+
+            if (criteria.searchYatyaza) {
+                totalCriteria++;
+                if (myanmarData.isYatyaza) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Yatyaza";
+                }
+            }
+
+            if (criteria.searchPyathada) {
+                totalCriteria++;
+                if (myanmarData.isPyathada) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Pyathada";
+                }
+            }
+
+            if (criteria.searchThamanyo) {
+                totalCriteria++;
+                if (myanmarData.isThamanyo) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "Thamanyo";
+                }
+            }
+
+            // Calculate match score
+            if (totalCriteria > 0) {
+                matchScore = static_cast<double>(matchCount) / static_cast<double>(totalCriteria);
+            }
+
+            // Add to results if there's a match
+            if (matchScore > 0.0) {
+                SearchResult result;
+                result.gregorianDate = dateBuffer;
+                result.myanmarData = myanmarData;
+                result.julianDay = jd;
+                result.weekday = weekday;
+                result.matchScore = matchScore;
+                result.matchDescription = matchDescription;
+
+                results.push_back(result);
+            }
+
+        } catch (const std::exception& e) {
+            // Skip this day on error
+            continue;
+        }
+    }
+
+    // Sort results by match score (descending) then by date (ascending)
+    std::sort(results.begin(), results.end(), [](const SearchResult& a, const SearchResult& b) {
+        if (a.matchScore != b.matchScore) {
+            return a.matchScore > b.matchScore;
+        }
+        return a.julianDay < b.julianDay;
+    });
+
+    return results;
+}
+
+// Search by specific moon phase
+std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchByMoonPhase(int moonPhase, const std::string& startDate, const std::string& endDate, double latitude, double longitude, bool exactMatch) const {
+    SearchCriteria criteria;
+    criteria.exactMoonPhase = moonPhase;
+    criteria.exactMatch = exactMatch;
+    criteria.nearMatchTolerance = 1;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchMyanmarCalendar(criteria, latitude, longitude);
+}
+
+// Search by weekday
+std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchByWeekday(int weekday, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactWeekday = weekday;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchMyanmarCalendar(criteria, latitude, longitude);
+}
+
+// Search by month
+std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchByMonth(int month, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactMonth = month;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchMyanmarCalendar(criteria, latitude, longitude);
+}
+
+// Search by year
+std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchByYear(int year, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactYear = year;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchMyanmarCalendar(criteria, latitude, longitude);
+}
+
+// Search by sabbath days
+std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchBySabbath(bool includeSabbathEve, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchSabbath = true;
+    criteria.searchSabbathEve = includeSabbathEve;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchMyanmarCalendar(criteria, latitude, longitude);
 }
 
 } // namespace Astro

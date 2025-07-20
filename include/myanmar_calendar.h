@@ -228,6 +228,69 @@ public:
     // Error handling
     std::string getLastError() const { return lastError; }
     bool isInitialized() const { return initialized; }
+
+    // Search functionality
+    struct SearchCriteria {
+        // Year criteria
+        int exactYear = -1;           // Search for specific Myanmar year (-1 = ignore)
+        int yearRangeStart = -1;      // Year range start (-1 = ignore)
+        int yearRangeEnd = -1;        // Year range end (-1 = ignore)
+
+        // Month criteria
+        int exactMonth = -1;          // Search for specific month (0-14, -1 = ignore)
+        int monthRangeStart = -1;     // Month range start (0-14, -1 = ignore)
+        int monthRangeEnd = -1;       // Month range end (0-14, -1 = ignore)
+
+        // Moon phase criteria
+        int exactMoonPhase = -1;      // Search for specific moon phase (0-3, -1 = ignore)
+        int moonPhaseRangeStart = -1; // Moon phase range start (0-3, -1 = ignore)
+        int moonPhaseRangeEnd = -1;   // Moon phase range end (0-3, -1 = ignore)
+
+        // Weekday criteria
+        int exactWeekday = -1;        // Search for specific weekday (0=Sat, 6=Fri, -1 = ignore)
+
+        // Fortnight day criteria
+        int exactFortnightDay = -1;   // Search for specific fortnight day (1-15, -1 = ignore)
+        int fortnightDayRangeStart = -1; // Fortnight day range start (1-15, -1 = ignore)
+        int fortnightDayRangeEnd = -1;   // Fortnight day range end (1-15, -1 = ignore)
+
+        // Astrological criteria
+        bool searchSabbath = false;           // Search for sabbath days
+        bool searchSabbathEve = false;        // Search for sabbath eve days
+        bool searchYatyaza = false;           // Search for yatyaza (inauspicious) days
+        bool searchPyathada = false;          // Search for pyathada days
+        bool searchThamanyo = false;          // Search for thamanyo (auspicious) days
+
+        // Search options
+        bool exactMatch = true;       // true = exact match, false = near match
+        int nearMatchTolerance = 1;   // For near match, tolerance in days
+
+        // Date range for search
+        std::string searchStartDate;  // Start date for search (YYYY-MM-DD)
+        std::string searchEndDate;    // End date for search (YYYY-MM-DD)
+    };
+
+    struct SearchResult {
+        std::string gregorianDate;              // Gregorian date (YYYY-MM-DD)
+        MyanmarCalendarData myanmarData;        // Full Myanmar calendar data for this date
+        double julianDay;                       // Julian day number
+        int weekday;                            // Weekday (0=Saturday, 6=Friday)
+        double matchScore;                      // Match score (1.0 = perfect match, 0.0 = no match)
+        std::string matchDescription;           // Description of what matched
+    };
+
+    // Search methods
+    std::vector<SearchResult> searchMyanmarCalendar(const SearchCriteria& criteria, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByMoonPhase(int moonPhase, const std::string& startDate, const std::string& endDate, double latitude, double longitude, bool exactMatch = true) const;
+    std::vector<SearchResult> searchByWeekday(int weekday, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByMonth(int month, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByYear(int year, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchBySabbath(bool includeSabbathEve, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+private:
+    // Utility method for parsing dates (shared with main search)
+    bool parseDate(const std::string& dateStr, int& year, int& month, int& day) const;
+    double gregorianDateToJulianDay(int year, int month, int day, double hour = 0.0) const;
 };
 
 // Utility functions

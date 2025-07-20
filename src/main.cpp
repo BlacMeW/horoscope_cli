@@ -133,6 +133,31 @@ struct CommandLineArgs {
     std::string myanmarCalendarFormat = "table";
     bool showAstrologicalDaysOnly = false;
 
+    // Myanmar Calendar Search options
+    bool showMyanmarSearch = false;
+    int myanmarSearchYear = -1;
+    int myanmarSearchYearStart = -1;
+    int myanmarSearchYearEnd = -1;
+    int myanmarSearchMonth = -1;
+    int myanmarSearchMonthStart = -1;
+    int myanmarSearchMonthEnd = -1;
+    int myanmarSearchMoonPhase = -1;
+    int myanmarSearchMoonPhaseStart = -1;
+    int myanmarSearchMoonPhaseEnd = -1;
+    int myanmarSearchWeekday = -1;
+    int myanmarSearchFortnightDay = -1;
+    int myanmarSearchFortnightDayStart = -1;
+    int myanmarSearchFortnightDayEnd = -1;
+    bool myanmarSearchSabbath = false;
+    bool myanmarSearchSabbathEve = false;
+    bool myanmarSearchYatyaza = false;
+    bool myanmarSearchPyathada = false;
+    bool myanmarSearchThamanyo = false;
+    bool myanmarSearchExactMatch = true;
+    int myanmarSearchNearTolerance = 1;
+    std::string myanmarSearchStartDate;
+    std::string myanmarSearchEndDate;
+
     // Astro Calendar options (Combined calendar system)
     bool showAstroCalendar = false;
     std::string astroCalendarDate;
@@ -359,6 +384,52 @@ void printHelp() {
     std::cout << "                       Show only astrological days and events\n";
     std::cout << "                       • Filters output to show Sabbath, Yatyaza, etc.\n";
     std::cout << "                       • Shows Myanmar astrological observances\n\n";
+
+    std::cout << "MYANMAR CALENDAR SEARCH OPTIONS 🔍🇲🇲\n";
+    std::cout << "    --myanmar-search FROM TO  Search Myanmar calendar by criteria\n";
+    std::cout << "                              • Format: YYYY-MM-DD YYYY-MM-DD (date range)\n";
+    std::cout << "                              • Combine with search criteria below\n";
+    std::cout << "                              • Results sorted by match score\n\n";
+
+    std::cout << "    --myanmar-search-year YEAR      Search for specific Myanmar year\n";
+    std::cout << "                                     • Example: --myanmar-search-year 1385\n\n";
+
+    std::cout << "    --myanmar-search-year-range START END  Search for year range\n";
+    std::cout << "                                            • Example: --myanmar-search-year-range 1385 1387\n\n";
+
+    std::cout << "    --myanmar-search-month MONTH    Search for specific month (0-14)\n";
+    std::cout << "                                     • 0=First Waso, 1=Tagu, 2=Kason, etc.\n";
+    std::cout << "                                     • Example: --myanmar-search-month 4 (Waso)\n\n";
+
+    std::cout << "    --myanmar-search-month-range START END  Search for month range (0-14)\n";
+    std::cout << "                                             • Example: --myanmar-search-month-range 3 5\n\n";
+
+    std::cout << "    --myanmar-search-moon-phase PHASE    Search for specific moon phase (0-3)\n";
+    std::cout << "                                          • 0=Waxing, 1=Full, 2=Waning, 3=New\n";
+    std::cout << "                                          • Example: --myanmar-search-moon-phase 1 (Full Moon)\n\n";
+
+    std::cout << "    --myanmar-search-moon-phase-range START END  Search for moon phase range (0-3)\n";
+    std::cout << "                                                  • Example: --myanmar-search-moon-phase-range 0 1\n\n";
+
+    std::cout << "    --myanmar-search-weekday DAY    Search for specific weekday (0-6)\n";
+    std::cout << "                                     • 0=Saturday, 1=Sunday, ..., 6=Friday\n";
+    std::cout << "                                     • Example: --myanmar-search-weekday 1 (Sundays)\n\n";
+
+    std::cout << "    --myanmar-search-fortnight-day DAY    Search for specific fortnight day (1-15)\n";
+    std::cout << "                                           • Example: --myanmar-search-fortnight-day 15\n\n";
+
+    std::cout << "    --myanmar-search-fortnight-day-range START END  Search for fortnight day range (1-15)\n";
+    std::cout << "                                                     • Example: --myanmar-search-fortnight-day-range 14 15\n\n";
+
+    std::cout << "    --myanmar-search-sabbath        Search for Buddhist sabbath days\n";
+    std::cout << "    --myanmar-search-sabbath-eve    Search for sabbath eve days\n";
+    std::cout << "    --myanmar-search-yatyaza        Search for yatyaza (inauspicious) days\n";
+    std::cout << "    --myanmar-search-pyathada       Search for pyathada (inauspicious) days\n";
+    std::cout << "    --myanmar-search-thamanyo       Search for thamanyo (auspicious) days\n\n";
+
+    std::cout << "    --myanmar-search-exact          Use exact matching (default)\n";
+    std::cout << "    --myanmar-search-near TOL       Use near matching with tolerance\n";
+    std::cout << "                                     • Example: --myanmar-search-near 2\n\n";
 
     std::cout << "ASTRO CALENDAR OPTIONS (Combined Calendar System) 📅🌟🇮🇳🇲🇲\n";
     std::cout << "    --astro-calendar   Show comprehensive astro-calendar for birth date\n";
@@ -893,6 +964,49 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--astrological-days-only") {
             args.showAstrologicalDaysOnly = true;
+
+        // Myanmar Calendar Search options
+        } else if (arg == "--myanmar-search" && i + 2 < argc) {
+            args.showMyanmarSearch = true;
+            args.myanmarSearchStartDate = argv[++i];
+            args.myanmarSearchEndDate = argv[++i];
+        } else if (arg == "--myanmar-search-year" && i + 1 < argc) {
+            args.myanmarSearchYear = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-year-range" && i + 2 < argc) {
+            args.myanmarSearchYearStart = std::stoi(argv[++i]);
+            args.myanmarSearchYearEnd = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-month" && i + 1 < argc) {
+            args.myanmarSearchMonth = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-month-range" && i + 2 < argc) {
+            args.myanmarSearchMonthStart = std::stoi(argv[++i]);
+            args.myanmarSearchMonthEnd = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-moon-phase" && i + 1 < argc) {
+            args.myanmarSearchMoonPhase = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-moon-phase-range" && i + 2 < argc) {
+            args.myanmarSearchMoonPhaseStart = std::stoi(argv[++i]);
+            args.myanmarSearchMoonPhaseEnd = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-weekday" && i + 1 < argc) {
+            args.myanmarSearchWeekday = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-fortnight-day" && i + 1 < argc) {
+            args.myanmarSearchFortnightDay = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-fortnight-day-range" && i + 2 < argc) {
+            args.myanmarSearchFortnightDayStart = std::stoi(argv[++i]);
+            args.myanmarSearchFortnightDayEnd = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-sabbath") {
+            args.myanmarSearchSabbath = true;
+        } else if (arg == "--myanmar-search-sabbath-eve") {
+            args.myanmarSearchSabbathEve = true;
+        } else if (arg == "--myanmar-search-yatyaza") {
+            args.myanmarSearchYatyaza = true;
+        } else if (arg == "--myanmar-search-pyathada") {
+            args.myanmarSearchPyathada = true;
+        } else if (arg == "--myanmar-search-thamanyo") {
+            args.myanmarSearchThamanyo = true;
+        } else if (arg == "--myanmar-search-exact") {
+            args.myanmarSearchExactMatch = true;
+        } else if (arg == "--myanmar-search-near" && i + 1 < argc) {
+            args.myanmarSearchExactMatch = false;
+            args.myanmarSearchNearTolerance = std::stoi(argv[++i]);
         } else if (arg == "--astro-calendar") {
             args.showAstroCalendar = true;
         } else if (arg == "--astro-calendar-monthly") {
@@ -940,16 +1054,16 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    // Eclipse, ephemeris, panchanga, Myanmar calendar, and Hindu search features can work without full birth data
+    // Eclipse, ephemeris, panchanga, Myanmar calendar, and Hindu/Myanmar search features can work without full birth data
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
-        args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch) {
+        args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch || args.showMyanmarSearch) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
         if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() ||
-             !args.myanmarCalendarFromDate.empty() || !args.searchStartDate.empty()) &&
+             !args.myanmarCalendarFromDate.empty() || !args.searchStartDate.empty() || !args.myanmarSearchStartDate.empty()) &&
             args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
              args.longitude < -180.0 || args.longitude > 180.0)) {
-            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar/Hindu search\n";
+            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar/Hindu/Myanmar search\n";
             return false;
         }
 
@@ -1524,9 +1638,119 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Handle Myanmar Calendar Search
+        if (args.showMyanmarSearch) {
+            MyanmarCalendar myanmarCalendar;
+
+            if (args.myanmarSearchStartDate.empty() || args.myanmarSearchEndDate.empty()) {
+                std::cerr << "Error: Myanmar calendar search requires --myanmar-search FROM TO dates" << std::endl;
+                return 1;
+            }
+
+            MyanmarCalendar::SearchCriteria criteria;
+            criteria.searchStartDate = args.myanmarSearchStartDate;
+            criteria.searchEndDate = args.myanmarSearchEndDate;
+
+            // Set search parameters
+            if (args.myanmarSearchYear != -1) {
+                criteria.exactYear = args.myanmarSearchYear;
+            }
+            if (args.myanmarSearchYearStart != -1 && args.myanmarSearchYearEnd != -1) {
+                criteria.yearRangeStart = args.myanmarSearchYearStart;
+                criteria.yearRangeEnd = args.myanmarSearchYearEnd;
+            }
+            if (args.myanmarSearchMonth != -1) {
+                criteria.exactMonth = args.myanmarSearchMonth;
+            }
+            if (args.myanmarSearchMonthStart != -1 && args.myanmarSearchMonthEnd != -1) {
+                criteria.monthRangeStart = args.myanmarSearchMonthStart;
+                criteria.monthRangeEnd = args.myanmarSearchMonthEnd;
+            }
+            if (args.myanmarSearchMoonPhase != -1) {
+                criteria.exactMoonPhase = args.myanmarSearchMoonPhase;
+            }
+            if (args.myanmarSearchMoonPhaseStart != -1 && args.myanmarSearchMoonPhaseEnd != -1) {
+                criteria.moonPhaseRangeStart = args.myanmarSearchMoonPhaseStart;
+                criteria.moonPhaseRangeEnd = args.myanmarSearchMoonPhaseEnd;
+            }
+            if (args.myanmarSearchWeekday != -1) {
+                criteria.exactWeekday = args.myanmarSearchWeekday;
+            }
+            if (args.myanmarSearchFortnightDay != -1) {
+                criteria.exactFortnightDay = args.myanmarSearchFortnightDay;
+            }
+            if (args.myanmarSearchFortnightDayStart != -1 && args.myanmarSearchFortnightDayEnd != -1) {
+                criteria.fortnightDayRangeStart = args.myanmarSearchFortnightDayStart;
+                criteria.fortnightDayRangeEnd = args.myanmarSearchFortnightDayEnd;
+            }
+
+            // Set astrological criteria
+            criteria.searchSabbath = args.myanmarSearchSabbath;
+            criteria.searchSabbathEve = args.myanmarSearchSabbathEve;
+            criteria.searchYatyaza = args.myanmarSearchYatyaza;
+            criteria.searchPyathada = args.myanmarSearchPyathada;
+            criteria.searchThamanyo = args.myanmarSearchThamanyo;
+
+            // Set matching mode
+            criteria.exactMatch = args.myanmarSearchExactMatch;
+            criteria.nearMatchTolerance = args.myanmarSearchNearTolerance;
+
+            std::vector<MyanmarCalendar::SearchResult> searchResults = myanmarCalendar.searchMyanmarCalendar(criteria, args.latitude, args.longitude);
+
+            if (!searchResults.empty()) {
+                std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
+                std::cout << "═══════════════════════════════════════════════════════\n";
+                std::cout << "Found " << searchResults.size() << " matching days:\n\n";
+
+                for (const auto& result : searchResults) {
+                    std::cout << "📅 Date: " << result.gregorianDate << " (Score: " << result.matchScore << ")\n";
+                    std::cout << "   Myanmar Year: " << result.myanmarData.myanmarYear << ", Month: " << myanmarCalendar.getMyanmarMonthName(result.myanmarData.month);
+                    std::cout << ", Day: " << result.myanmarData.fortnightDay << " (" << myanmarCalendar.getMoonPhaseName(result.myanmarData.moonPhase) << ")\n";
+                    std::cout << "   Weekday: " << myanmarCalendar.getMyanmarWeekdayName(result.myanmarData.weekday) << "\n";
+
+                    if (!result.matchDescription.empty()) {
+                        std::cout << "   🔮 " << result.matchDescription << "\n";
+                    }
+                    std::cout << "\n";
+                }
+            } else {
+                std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
+                std::cout << "═══════════════════════════════════════════════════════\n";
+                std::cout << "No matching days found for the specified criteria.\n\n";
+
+                std::cout << "Search Criteria Summary:\n";
+                std::cout << "• Date Range: " << criteria.searchStartDate << " to " << criteria.searchEndDate << "\n";
+                if (criteria.exactYear != -1) std::cout << "• Myanmar Year: " << criteria.exactYear << "\n";
+                if (criteria.yearRangeStart != -1 && criteria.yearRangeEnd != -1) {
+                    std::cout << "• Myanmar Year Range: " << criteria.yearRangeStart << " to " << criteria.yearRangeEnd << "\n";
+                }
+                if (criteria.exactMonth != -1) std::cout << "• Month: " << criteria.exactMonth << "\n";
+                if (criteria.monthRangeStart != -1 && criteria.monthRangeEnd != -1) {
+                    std::cout << "• Month Range: " << criteria.monthRangeStart << " to " << criteria.monthRangeEnd << "\n";
+                }
+                if (criteria.exactMoonPhase != -1) std::cout << "• Moon Phase: " << criteria.exactMoonPhase << "\n";
+                if (criteria.moonPhaseRangeStart != -1 && criteria.moonPhaseRangeEnd != -1) {
+                    std::cout << "• Moon Phase Range: " << criteria.moonPhaseRangeStart << " to " << criteria.moonPhaseRangeEnd << "\n";
+                }
+                if (criteria.exactWeekday != -1) std::cout << "• Weekday: " << criteria.exactWeekday << "\n";
+                if (criteria.exactFortnightDay != -1) std::cout << "• Fortnight Day: " << criteria.exactFortnightDay << "\n";
+                if (criteria.fortnightDayRangeStart != -1 && criteria.fortnightDayRangeEnd != -1) {
+                    std::cout << "• Fortnight Day Range: " << criteria.fortnightDayRangeStart << " to " << criteria.fortnightDayRangeEnd << "\n";
+                }
+                if (criteria.searchSabbath) std::cout << "• Looking for Sabbath days\n";
+                if (criteria.searchSabbathEve) std::cout << "• Looking for Sabbath eve days\n";
+                if (criteria.searchYatyaza) std::cout << "• Looking for Yatyaza days\n";
+                if (criteria.searchPyathada) std::cout << "• Looking for Pyathada days\n";
+                if (criteria.searchThamanyo) std::cout << "• Looking for Thamanyo days\n";
+
+                std::cout << "\nTry adjusting your search criteria or expanding the date range.\n";
+            }
+        }
+
         // Return early if only special features were requested
         if (args.showEclipses || args.showConjunctions || args.showEphemerisTable ||
-            args.showKPTransitions || args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch) {
+            args.showKPTransitions || args.showPanchangaRange || args.showMyanmarCalendarRange ||
+            args.showHinduSearch || args.showMyanmarSearch) {
             return 0;
         }
     } catch (const std::exception& e) {
