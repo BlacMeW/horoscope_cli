@@ -1642,6 +1642,12 @@ int main(int argc, char* argv[]) {
         if (args.showMyanmarSearch) {
             MyanmarCalendar myanmarCalendar;
 
+            // Initialize the Myanmar calendar
+            if (!myanmarCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Myanmar calendar" << std::endl;
+                return 1;
+            }
+
             if (args.myanmarSearchStartDate.empty() || args.myanmarSearchEndDate.empty()) {
                 std::cerr << "Error: Myanmar calendar search requires --myanmar-search FROM TO dates" << std::endl;
                 return 1;

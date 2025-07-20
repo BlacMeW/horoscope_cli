@@ -1095,9 +1095,13 @@ std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchMyanmarCalenda
             // Calculate match score
             if (totalCriteria > 0) {
                 matchScore = static_cast<double>(matchCount) / static_cast<double>(totalCriteria);
+            } else {
+                // If no specific criteria are provided, return all days with base score
+                matchScore = 0.5;
+                matchDescription = "All days (no specific criteria)";
             }
 
-            // Add to results if there's a match
+            // Add to results if there's a match (or if no criteria specified)
             if (matchScore > 0.0) {
                 SearchResult result;
                 result.gregorianDate = dateBuffer;
