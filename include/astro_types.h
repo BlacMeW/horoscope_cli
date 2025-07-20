@@ -28,6 +28,63 @@ enum class HouseSystem {
     REGIOMONTANUS = 'R'
 };
 
+// Zodiac calculation mode
+enum class ZodiacMode {
+    TROPICAL = 0,    // Tropical zodiac (season-based, default)
+    SIDEREAL = 1     // Sidereal zodiac (star-based)
+};
+
+// Ayanamsa (Precession correction) types for sidereal calculations
+enum class AyanamsaType {
+    FAGAN_BRADLEY = 0,   // Fagan-Bradley
+    LAHIRI = 1,          // Lahiri/Chitrapaksha (most common in India)
+    DELUCE = 2,          // De Luce
+    RAMAN = 3,           // B.V. Raman
+    USHASHASHI = 4,      // Usha-Shashi
+    KRISHNAMURTI = 5,    // K.S. Krishnamurti (KP System)
+    DJWHAL_KHUL = 6,     // Djwhal Khul
+    YUKTESHWAR = 7,      // Sri Yukteshwar
+    JN_BHASIN = 8,       // J.N. Bhasin
+    BABYLONIAN_KUGLER1 = 9,   // Babylonian (Kugler 1)
+    BABYLONIAN_KUGLER2 = 10,  // Babylonian (Kugler 2)
+    BABYLONIAN_KUGLER3 = 11,  // Babylonian (Kugler 3)
+    BABYLONIAN_HUBER = 12,    // Babylonian (Huber)
+    BABYLONIAN_ETPSC = 13,    // Babylonian (Et Psc)
+    ALDEBARAN_15TAU = 14,     // Aldebaran at 15° Taurus
+    HIPPARCHOS = 15,          // Hipparchos
+    SASSANIAN = 16,           // Sassanian
+    GALACTIC_CENTER = 17,     // Galactic Center at 0° Sagittarius
+    J2000 = 18,              // J2000
+    J1900 = 19,              // J1900
+    B1950 = 20               // B1950
+};
+
+// Calculation flags for Swiss Ephemeris
+enum class CalculationFlag {
+    // Coordinate system flags
+    GEOCENTRIC = 1,          // Geocentric (default behavior when no flag set)
+    HELIOCENTRIC = 2,        // Heliocentric
+    BARYCENTRIC = 3,         // Barycentric
+    TOPOCENTRIC = 4,         // Topocentric (requires observer coordinates)
+    
+    // Position type flags
+    APPARENT = 10,           // Apparent position (default, includes aberration/deflection)
+    TRUE_GEOMETRIC = 11,     // True/geometric position
+    ASTROMETRIC = 12,        // Astrometric position (no aberration/deflection)
+    
+    // Precession/Nutation flags
+    STANDARD_EQUINOX = 20,   // Standard equinox of date (default)
+    J2000_EQUINOX = 21,      // J2000.0 equinox (no precession)
+    MEAN_EQUINOX = 22,       // Mean equinox of date (no nutation)
+    
+    // Speed calculation flags
+    HIGH_PRECISION_SPEED = 30,  // High precision speed calculation
+    
+    // Coordinate format flags
+    ECLIPTIC = 40,           // Ecliptic coordinates (default)
+    EQUATORIAL = 41          // Equatorial coordinates
+};
+
 // Aspect types
 enum class AspectType {
     CONJUNCTION = 0,    // 0°
@@ -105,11 +162,18 @@ std::string zodiacSignToString(ZodiacSign sign);
 std::string planetToString(Planet planet);
 std::string planetToShortString(Planet planet);
 std::string aspectTypeToString(AspectType aspect);
+std::string zodiacModeToString(ZodiacMode mode);
+std::string ayanamsaTypeToString(AyanamsaType ayanamsa);
+std::string calculationFlagToString(CalculationFlag flag);
 ZodiacSign longitudeToSign(double longitude);
 double normalizeAngle(double angle);
 double calculateAspectOrb(double angle1, double angle2, AspectType aspect);
 Planet getSignLord(ZodiacSign sign);
 std::string getPlanetName(Planet planet);
+AyanamsaType stringToAyanamsaType(const std::string& ayanamsaStr);
+ZodiacMode stringToZodiacMode(const std::string& modeStr);
+CalculationFlag stringToCalculationFlag(const std::string& flagStr);
+int ayanamsaTypeToSwissEphId(AyanamsaType ayanamsa);
 
 // Date parsing with BC era support
 bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day);

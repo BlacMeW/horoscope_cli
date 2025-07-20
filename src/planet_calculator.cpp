@@ -3,7 +3,9 @@
 namespace Astro {
 
 PlanetCalculator::PlanetCalculator(EphemerisManager& ephemeris)
-    : ephemerisManager(ephemeris) {
+    : ephemerisManager(ephemeris),
+      zodiacMode(ZodiacMode::TROPICAL),
+      ayanamsa(AyanamsaType::LAHIRI) {
     planetsToCalculate = getStandardPlanets();
 }
 
@@ -29,8 +31,8 @@ bool PlanetCalculator::calculateAllPlanets(const BirthData& birthData, std::vect
 
 bool PlanetCalculator::calculatePlanet(const BirthData& birthData, Planet planet, PlanetPosition& position) {
     double julianDay = birthData.getJulianDay();
-
-    bool success = ephemerisManager.calculatePlanetPosition(julianDay, planet, position);
+    
+    bool success = ephemerisManager.calculatePlanetPosition(julianDay, planet, position, zodiacMode, ayanamsa, calculationFlags);
 
     if (!success) {
         lastError = ephemerisManager.getLastError();
@@ -42,7 +44,7 @@ bool PlanetCalculator::calculatePlanet(const BirthData& birthData, Planet planet
         // South Node is always 180 degrees opposite to North Node
         // We need to calculate North Node first, then add 180 degrees
         PlanetPosition northNode;
-        if (ephemerisManager.calculatePlanetPosition(julianDay, Planet::NORTH_NODE, northNode)) {
+        if (ephemerisManager.calculatePlanetPosition(julianDay, Planet::NORTH_NODE, northNode, zodiacMode, ayanamsa, calculationFlags)) {
             position.longitude = normalizeAngle(northNode.longitude + 180.0);
             position.latitude = -northNode.latitude;
             position.distance = northNode.distance;
@@ -56,9 +58,7 @@ bool PlanetCalculator::calculatePlanet(const BirthData& birthData, Planet planet
     }
 
     return true;
-}
-
-std::vector<Planet> PlanetCalculator::getStandardPlanets() {
+}std::vector<Planet> PlanetCalculator::getStandardPlanets() {
     return {
         Planet::SUN,
         Planet::MOON,
@@ -94,6 +94,18 @@ std::vector<Planet> PlanetCalculator::getAncientDatePlanets() {
 
 void PlanetCalculator::setPlanetsToCalculate(const std::vector<Planet>& planets) {
     planetsToCalculate = planets;
+}
+
+void PlanetCalculator::setZodiacMode(ZodiacMode mode) {
+    zodiacMode = mode;
+}
+
+void PlanetCalculator::setAyanamsa(AyanamsaType ayanamsa) {
+    this->ayanamsa = ayanamsa;
+}
+
+void PlanetCalculator::setCalculationFlags(const std::vector<CalculationFlag>& flags) {
+    calculationFlags = flags;
 }
 
 std::string PlanetCalculator::getLastError() const {

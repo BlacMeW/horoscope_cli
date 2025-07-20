@@ -22,6 +22,10 @@ public:
     // Set aspects
     void setAspects(const std::vector<Aspect>& aspects);
 
+    // Set zodiac mode and ayanamsa
+    void setZodiacMode(ZodiacMode mode);
+    void setAyanamsa(AyanamsaType ayanamsa);
+
     // Get formatted chart as string
     std::string getFormattedChart() const;
 
@@ -45,12 +49,16 @@ public:
     const std::vector<PlanetPosition>& getPlanetPositions() const { return planetPositions; }
     const HouseCusps& getHouseCusps() const { return houseCusps; }
     const std::vector<Aspect>& getAspects() const { return aspects; }
+    ZodiacMode getZodiacMode() const { return zodiacMode; }
+    AyanamsaType getAyanamsa() const { return ayanamsa; }
 
 private:
     BirthData birthData;
     std::vector<PlanetPosition> planetPositions;
     HouseCusps houseCusps;
     std::vector<Aspect> aspects;
+    ZodiacMode zodiacMode;
+    AyanamsaType ayanamsa;
 
     // Helper functions for formatting
     std::string formatDegreeMinute(double degrees) const;

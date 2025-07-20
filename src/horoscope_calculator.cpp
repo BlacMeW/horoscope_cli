@@ -7,6 +7,8 @@ HoroscopeCalculator::HoroscopeCalculator()
     : planetCalculator(ephemerisManager),
       houseCalculator(ephemerisManager),
       defaultHouseSystem(HouseSystem::PLACIDUS),
+      zodiacMode(ZodiacMode::TROPICAL),
+      ayanamsa(AyanamsaType::LAHIRI),
       initialized(false) {
 }
 
@@ -47,6 +49,13 @@ bool HoroscopeCalculator::calculateBirthChart(const BirthData& birthData,
         planetCalculator.setPlanetsToCalculate(PlanetCalculator::getAncientDatePlanets());
     } else {
         planetCalculator.setPlanetsToCalculate(PlanetCalculator::getStandardPlanets());
+    }
+
+    // Set calculation parameters in planet calculator
+    planetCalculator.setZodiacMode(zodiacMode);
+    planetCalculator.setAyanamsa(ayanamsa);
+    if (!calculationFlags.empty()) {
+        planetCalculator.setCalculationFlags(calculationFlags);
     }
 
     // Calculate planetary positions
@@ -97,6 +106,44 @@ std::string HoroscopeCalculator::getLastError() const {
 
 bool HoroscopeCalculator::isInitialized() const {
     return initialized;
+}
+
+bool HoroscopeCalculator::calculateBirthChart(const BirthData& birthData,
+                                            HouseSystem houseSystem,
+                                            ZodiacMode zodiacMode,
+                                            AyanamsaType ayanamsa,
+                                            BirthChart& chart) {
+    // Set zodiac mode and ayanamsa temporarily
+    ZodiacMode originalMode = this->zodiacMode;
+    AyanamsaType originalAyanamsa = this->ayanamsa;
+    
+    this->zodiacMode = zodiacMode;
+    this->ayanamsa = ayanamsa;
+    
+    // Set zodiac mode and ayanamsa in chart
+    chart.setZodiacMode(zodiacMode);
+    chart.setAyanamsa(ayanamsa);
+    
+    // Call the main calculation method
+    bool result = calculateBirthChart(birthData, houseSystem, chart);
+    
+    // Restore original settings
+    this->zodiacMode = originalMode;
+    this->ayanamsa = originalAyanamsa;
+    
+    return result;
+}
+
+void HoroscopeCalculator::setZodiacMode(ZodiacMode mode) {
+    zodiacMode = mode;
+}
+
+void HoroscopeCalculator::setAyanamsa(AyanamsaType ayanamsa) {
+    this->ayanamsa = ayanamsa;
+}
+
+void HoroscopeCalculator::setCalculationFlags(const std::vector<CalculationFlag>& flags) {
+    calculationFlags = flags;
 }
 
 bool HoroscopeCalculator::validateBirthData(const BirthData& birthData) {

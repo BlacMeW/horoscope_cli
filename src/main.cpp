@@ -21,6 +21,7 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+#include <sstream>
 
 using namespace Astro;
 
@@ -60,6 +61,9 @@ struct CommandLineArgs {
     double longitude = 0.0;
     double timezone = 0.0;
     HouseSystem houseSystem = HouseSystem::PLACIDUS;
+    ZodiacMode zodiacMode = ZodiacMode::TROPICAL;
+    AyanamsaType ayanamsa = AyanamsaType::LAHIRI;
+    std::vector<CalculationFlag> calculationFlags;
     std::string outputFormat = "text";
     std::string chartStyle = "";
     std::string ephemerisPath;
@@ -219,6 +223,30 @@ void printHelp() {
     std::cout << "                       W = Whole Sign\n";
     std::cout << "                       C = Campanus\n";
     std::cout << "                       R = Regiomontanus\n\n";
+
+    std::cout << "    --zodiac-mode MODE Zodiac calculation mode (default: tropical)\n";
+    std::cout << "                       tropical  = Tropical zodiac (season-based, Western)\n";
+    std::cout << "                       sidereal  = Sidereal zodiac (star-based, Vedic)\n\n";
+
+    std::cout << "    --ayanamsa TYPE    Ayanamsa for sidereal calculations (default: lahiri)\n";
+    std::cout << "                       lahiri           = Lahiri/Chitrapaksha (most common)\n";
+    std::cout << "                       fagan-bradley    = Fagan-Bradley\n";
+    std::cout << "                       raman            = B.V. Raman\n";
+    std::cout << "                       krishnamurti     = K.S. Krishnamurti (KP System)\n";
+    std::cout << "                       yukteshwar       = Sri Yukteshwar\n";
+    std::cout << "                       jn_bhasin        = J.N. Bhasin\n";
+    std::cout << "                       sassanian        = Sassanian\n";
+    std::cout << "                       galactic_center  = Galactic Center at 0° Sagittarius\n";
+    std::cout << "                       (See full list with --help-ayanamsa)\n\n";
+
+    std::cout << "    --calculation-flags FLAGS  Calculation flags (comma-separated)\n";
+    std::cout << "                               Coordinate system:\n";
+    std::cout << "                               geocentric, heliocentric, barycentric, topocentric\n";
+    std::cout << "                               Position type:\n";
+    std::cout << "                               apparent, true_geometric, astrometric\n";
+    std::cout << "                               Precision:\n";
+    std::cout << "                               high_precision_speed, j2000_equinox\n";
+    std::cout << "                               Example: --calculation-flags geocentric,apparent\n\n";
 
     std::cout << "    --chart-style STY  Chart display style (optional)\n";
     std::cout << "                       western      = Western wheel & rectangular\n";
@@ -529,6 +557,23 @@ void printHelp() {
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
     std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
     std::cout << "                --chart-style north-indian\n\n";
+
+    std::cout << "  # Sidereal chart with Lahiri ayanamsa\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --zodiac-mode sidereal --ayanamsa lahiri\n\n";
+
+    std::cout << "  # KP System chart with Krishnamurti ayanamsa\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --zodiac-mode sidereal --ayanamsa krishnamurti \\\n";
+    std::cout << "                --chart-style north-indian\n\n";
+
+    std::cout << "  # High precision sidereal chart\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --zodiac-mode sidereal --ayanamsa lahiri \\\n";
+    std::cout << "                --calculation-flags high_precision_speed,true_geometric\n\n";
 
     std::cout << "  # JSON output for API integration\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
@@ -843,6 +888,23 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--house-system" && i + 1 < argc) {
             args.houseSystem = parseHouseSystem(argv[++i]);
+        } else if (arg == "--zodiac-mode" && i + 1 < argc) {
+            args.zodiacMode = Astro::stringToZodiacMode(argv[++i]);
+        } else if (arg == "--ayanamsa" && i + 1 < argc) {
+            args.ayanamsa = Astro::stringToAyanamsaType(argv[++i]);
+        } else if (arg == "--calculation-flags" && i + 1 < argc) {
+            std::string flagsStr = argv[++i];
+            std::string flag;
+            std::stringstream ss(flagsStr);
+            args.calculationFlags.clear();
+            while (std::getline(ss, flag, ',')) {
+                // Trim whitespace
+                flag.erase(0, flag.find_first_not_of(" \t"));
+                flag.erase(flag.find_last_not_of(" \t") + 1);
+                if (!flag.empty()) {
+                    args.calculationFlags.push_back(Astro::stringToCalculationFlag(flag));
+                }
+            }
         } else if (arg == "--output" && i + 1 < argc) {
             args.outputFormat = argv[++i];
             if (args.outputFormat != "text" && args.outputFormat != "json") {
@@ -1994,9 +2056,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Set calculation parameters
+    calculator.setZodiacMode(args.zodiacMode);
+    calculator.setAyanamsa(args.ayanamsa);
+    if (!args.calculationFlags.empty()) {
+        calculator.setCalculationFlags(args.calculationFlags);
+    }
+
     // Calculate birth chart
     BirthChart chart;
-    if (!calculator.calculateBirthChart(birthData, args.houseSystem, chart)) {
+    if (!calculator.calculateBirthChart(birthData, args.houseSystem, args.zodiacMode, args.ayanamsa, chart)) {
         std::cerr << "Error: Failed to calculate birth chart: " << calculator.getLastError() << "\n";
         return 1;
     }

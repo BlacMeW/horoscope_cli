@@ -19,6 +19,11 @@ public:
     // Calculate planet position for given Julian Day
     bool calculatePlanetPosition(double julianDay, Planet planet, PlanetPosition& position);
 
+    // Calculate planet position with zodiac mode and ayanamsa
+    bool calculatePlanetPosition(double julianDay, Planet planet, PlanetPosition& position,
+                               ZodiacMode zodiacMode, AyanamsaType ayanamsa,
+                               const std::vector<CalculationFlag>& flags = {});
+
     // Calculate house cusps
     bool calculateHouseCusps(double julianDay, double latitude, double longitude,
                            HouseSystem system, HouseCusps& cusps);
@@ -38,6 +43,9 @@ private:
 
     // Convert HouseSystem enum to Swiss Ephemeris house system character
     char houseSystemToSwissEph(HouseSystem system) const;
+
+    // Build Swiss Ephemeris calculation flags
+    int buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags) const;
 };
 
 } // namespace Astro

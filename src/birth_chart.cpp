@@ -5,7 +5,7 @@
 
 namespace Astro {
 
-BirthChart::BirthChart() {
+BirthChart::BirthChart() : zodiacMode(ZodiacMode::TROPICAL), ayanamsa(AyanamsaType::LAHIRI) {
 }
 
 void BirthChart::setBirthData(const BirthData& data) {
@@ -22,6 +22,14 @@ void BirthChart::setHouseCusps(const HouseCusps& cusps) {
 
 void BirthChart::setAspects(const std::vector<Aspect>& aspects) {
     this->aspects = aspects;
+}
+
+void BirthChart::setZodiacMode(ZodiacMode mode) {
+    zodiacMode = mode;
+}
+
+void BirthChart::setAyanamsa(AyanamsaType ayanamsa) {
+    this->ayanamsa = ayanamsa;
 }
 
 std::string BirthChart::getFormattedChart() const {
@@ -97,7 +105,11 @@ std::string BirthChart::getAspectsString() const {
 std::string BirthChart::getChartHeader() const {
     std::ostringstream oss;
     oss << "Birth Chart for " << birthData.getDateTimeString() << "\n";
-    oss << "Location: " << birthData.getLocationString();
+    oss << "Location: " << birthData.getLocationString() << "\n";
+    oss << "Zodiac System: " << zodiacModeToString(zodiacMode);
+    if (zodiacMode == ZodiacMode::SIDEREAL) {
+        oss << " (Ayanamsa: " << ayanamsaTypeToString(ayanamsa) << ")";
+    }
     return oss.str();
 }
 

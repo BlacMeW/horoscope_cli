@@ -3,6 +3,8 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#include <algorithm>
+#include <cctype>
 
 namespace Astro {
 
@@ -366,6 +368,153 @@ std::string getPlanetName(Planet planet) {
         case Planet::CHIRON: return "Chiron";
         case Planet::LILITH: return "Lilith";
         default: return "Unknown";
+    }
+}
+
+std::string zodiacModeToString(ZodiacMode mode) {
+    switch (mode) {
+        case ZodiacMode::TROPICAL: return "Tropical";
+        case ZodiacMode::SIDEREAL: return "Sidereal";
+        default: return "Unknown";
+    }
+}
+
+std::string ayanamsaTypeToString(AyanamsaType ayanamsa) {
+    switch (ayanamsa) {
+        case AyanamsaType::FAGAN_BRADLEY: return "Fagan-Bradley";
+        case AyanamsaType::LAHIRI: return "Lahiri (Chitrapaksha)";
+        case AyanamsaType::DELUCE: return "De Luce";
+        case AyanamsaType::RAMAN: return "B.V. Raman";
+        case AyanamsaType::USHASHASHI: return "Usha-Shashi";
+        case AyanamsaType::KRISHNAMURTI: return "K.S. Krishnamurti";
+        case AyanamsaType::DJWHAL_KHUL: return "Djwhal Khul";
+        case AyanamsaType::YUKTESHWAR: return "Sri Yukteshwar";
+        case AyanamsaType::JN_BHASIN: return "J.N. Bhasin";
+        case AyanamsaType::BABYLONIAN_KUGLER1: return "Babylonian (Kugler 1)";
+        case AyanamsaType::BABYLONIAN_KUGLER2: return "Babylonian (Kugler 2)";
+        case AyanamsaType::BABYLONIAN_KUGLER3: return "Babylonian (Kugler 3)";
+        case AyanamsaType::BABYLONIAN_HUBER: return "Babylonian (Huber)";
+        case AyanamsaType::BABYLONIAN_ETPSC: return "Babylonian (Et Psc)";
+        case AyanamsaType::ALDEBARAN_15TAU: return "Aldebaran at 15° Taurus";
+        case AyanamsaType::HIPPARCHOS: return "Hipparchos";
+        case AyanamsaType::SASSANIAN: return "Sassanian";
+        case AyanamsaType::GALACTIC_CENTER: return "Galactic Center";
+        case AyanamsaType::J2000: return "J2000";
+        case AyanamsaType::J1900: return "J1900";
+        case AyanamsaType::B1950: return "B1950";
+        default: return "Unknown";
+    }
+}
+
+std::string calculationFlagToString(CalculationFlag flag) {
+    switch (flag) {
+        case CalculationFlag::GEOCENTRIC: return "Geocentric";
+        case CalculationFlag::HELIOCENTRIC: return "Heliocentric";
+        case CalculationFlag::BARYCENTRIC: return "Barycentric";
+        case CalculationFlag::TOPOCENTRIC: return "Topocentric";
+        case CalculationFlag::APPARENT: return "Apparent Position";
+        case CalculationFlag::TRUE_GEOMETRIC: return "True Geometric Position";
+        case CalculationFlag::ASTROMETRIC: return "Astrometric Position";
+        case CalculationFlag::STANDARD_EQUINOX: return "Standard Equinox of Date";
+        case CalculationFlag::J2000_EQUINOX: return "J2000.0 Equinox";
+        case CalculationFlag::MEAN_EQUINOX: return "Mean Equinox of Date";
+        case CalculationFlag::HIGH_PRECISION_SPEED: return "High Precision Speed";
+        case CalculationFlag::ECLIPTIC: return "Ecliptic Coordinates";
+        case CalculationFlag::EQUATORIAL: return "Equatorial Coordinates";
+        default: return "Unknown";
+    }
+}
+
+AyanamsaType stringToAyanamsaType(const std::string& ayanamsaStr) {
+    std::string lower = ayanamsaStr;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    
+    if (lower == "fagan-bradley" || lower == "fagan_bradley" || lower == "fagan") return AyanamsaType::FAGAN_BRADLEY;
+    else if (lower == "lahiri" || lower == "chitrapaksha") return AyanamsaType::LAHIRI;
+    else if (lower == "deluce" || lower == "de_luce") return AyanamsaType::DELUCE;
+    else if (lower == "raman" || lower == "b.v.raman" || lower == "bv_raman") return AyanamsaType::RAMAN;
+    else if (lower == "ushashashi" || lower == "usha_shashi" || lower == "usha-shashi") return AyanamsaType::USHASHASHI;
+    else if (lower == "krishnamurti" || lower == "kp" || lower == "k.s.krishnamurti") return AyanamsaType::KRISHNAMURTI;
+    else if (lower == "djwhal_khul" || lower == "djwhal-khul" || lower == "djwhal") return AyanamsaType::DJWHAL_KHUL;
+    else if (lower == "yukteshwar" || lower == "sri_yukteshwar" || lower == "sri-yukteshwar") return AyanamsaType::YUKTESHWAR;
+    else if (lower == "jn_bhasin" || lower == "j.n.bhasin" || lower == "bhasin") return AyanamsaType::JN_BHASIN;
+    else if (lower == "babylonian_kugler1" || lower == "babyl_kugler1" || lower == "kugler1") return AyanamsaType::BABYLONIAN_KUGLER1;
+    else if (lower == "babylonian_kugler2" || lower == "babyl_kugler2" || lower == "kugler2") return AyanamsaType::BABYLONIAN_KUGLER2;
+    else if (lower == "babylonian_kugler3" || lower == "babyl_kugler3" || lower == "kugler3") return AyanamsaType::BABYLONIAN_KUGLER3;
+    else if (lower == "babylonian_huber" || lower == "babyl_huber" || lower == "huber") return AyanamsaType::BABYLONIAN_HUBER;
+    else if (lower == "babylonian_etpsc" || lower == "babyl_etpsc" || lower == "etpsc") return AyanamsaType::BABYLONIAN_ETPSC;
+    else if (lower == "aldebaran_15tau" || lower == "aldebaran" || lower == "aldebaran_15") return AyanamsaType::ALDEBARAN_15TAU;
+    else if (lower == "hipparchos" || lower == "hipparcos") return AyanamsaType::HIPPARCHOS;
+    else if (lower == "sassanian") return AyanamsaType::SASSANIAN;
+    else if (lower == "galactic_center" || lower == "galcent" || lower == "galactic") return AyanamsaType::GALACTIC_CENTER;
+    else if (lower == "j2000") return AyanamsaType::J2000;
+    else if (lower == "j1900") return AyanamsaType::J1900;
+    else if (lower == "b1950") return AyanamsaType::B1950;
+    else return AyanamsaType::LAHIRI; // default
+}
+
+ZodiacMode stringToZodiacMode(const std::string& modeStr) {
+    std::string lower = modeStr;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    
+    if (lower == "sidereal" || lower == "sid") return ZodiacMode::SIDEREAL;
+    else return ZodiacMode::TROPICAL; // default
+}
+
+CalculationFlag stringToCalculationFlag(const std::string& flagStr) {
+    std::string lower = flagStr;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    
+    // Coordinate system
+    if (lower == "geocentric" || lower == "geo") return CalculationFlag::GEOCENTRIC;
+    else if (lower == "heliocentric" || lower == "helio") return CalculationFlag::HELIOCENTRIC;
+    else if (lower == "barycentric" || lower == "bary") return CalculationFlag::BARYCENTRIC;
+    else if (lower == "topocentric" || lower == "topo") return CalculationFlag::TOPOCENTRIC;
+    
+    // Position type
+    else if (lower == "apparent" || lower == "app") return CalculationFlag::APPARENT;
+    else if (lower == "true_geometric" || lower == "true" || lower == "geometric") return CalculationFlag::TRUE_GEOMETRIC;
+    else if (lower == "astrometric" || lower == "astro") return CalculationFlag::ASTROMETRIC;
+    
+    // Precession/Nutation
+    else if (lower == "standard_equinox" || lower == "standard" || lower == "date") return CalculationFlag::STANDARD_EQUINOX;
+    else if (lower == "j2000_equinox" || lower == "j2000" || lower == "no_precession") return CalculationFlag::J2000_EQUINOX;
+    else if (lower == "mean_equinox" || lower == "mean" || lower == "no_nutation") return CalculationFlag::MEAN_EQUINOX;
+    
+    // Speed
+    else if (lower == "high_precision_speed" || lower == "high_speed" || lower == "speed") return CalculationFlag::HIGH_PRECISION_SPEED;
+    
+    // Coordinates
+    else if (lower == "ecliptic" || lower == "ecl") return CalculationFlag::ECLIPTIC;
+    else if (lower == "equatorial" || lower == "equ") return CalculationFlag::EQUATORIAL;
+    
+    else return CalculationFlag::GEOCENTRIC; // default
+}
+
+int ayanamsaTypeToSwissEphId(AyanamsaType ayanamsa) {
+    switch (ayanamsa) {
+        case AyanamsaType::FAGAN_BRADLEY: return SE_SIDM_FAGAN_BRADLEY;
+        case AyanamsaType::LAHIRI: return SE_SIDM_LAHIRI;
+        case AyanamsaType::DELUCE: return SE_SIDM_DELUCE;
+        case AyanamsaType::RAMAN: return SE_SIDM_RAMAN;
+        case AyanamsaType::USHASHASHI: return SE_SIDM_USHASHASHI;
+        case AyanamsaType::KRISHNAMURTI: return SE_SIDM_KRISHNAMURTI;
+        case AyanamsaType::DJWHAL_KHUL: return SE_SIDM_DJWHAL_KHUL;
+        case AyanamsaType::YUKTESHWAR: return SE_SIDM_YUKTESHWAR;
+        case AyanamsaType::JN_BHASIN: return SE_SIDM_JN_BHASIN;
+        case AyanamsaType::BABYLONIAN_KUGLER1: return SE_SIDM_BABYL_KUGLER1;
+        case AyanamsaType::BABYLONIAN_KUGLER2: return SE_SIDM_BABYL_KUGLER2;
+        case AyanamsaType::BABYLONIAN_KUGLER3: return SE_SIDM_BABYL_KUGLER3;
+        case AyanamsaType::BABYLONIAN_HUBER: return SE_SIDM_BABYL_HUBER;
+        case AyanamsaType::BABYLONIAN_ETPSC: return SE_SIDM_BABYL_ETPSC;
+        case AyanamsaType::ALDEBARAN_15TAU: return SE_SIDM_ALDEBARAN_15TAU;
+        case AyanamsaType::HIPPARCHOS: return SE_SIDM_HIPPARCHOS;
+        case AyanamsaType::SASSANIAN: return SE_SIDM_SASSANIAN;
+        case AyanamsaType::GALACTIC_CENTER: return SE_SIDM_GALCENT_0SAG;
+        case AyanamsaType::J2000: return SE_SIDM_J2000;
+        case AyanamsaType::J1900: return SE_SIDM_J1900;
+        case AyanamsaType::B1950: return SE_SIDM_B1950;
+        default: return SE_SIDM_LAHIRI;
     }
 }
 

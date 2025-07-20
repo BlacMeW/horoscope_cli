@@ -434,9 +434,6 @@ int HinduCalendar::getSweAyanamsaId() const {
         case AyanamsaType::JN_BHASIN: return SE_SIDM_JN_BHASIN;
         case AyanamsaType::SASSANIAN: return SE_SIDM_SASSANIAN;
         case AyanamsaType::GALACTIC_CENTER: return SE_SIDM_GALCENT_0SAG;
-        case AyanamsaType::TRUE_CHITRA: return SE_SIDM_TRUE_CITRA;
-        case AyanamsaType::TRUE_REVATI: return SE_SIDM_TRUE_REVATI;
-        case AyanamsaType::TRUE_PUSHYA: return SE_SIDM_TRUE_PUSHYA;
         default: return SE_SIDM_LAHIRI;
     }
 }
@@ -454,9 +451,9 @@ std::string HinduCalendar::getAyanamsaName() const {
         case AyanamsaType::JN_BHASIN: return "J.N. Bhasin";
         case AyanamsaType::SASSANIAN: return "Sassanian";
         case AyanamsaType::GALACTIC_CENTER: return "Galactic Center";
-        case AyanamsaType::TRUE_CHITRA: return "True Chitra";
-        case AyanamsaType::TRUE_REVATI: return "True Revati";
-        case AyanamsaType::TRUE_PUSHYA: return "True Pushya";
+        case AyanamsaType::J2000: return "J2000";
+        case AyanamsaType::J1900: return "J1900";
+        case AyanamsaType::B1950: return "B1950";
         default: return "Unknown";
     }
 }

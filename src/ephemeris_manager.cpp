@@ -70,6 +70,49 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
     return true;
 }
 
+bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, PlanetPosition& position,
+                                             ZodiacMode zodiacMode, AyanamsaType ayanamsa,
+                                             const std::vector<CalculationFlag>& flags) {
+    if (!initialized) {
+        lastError = "EphemerisManager not initialized";
+        return false;
+    }
+
+    double xx[6];
+    char serr[256];
+    int32 iflag = buildSwissEphFlags(zodiacMode, flags);
+    int ipl = planetToSwissEph(planet);
+
+    if (ipl < 0) {
+        lastError = "Invalid planet";
+        return false;
+    }
+
+    // Set ayanamsa if using sidereal zodiac
+    if (zodiacMode == ZodiacMode::SIDEREAL) {
+        swe_set_sid_mode(ayanamsaTypeToSwissEphId(ayanamsa), 0, 0);
+    }
+
+    int ret = swe_calc(julianDay, ipl, iflag, xx, serr);
+
+    if (ret < 0) {
+        lastError = std::string("Swiss Ephemeris error: ") + serr;
+        return false;
+    }
+
+    position.planet = planet;
+    position.longitude = xx[0];
+    position.latitude = xx[1];
+    position.distance = xx[2];
+    position.speed = xx[3];
+    position.house = 0; // Will be set by HouseCalculator
+    position.housePosition = 0.0;
+
+    position.calculateSignPosition();
+
+    return true;
+}
+
 bool EphemerisManager::calculateHouseCusps(double julianDay, double latitude, double longitude,
                                          HouseSystem system, HouseCusps& cusps) {
     if (!initialized) {
@@ -134,6 +177,57 @@ int EphemerisManager::planetToSwissEph(Planet planet) const {
 
 char EphemerisManager::houseSystemToSwissEph(HouseSystem system) const {
     return static_cast<char>(system);
+}
+
+int EphemerisManager::buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags) const {
+    int32 iflag = SEFLG_SWIEPH; // Use Swiss Ephemeris by default
+
+    // Set zodiac mode
+    if (zodiacMode == ZodiacMode::SIDEREAL) {
+        iflag |= SEFLG_SIDEREAL;
+    }
+    // TROPICAL is the default (no additional flag needed)
+
+    // Process calculation flags
+    for (const auto& flag : flags) {
+        switch (flag) {
+            case CalculationFlag::GEOCENTRIC:
+                // Geocentric is default, no flag needed
+                break;
+            case CalculationFlag::HELIOCENTRIC:
+                iflag |= SEFLG_HELCTR;
+                break;
+            case CalculationFlag::BARYCENTRIC:
+                iflag |= SEFLG_BARYCTR;
+                break;
+            case CalculationFlag::TOPOCENTRIC:
+                iflag |= SEFLG_TOPOCTR;
+                break;
+            case CalculationFlag::TRUE_GEOMETRIC:
+                iflag |= SEFLG_TRUEPOS;
+                break;
+            case CalculationFlag::ASTROMETRIC:
+                iflag |= SEFLG_ASTROMETRIC;
+                break;
+            case CalculationFlag::J2000_EQUINOX:
+                iflag |= SEFLG_J2000;
+                break;
+            case CalculationFlag::MEAN_EQUINOX:
+                iflag |= SEFLG_NONUT;
+                break;
+            case CalculationFlag::HIGH_PRECISION_SPEED:
+                iflag |= SEFLG_SPEED;
+                break;
+            case CalculationFlag::EQUATORIAL:
+                iflag |= SEFLG_EQUATORIAL;
+                break;
+            default:
+                // Ignore unknown flags
+                break;
+        }
+    }
+
+    return iflag;
 }
 
 } // namespace Astro

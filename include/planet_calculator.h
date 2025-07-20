@@ -25,12 +25,24 @@ public:
     // Set which planets to include in calculations
     void setPlanetsToCalculate(const std::vector<Planet>& planets);
 
+    // Set zodiac calculation mode (tropical/sidereal)
+    void setZodiacMode(ZodiacMode mode);
+
+    // Set ayanamsa for sidereal calculations
+    void setAyanamsa(AyanamsaType ayanamsa);
+
+    // Set calculation flags
+    void setCalculationFlags(const std::vector<CalculationFlag>& flags);
+
     // Get error message
     std::string getLastError() const;
 
 private:
     EphemerisManager& ephemerisManager;
     std::vector<Planet> planetsToCalculate;
+    ZodiacMode zodiacMode;
+    AyanamsaType ayanamsa;
+    std::vector<CalculationFlag> calculationFlags;
     std::string lastError;
 };
 

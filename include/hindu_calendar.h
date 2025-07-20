@@ -54,20 +54,6 @@ enum class Rashi {
     TULA, VRISHCHIKA, DHANU, MAKARA, KUMBHA, MEENA
 };
 
-// Ayanamsa types for sidereal calculations
-enum class AyanamsaType {
-    LAHIRI = 1,        // Lahiri/Chitrapaksha (most common)
-    RAMAN = 2,         // B.V. Raman
-    KRISHNAMURTI = 3,  // K.S. Krishnamurti
-    YUKTESHWAR = 4,    // Sri Yukteshwar
-    JN_BHASIN = 5,     // J.N. Bhasin
-    SASSANIAN = 6,     // Sassanian
-    GALACTIC_CENTER = 7, // Galactic Center
-    TRUE_CHITRA = 8,   // True Chitra
-    TRUE_REVATI = 9,   // True Revati
-    TRUE_PUSHYA = 10   // True Pushya
-};
-
 // Calendar calculation methods
 enum class CalculationMethod {
     DRIK_SIDDHANTA = 1,  // Accurate astronomical calculations

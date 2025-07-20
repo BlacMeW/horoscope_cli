@@ -21,8 +21,24 @@ public:
                            HouseSystem houseSystem,
                            BirthChart& chart);
 
+    // Calculate birth chart with zodiac mode and ayanamsa
+    bool calculateBirthChart(const BirthData& birthData,
+                           HouseSystem houseSystem,
+                           ZodiacMode zodiacMode,
+                           AyanamsaType ayanamsa,
+                           BirthChart& chart);
+
     // Set house system to use
     void setHouseSystem(HouseSystem system);
+
+    // Set zodiac calculation mode (tropical/sidereal)
+    void setZodiacMode(ZodiacMode mode);
+
+    // Set ayanamsa for sidereal calculations
+    void setAyanamsa(AyanamsaType ayanamsa);
+
+    // Set calculation flags
+    void setCalculationFlags(const std::vector<CalculationFlag>& flags);
 
     // Set which planets to include
     void setPlanetsToCalculate(const std::vector<Planet>& planets);
@@ -43,6 +59,9 @@ private:
     AspectCalculator aspectCalculator;
 
     HouseSystem defaultHouseSystem;
+    ZodiacMode zodiacMode;
+    AyanamsaType ayanamsa;
+    std::vector<CalculationFlag> calculationFlags;
     std::string lastError;
     bool initialized;
 
