@@ -11,6 +11,7 @@
 #include "hindu_calendar.h"
 #include "myanmar_calendar.h"
 #include "astro_calendar.h"
+#include "swephexp.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -1275,8 +1276,8 @@ int main(int argc, char* argv[]) {
                     int startMonth = std::stoi(fromDate.substr(5, 2));
                     int startDay = std::stoi(fromDate.substr(8, 2));
 
-                    // Simple Julian day calculation for demonstration
-                    double startJD = 2451545.0 + (startYear - 2000) * 365.25 + (startMonth - 1) * 30.4 + startDay - 1;
+                    // Use proper Swiss Ephemeris Julian Day calculation
+                    double startJD = swe_julday(startYear, startMonth, startDay, 12.0, SE_GREG_CAL);
 
                     for (size_t i = 0; i < panchangaList.size(); ++i) {
                         julianDays.push_back(startJD + i);

@@ -1,9 +1,11 @@
 #include "hindu_calendar.h"
 #include "ephemeris_manager.h"
 #include "planet_calculator.h"
+#include "myanmar_calendar.h"
 #include <cmath>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <algorithm>
 #include <map>
 #include <ctime>
@@ -853,84 +855,130 @@ std::string HinduCalendar::generatePanchangaTable(const std::vector<PanchangaDat
 
 std::string HinduCalendar::generatePanchangaTableFormat(const std::vector<PanchangaData>& panchangaList,
                                                         const std::vector<double>& julianDays) const {
-    if (panchangaList.empty() || panchangaList.size() != julianDays.size()) {
-        return "No Panchanga data available or data size mismatch.";
+    if (julianDays.empty()) {
+        return "No Julian Day data available.";
     }
 
     std::ostringstream oss;
-
     oss << "Pancanga based on Suryasiddhanta (AD 1000 ca) Use Mean Position\n";
     oss << std::string(110, '-') << "\n";
 
-    for (size_t i = 0; i < panchangaList.size(); ++i) {
-        const auto& panchanga = panchangaList[i];
+    // Loop based on Julian Days - each calendar calculates independently
+    for (size_t i = 0; i < julianDays.size(); ++i) {
         double jd = julianDays[i];
 
-        // Calculate Gregorian date from Julian Day using a simple method
-        // Julian Day Number algorithm
-        int a = (int)(jd + 0.5) + 32044;
-        int b = (4 * a + 3) / 146097;
-        int c = a - (146097 * b) / 4;
-        int d = (4 * c + 3) / 1461;
-        int e = c - (1461 * d) / 4;
-        int m = (5 * e + 2) / 153;
+        // Reset stream formatting state at start of each iteration
+        oss << std::setfill(' ') << std::setprecision(6);
+        oss.unsetf(std::ios::fixed | std::ios::showpos);
 
-        int gregDay = e - (153 * m + 2) / 5 + 1;
-        int gregMonth = m + 3 - 12 * (m / 10);
-        int gregYear = 100 * b + d - 4800 + m / 10;
+        // === GREGORIAN CALENDAR - Independent calculation from JD ===
+        int gregYear, gregMonth, gregDay, gregHour, gregMin;
+        double gregSec;
+        swe_jdet_to_utc(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gregHour, &gregMin, &gregSec);
 
-        // Day names and month names
+        // === JULIAN CALENDAR - Simple approximation from Gregorian ===
+        // Julian calendar is approximately 13 days behind Gregorian in current era
+        int julYear = gregYear;
+        int julMonth = gregMonth;
+        int julDay = gregDay - 13;
+
+        // Handle month/year rollover for negative days
+        while (julDay <= 0) {
+            julMonth--;
+            if (julMonth <= 0) {
+                julMonth = 12;
+                julYear--;
+            }
+            // Days in month (Julian calendar)
+            int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+            if (julMonth == 2 && julYear % 4 == 0) daysInMonth[1] = 29; // Julian leap year rule
+            julDay += daysInMonth[julMonth - 1];
+        }
+
+
+        // === HINDU CALENDAR - Independent calculation from JD ===
+        PanchangaData hinduData = calculatePanchanga(jd, 0.0, 0.0);
+
+        // === MYANMAR CALENDAR - Independent calculation from JD ===
+        MyanmarCalendar myanmarCalendar;
+        MyanmarCalendarData myanmarData;
+        bool hasMyanmarData = false;
+
+        if (myanmarCalendar.initialize()) {
+            try {
+                myanmarData = myanmarCalendar.calculateMyanmarCalendar(jd);
+                hasMyanmarData = true;
+            } catch (...) {
+                hasMyanmarData = false;
+            }
+        }
+
+        // === OUTPUT FORMATTING ===
         std::vector<std::string> dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
         std::vector<std::string> months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-        int dayOfWeek = static_cast<int>(panchanga.vara);
-        if (dayOfWeek < 0 || dayOfWeek > 6) dayOfWeek = 0;
+        // Calculate day of week from Julian Day
+        int dayOfWeek = static_cast<int>(jd + 1.5) % 7; // JD 0 = Monday, so adjust
 
-        // Format first line: Julian date and Gregorian date
-        oss << "Julian (" << gregYear << " " << months[gregMonth-1] << " "
-            << std::setfill('0') << std::setw(2) << gregDay << " " << dayNames[dayOfWeek] << ")";
+        // Line 1: Julian Calendar | Gregorian Calendar
+        oss << "Julian (" << julYear << " " << months[julMonth-1] << " ";
+        if (julDay < 10) oss << "0";  // Manual padding
+        oss << julDay << " " << dayNames[dayOfWeek] << ")";
         oss << std::string(25, ' ');
-        oss << "Gregorian (" << gregYear << " " << months[gregMonth-1] << " "
-            << std::setfill('0') << std::setw(2) << gregDay << " " << dayNames[dayOfWeek] << ")\n";
+        oss << "Gregorian (" << gregYear << " " << months[gregMonth-1] << " ";
+        if (gregDay < 10) oss << "0";  // Manual padding
+        oss << gregDay << " " << dayNames[dayOfWeek] << ")\n";
 
-        // Calculate traditional years
-        int kaliYear = 5126; // Base for 2025, adjust as needed
-        int shakaYear = 1947; // Base for 2025
+        // Line 2: Traditional Years and Hindu Month/Tithi
+        int kaliYear = calculateKaliYear(jd);
+        int shakaYear = calculateShakaYear(jd);
+        std::string hinduMonth = getHinduMonthName(hinduData.month);
+        if (hinduMonth.length() > 8) hinduMonth = hinduMonth.substr(0, 8);
+        std::string paksha = hinduData.isShukla ? "SUKLAPAKSA" : "KRSNAPAKSA";
+        int tithiNum = static_cast<int>(hinduData.tithi);
+        double tithiFraction = hinduData.lunarPhase / 360.0;
 
-        // Get month name
-        std::string monthName = "ASHADHA"; // Default
-        try {
-            monthName = getHinduMonthName(panchanga.month);
-            if (monthName.length() > 8) monthName = monthName.substr(0, 8);
-        } catch (...) {
-            monthName = "ASHADHA";
-        }
-
-        // Format second line: KALI, SAKA, VIKEAMA years and month info
         oss << "KALI  " << kaliYear << "        SAKA  " << shakaYear;
         oss << std::string(10, ' ');
-        oss << "VIKEAMA " << panchanga.year << "       " << std::setw(8) << std::left << monthName;
-
-        // Paksha and tithi
-        std::string paksha = panchanga.isShukla ? "SUKLAPAKSA" : "KRSNAPAKSA";
-        int tithiNum = static_cast<int>(panchanga.tithi);
-        if (tithiNum > 15) tithiNum -= 15;
-        if (tithiNum < 1) tithiNum = 1;
-
-        double tithiFraction = panchanga.lunarPhase / 360.0;
-        if (tithiFraction < 0) tithiFraction = 0.0;
-        if (tithiFraction > 1) tithiFraction = 1.0;
-
+        oss << "VIKEAMA " << hinduData.year << "       " << std::setw(8) << std::left << hinduMonth;
         oss << "        " << std::setw(11) << paksha << "        " << std::setw(2) << tithiNum
             << "        (" << std::fixed << std::setprecision(4) << tithiFraction << ")\n";
 
-        // Myanmar calendar line
-        std::string phase = panchanga.isShukla ? "waxing" : "waning";
-        oss << "Myanmar 1387      (Common) Waso        " << std::setw(6) << std::left << phase
-            << "        " << std::setw(2) << tithiNum << "\n";
+        // Line 3: Myanmar Calendar
+        if (hasMyanmarData) {
+            std::vector<std::string> myanmarMonths = {
+                "Tagu", "Kason", "Nayon", "Waso", "Wagaung", "Tawthalin",
+                "Thadingyut", "Tazaungmon", "Nadaw", "Pyatho", "Tabodwe", "Tabaung"
+            };
 
-        if (i < panchangaList.size() - 1) {
+            std::string myanmarMonth = "Waso";
+            int monthIndex = static_cast<int>(myanmarData.month);
+            if (monthIndex >= 0 && monthIndex < static_cast<int>(myanmarMonths.size())) {
+                myanmarMonth = myanmarMonths[monthIndex];
+            }
+
+            std::string phase = "waxing";
+            switch (myanmarData.moonPhase) {
+                case MyanmarMoonPhase::WAXING: phase = "waxing"; break;
+                case MyanmarMoonPhase::WANING: phase = "waning"; break;
+                case MyanmarMoonPhase::FULL_MOON: phase = "full"; break;
+                case MyanmarMoonPhase::NEW_MOON: phase = "new"; break;
+            }
+
+            oss << "Myanmar " << myanmarData.myanmarYear << "      (Common) "
+                << myanmarMonth;  // Removed setw formatting
+            oss << "        " << phase;  // Removed setw formatting
+            oss << "        " << myanmarData.fortnightDay << "\n";
+        } else {
+            // Fallback if Myanmar calendar fails
+            oss << "Myanmar " << (gregYear - 638) << "      (Common) "
+                << std::setw(8) << std::left << "Waso"
+                << "        " << std::setw(6) << std::left << "waxing"
+                << "        " << std::setw(2) << 1 << "\n";
+        }
+
+        if (i < julianDays.size() - 1) {
             oss << std::string(110, '-') << "\n";
         }
     }
