@@ -2117,195 +2117,56 @@ int main(int argc, char* argv[]) {
                                   << static_cast<int>(result.panchangaData.karana) << "\n";
                     }
                 } else if (args.hinduSearchFormat == "list") {
-                    // Use Professional Table System inspired by p-ranav/tabulate
-                    Astro::ProfessionalTable table;
-
-                    // Apply Hindu calendar styling
-                    table.applyHinduCalendarStyle();
-
-                    // Set table title and subtitle with metadata
-                    table.setTitle("Hindu Calendar Search Results - Professional View");
-
-                    std::stringstream subtitleStream;
-                    subtitleStream << searchResults.size() << " Results | Location: "
-                                  << std::fixed << std::setprecision(2) << args.latitude << "°N, "
-                                  << args.longitude << "°E | Period: " << args.searchStartDate
-                                  << " ↔ " << args.searchEndDate;
-                    table.setSubtitle(subtitleStream.str());
-
-                    // Define headers with astrological context
-                    std::vector<std::string> headers = {
-                        "DATE", "WEEKDAY", "TITHI", "NAKSHATRA", "YOGA",
-                        "KARANA", "H.MONTH", "PAKSHA", "YEAR", "MUH", "SPECIAL EVENTS", "SCORE"
-                    };
-                    table.addRow(headers);
-
-                    // Add data rows with cultural formatting
+                    // Simple date list format
                     for (const auto& result : searchResults) {
-                        std::vector<std::string> row;
-
-                        // Date column
-                        row.push_back(result.gregorianDate);
-
-                        // Weekday with auspiciousness indicator
-                        std::string weekday = hinduCalendar.getVaraName(result.panchangaData.vara);
-                        if (weekday == "Sunday" || weekday == "Monday" || weekday == "Thursday") {
-                            weekday = "*" + weekday;  // Auspicious days
-                        }
-                        row.push_back(weekday);
-
-                        // Tithi with lunar phase indicators
-                        std::string tithi = hinduCalendar.getTithiName(result.panchangaData.tithi);
-                        if (tithi.find("Purnima") != std::string::npos) tithi = "O" + tithi;
-                        else if (tithi.find("Amavasya") != std::string::npos) tithi = "@" + tithi;
-                        else if (tithi.find("Ekadashi") != std::string::npos) tithi = "!" + tithi;
-                        row.push_back(tithi);
-
-                        // Nakshatra with constellation grouping
-                        std::string nakshatra = hinduCalendar.getNakshatraName(result.panchangaData.nakshatra);
-                        std::vector<std::string> devaGanas = {"Ashwini", "Mrigashirsha", "Punarvasu", "Pushya", "Hasta", "Swati", "Anuradha", "Shravana", "Revati"};
-                        for (const auto& deva : devaGanas) {
-                            if (nakshatra.find(deva.substr(0, 4)) != std::string::npos) {
-                                nakshatra = "+" + nakshatra;
-                                break;
-                            }
-                        }
-                        row.push_back(nakshatra);
-
-                        // Yoga with benefic indicators
-                        std::string yoga = hinduCalendar.getYogaName(result.panchangaData.yoga);
-                        if (yoga == "Siddhi" || yoga == "Shubha" || yoga == "Amrita") {
-                            yoga = "#" + yoga;
-                        }
-                        row.push_back(yoga);
-
-                        // Karana
-                        row.push_back(hinduCalendar.getKaranaName(result.panchangaData.karana));
-
-                        // Hindu Month with seasonal indicators
-                        std::string hmonth = hinduCalendar.getHinduMonthName(result.panchangaData.month);
-                        std::vector<std::string> springMonths = {"Chaitra", "Vaishakha"};
-                        for (const auto& spring : springMonths) {
-                            if (hmonth.find(spring.substr(0, 4)) != std::string::npos) {
-                                hmonth = "~" + hmonth;
-                                break;
-                            }
-                        }
-                        row.push_back(hmonth);
-
-                        // Paksha with moon phase visual
-                        std::string paksha = result.panchangaData.isShukla ? ">Shukla" : "<Krishna";
-                        row.push_back(paksha);
-
-                        // Year
-                        row.push_back(std::to_string(result.panchangaData.year));
-
-                        // Muhurta with indicators
-                        std::string muhurta;
-                        if (result.panchangaData.isShubhaMuhurta) muhurta = "Good";
-                        else if (result.panchangaData.isAshubhaMuhurta) muhurta = "Warn";
-                        else muhurta = "Neut";
-                        row.push_back(muhurta);
-
-                        // Special Events with priority display
-                        std::string specialEvents;
-                        if (result.panchangaData.isEkadashi) specialEvents += "Eka ";
-                        if (result.panchangaData.isPurnima) specialEvents += "Pur ";
-                        if (result.panchangaData.isAmavasya) specialEvents += "Ama ";
-                        if (result.panchangaData.isSankranti) specialEvents += "San ";
-
-                        if (!result.panchangaData.festivals.empty()) {
-                            std::string fest = result.panchangaData.festivals[0];
-                            if (fest.length() > 8) fest = fest.substr(0, 6) + "..";
-                            specialEvents += fest;
-                        }
-
-                        if (specialEvents.empty()) specialEvents = "-";
-                        row.push_back(specialEvents);
-
-                        // Score with quality indicator
-                        std::string scoreDisplay = std::to_string(result.matchScore);
-                        if (scoreDisplay.length() > 5) scoreDisplay = scoreDisplay.substr(0, 5);
-                        if (result.matchScore >= 0.90) scoreDisplay = "*" + scoreDisplay;
-                        else if (result.matchScore >= 0.75) scoreDisplay = "#" + scoreDisplay;
-                        row.push_back(scoreDisplay);
-
-                        table.addRow(row);
+                        std::cout << result.gregorianDate << "\n";
                     }
-
-                    // Output the professional table
-                    std::cout << "\n" << table.toString() << std::endl;
-
-                    // Add legend
-                    std::cout << "\n========================================= LEGEND & SYMBOLS ==========================================\n";
-                    std::cout << "MUHURTA: Good=Shubha(Auspicious) Warn=Ashubha(Inauspicious) Neut=Samanya(Neutral)\n";
-                    std::cout << "WEEKDAY: *=Highly Auspicious (Sun/Mon/Thu) • Others=Normal\n";
-                    std::cout << "TITHI: O=Purnima(Full Moon) @=Amavasya(New Moon) !=Ekadashi(Sacred)\n";
-                    std::cout << "NAKSHATRA: +=Deva Gana(Divine) • Others=Manushya/Rakshasa Gana\n";
-                    std::cout << "YOGA: #=Highly Beneficial • Others=Regular Combinations\n";
-                    std::cout << "MONTH: ~=Spring Season • Others=Summer/Monsoon/Autumn/Winter\n";
-                    std::cout << "PAKSHA: >=Shukla(Bright Fortnight) <=Krishna(Dark Fortnight)\n";
-                    std::cout << "EVENTS: Eka=Ekadashi Pur=Purnima Ama=Amavasya San=Sankranti + Festival names\n";
-                    std::cout << "SCORE: *=Excellent(>=0.9) #=Good(>=0.75) •=Standard(<0.75)\n";
-                    std::cout << "========================================================================================================\n";
-
                 } else {
-                    // Default table format
-                    std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
-                    std::cout << "═══════════════════════════════════════════════\n\n";
-                    std::cout << "Found " << searchResults.size() << " matching dates\n";
-                    std::cout << "Search criteria: ";
+                    // Professional table format using ProfessionalTable system
+                    ProfessionalTable table = createHinduCalendarTable();
 
-                    bool first = true;
-                    if (criteria.exactYear > 0) {
-                        if (!first) std::cout << ", ";
-                        std::cout << "Year=" << criteria.exactYear;
-                        first = false;
-                    } else if (criteria.yearRangeStart > 0) {
-                        if (!first) std::cout << ", ";
-                        std::cout << "Year=" << criteria.yearRangeStart << "-" << criteria.yearRangeEnd;
-                        first = false;
-                    }
-                    if (criteria.exactMonth > 0) {
-                        if (!first) std::cout << ", ";
-                        std::cout << "Month=" << criteria.exactMonth;
-                        first = false;
-                    } else if (criteria.monthRangeStart > 0) {
-                        if (!first) std::cout << ", ";
-                        std::cout << "Month=" << criteria.monthRangeStart << "-" << criteria.monthRangeEnd;
-                        first = false;
-                    }
-                    if (criteria.exactTithi > 0) {
-                        if (!first) std::cout << ", ";
-                        std::cout << "Tithi=" << criteria.exactTithi;
-                        first = false;
-                    } else if (criteria.tithiRangeStart > 0) {
-                        if (!first) std::cout << ", ";
-                        std::cout << "Tithi=" << criteria.tithiRangeStart << "-" << criteria.tithiRangeEnd;
-                        first = false;
-                    }
-                    if (criteria.exactWeekday >= 0) {
-                        if (!first) std::cout << ", ";
-                        std::string weekdayNames[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                        std::cout << "Weekday=" << weekdayNames[criteria.exactWeekday];
-                        first = false;
-                    }
-                    std::cout << "\n";
-                    std::cout << "Match type: " << (criteria.exactMatch ? "Exact" : "Near (tolerance=" + std::to_string(criteria.nearMatchTolerance) + ")") << "\n\n";
+                    std::ostringstream subtitle;
+                    subtitle << searchResults.size() << " results found | Period: " << args.searchStartDate
+                            << " to " << args.searchEndDate << " | Location: "
+                            << std::fixed << std::setprecision(2) << args.latitude << "N, " << args.longitude << "E";
+                    table.setSubtitle(subtitle.str());
 
-                    for (size_t i = 0; i < searchResults.size(); ++i) {
-                        const auto& result = searchResults[i];
-                        std::cout << "Result #" << (i + 1) << " (Score: " << result.matchScore << ")\n";
-                        std::cout << "Date: " << result.gregorianDate << "\n";
-                        std::cout << hinduCalendar.generatePanchangaTable(result.panchangaData) << "\n";
-                        if (i < searchResults.size() - 1) {
-                            std::cout << "-----------------------------------------------\n\n";
+                    for (const auto& result : searchResults) {
+                        std::string date = result.gregorianDate;
+                        std::string weekday = hinduCalendar.getVaraName(result.panchangaData.vara);
+                        std::string tithi = hinduCalendar.getTithiName(result.panchangaData.tithi);
+                        std::string nakshatra = hinduCalendar.getNakshatraName(result.panchangaData.nakshatra);
+                        std::string yoga = hinduCalendar.getYogaName(result.panchangaData.yoga);
+                        std::string karana = hinduCalendar.getKaranaName(result.panchangaData.karana);
+                        std::string month = hinduCalendar.getHinduMonthName(result.panchangaData.month);
+                        std::string paksha = result.panchangaData.isShukla ? "Shukla" : "Krishna";
+                        std::string year = std::to_string(result.panchangaData.year);
+
+                        std::string muhurta = "Neutral";
+                        if (result.panchangaData.isShubhaMuhurta) muhurta = "Good";
+                        else if (result.panchangaData.isAshubhaMuhurta) muhurta = "Caution";
+
+                        std::string events = "";
+                        if (result.panchangaData.isEkadashi) events += "Ekadashi ";
+                        if (result.panchangaData.isPurnima) events += "Purnima ";
+                        if (result.panchangaData.isAmavasya) events += "Amavasya ";
+                        if (result.panchangaData.isSankranti) events += "Sankranti ";
+                        if (!result.panchangaData.festivals.empty()) {
+                            events += result.panchangaData.festivals[0];
                         }
+                        if (events.empty()) events = "-";
+
+                        std::string score = std::to_string(result.matchScore).substr(0, 5);
+
+                        addHinduCalendarRow(table, date, weekday, tithi, nakshatra, yoga, karana,
+                                          month, paksha, year, muhurta, events, score);
                     }
+
+                    std::cout << table.toString();
                 }
             } else {
-                std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
-                std::cout << "═══════════════════════════════════════════════\n\n";
+                std::cout << "\nHINDU CALENDAR SEARCH RESULTS\n";
+                std::cout << "=================================\n\n";
                 std::cout << "No matching dates found for the specified criteria.\n";
                 std::cout << "Try adjusting your search parameters or using --search-near with a higher tolerance.\n";
             }
@@ -2453,10 +2314,10 @@ int main(int argc, char* argv[]) {
                                   << static_cast<int>(result.myanmarData.weekday) << "\n";
                     }
                 } else if (args.myanmarSearchFormat == "list") {
-                    // Generate professional-grade Myanmar tabular output with enhanced design and ASCII borders
+                    // Generate professional-grade Myanmar tabular output with enhanced design and ASCII borders - NO UNICODE EMOJIS
                     std::cout << "\n";
                     std::cout << "+==================================================================================================================================================================================================+\n";
-                    std::cout << "|                                             🇲🇲  MYANMAR CALENDAR SEARCH RESULTS - PROFESSIONAL VIEW  🇲🇲                                                                            |\n";
+                    std::cout << "|                                                  MYANMAR CALENDAR SEARCH RESULTS - PROFESSIONAL VIEW                                                                              |\n";
                     std::cout << "+==================================================================================================================================================================================================+\n";
                     std::cout << "| " << std::setw(3) << std::right << searchResults.size() << " Results Found"
                               << " | Location: " << std::fixed << std::setprecision(2) << args.latitude << "°N, " << args.longitude << "°E"
@@ -2472,7 +2333,7 @@ int main(int argc, char* argv[]) {
 
                     std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
                     std::cout << "|    DATE     |  WEEKDAY   |MY.YR |    MONTH    | DAY |MOON.PHASE |  MAHABOTE  | NAKHAT  | NAGAHLE| RELIGIOUS|  ASTRO.DAYS    |SCORE |\n";
-                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+";
+                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
 
                     // Professional Myanmar table rows with enhanced formatting
                     size_t rowCount = 0;
@@ -2482,16 +2343,16 @@ int main(int argc, char* argv[]) {
                         // Date column with center alignment
                         std::cout << "| " << std::setw(11) << std::left << result.gregorianDate << " | ";
 
-                        // Weekday column with Myanmar cultural indicators - fixed 10 chars
+                        // Weekday column with Myanmar cultural indicators - fixed 10 chars - NO UNICODE EMOJIS
                         std::string weekday = myanmarCalendar.getMyanmarWeekdayName(result.myanmarData.weekday);
                         std::string weekdayDisplay = weekday;
 
-                        // Create consistent weekday abbreviations
-                        if (weekday == "Sunday") weekdayDisplay = "⚡Sunday";
-                        else if (weekday == "Monday") weekdayDisplay = "☾Monday";
-                        else if (weekday == "Tuesday") weekdayDisplay = "⚡Tuesday";
+                        // Create consistent weekday abbreviations without emojis
+                        if (weekday == "Sunday") weekdayDisplay = "P-Sunday";
+                        else if (weekday == "Monday") weekdayDisplay = "M-Monday";
+                        else if (weekday == "Tuesday") weekdayDisplay = "P-Tuesday";
                         else if (weekday == "Wednesday") weekdayDisplay = "Wednesday";
-                        else if (weekday == "Thursday") weekdayDisplay = "☾Thursday";
+                        else if (weekday == "Thursday") weekdayDisplay = "M-Thursday";
                         else if (weekday == "Friday") weekdayDisplay = "Friday";
                         else if (weekday == "Saturday") weekdayDisplay = "Saturday";
 
@@ -2502,10 +2363,10 @@ int main(int argc, char* argv[]) {
                         // Myanmar Year column - right aligned
                         std::cout << std::setw(4) << std::right << result.myanmarData.myanmarYear << " | ";
 
-                        // Month column with seasonal indicators
+                        // Month column with seasonal indicators - NO UNICODE EMOJIS
                         std::string month = myanmarCalendar.getMyanmarMonthName(result.myanmarData.month);
                         if (month.length() > 11) month = month.substr(0, 9) + "..";
-                        // Add seasonal context for Myanmar months
+                        // Add seasonal context for Myanmar months without emojis
                         std::vector<std::string> hotMonths = {"Tagu", "Kason", "Nayon"};
                         std::vector<std::string> rainyMonths = {"Waso", "Wagaung", "Tawthalin"};
                         std::vector<std::string> coolMonths = {"Thadingyut", "Tazaungmon", "Nadaw", "Pyatho", "Tabodwe", "Tabaung"};
@@ -2513,19 +2374,19 @@ int main(int argc, char* argv[]) {
                         std::string monthDisplay = month;
                         for (const auto& hot : hotMonths) {
                             if (month.find(hot) != std::string::npos) {
-                                monthDisplay = "☀" + month.substr(0, 10);
+                                monthDisplay = "H-" + month.substr(0, 9);
                                 break;
                             }
                         }
                         for (const auto& rainy : rainyMonths) {
                             if (month.find(rainy) != std::string::npos) {
-                                monthDisplay = "🌧" + month.substr(0, 10);
+                                monthDisplay = "R-" + month.substr(0, 9);
                                 break;
                             }
                         }
                         for (const auto& cool : coolMonths) {
                             if (month.find(cool) != std::string::npos) {
-                                monthDisplay = "❄" + month.substr(0, 10);
+                                monthDisplay = "C-" + month.substr(0, 9);
                                 break;
                             }
                         }
@@ -2534,65 +2395,65 @@ int main(int argc, char* argv[]) {
                         // Day column - center aligned
                         std::cout << std::setw(3) << std::right << result.myanmarData.dayOfMonth << " | ";
 
-                        // Moon Phase column with visual indicators
+                        // Moon Phase column with visual indicators - NO UNICODE EMOJIS
                         std::string moonPhase = myanmarCalendar.getMoonPhaseName(result.myanmarData.moonPhase);
                         if (moonPhase.length() > 9) moonPhase = moonPhase.substr(0, 7) + "..";
-                        // Add moon phase visual symbols
-                        if (moonPhase.find("Full") != std::string::npos) moonPhase = "🌕" + moonPhase.substr(0, 8);
-                        else if (moonPhase.find("New") != std::string::npos) moonPhase = "🌑" + moonPhase.substr(0, 8);
-                        else if (moonPhase.find("Waxing") != std::string::npos) moonPhase = "🌔" + moonPhase.substr(0, 8);
-                        else if (moonPhase.find("Waning") != std::string::npos) moonPhase = "🌖" + moonPhase.substr(0, 8);
+                        // Add moon phase visual symbols without emojis
+                        if (moonPhase.find("Full") != std::string::npos) moonPhase = "F-" + moonPhase.substr(0, 7);
+                        else if (moonPhase.find("New") != std::string::npos) moonPhase = "N-" + moonPhase.substr(0, 7);
+                        else if (moonPhase.find("Waxing") != std::string::npos) moonPhase = "W+" + moonPhase.substr(0, 6);
+                        else if (moonPhase.find("Waning") != std::string::npos) moonPhase = "W-" + moonPhase.substr(0, 6);
                         std::cout << std::setw(9) << std::left << moonPhase << " | ";
 
-                        // Mahabote column with quality indicators - fixed 10 chars
+                        // Mahabote column with quality indicators - fixed 10 chars - NO UNICODE EMOJIS
                         std::string mahabote;
                         switch(result.myanmarData.mahabote) {
-                            case Mahabote::BINGA: mahabote = "♦Binga"; break;      // Benefic
-                            case Mahabote::ATUN: mahabote = "◇Atun"; break;       // Neutral
-                            case Mahabote::YAZA: mahabote = "⚠Yaza"; break;       // Malefic
-                            case Mahabote::ADIPATI: mahabote = "♦Adipati"; break;  // Benefic
-                            case Mahabote::MARANA: mahabote = "⚠Marana"; break;   // Malefic
-                            case Mahabote::THIKE: mahabote = "◇Thike"; break;     // Neutral
-                            case Mahabote::PUTI: mahabote = "♦Puti"; break;       // Benefic
+                            case Mahabote::BINGA: mahabote = "B-Binga"; break;      // Benefic
+                            case Mahabote::ATUN: mahabote = "N-Atun"; break;       // Neutral
+                            case Mahabote::YAZA: mahabote = "M-Yaza"; break;       // Malefic
+                            case Mahabote::ADIPATI: mahabote = "B-Adipati"; break;  // Benefic
+                            case Mahabote::MARANA: mahabote = "M-Marana"; break;   // Malefic
+                            case Mahabote::THIKE: mahabote = "N-Thike"; break;     // Neutral
+                            case Mahabote::PUTI: mahabote = "B-Puti"; break;       // Benefic
                         }
 
                         // Ensure fixed width of exactly 10 characters
                         if (mahabote.length() > 10) mahabote = mahabote.substr(0, 10);
                         std::cout << std::setw(10) << std::left << mahabote << " | ";
 
-                        // Nakhat column with cycle indicators
+                        // Nakhat column with cycle indicators - NO UNICODE EMOJIS
                         std::string nakhat;
                         switch(result.myanmarData.nakhat) {
-                            case Nakhat::ORC: nakhat = "🔴Orc"; break;      // Active/Aggressive
-                            case Nakhat::ELF: nakhat = "🟢Elf"; break;      // Peaceful/Wise
-                            case Nakhat::HUMAN: nakhat = "🟡Human"; break;  // Balanced
+                            case Nakhat::ORC: nakhat = "A-Orc"; break;      // Active/Aggressive
+                            case Nakhat::ELF: nakhat = "P-Elf"; break;      // Peaceful/Wise
+                            case Nakhat::HUMAN: nakhat = "B-Human"; break;  // Balanced
                         }
                         std::cout << std::setw(7) << std::left << nakhat << " | ";
 
-                        // Nagahle column with directional symbols
+                        // Nagahle column with directional symbols - NO UNICODE EMOJIS
                         std::string nagahle;
                         switch(result.myanmarData.nagahle) {
-                            case NagahleDirection::WEST: nagahle = "⬅West"; break;
-                            case NagahleDirection::NORTH: nagahle = "⬆North"; break;
-                            case NagahleDirection::EAST: nagahle = "➡East"; break;
-                            case NagahleDirection::SOUTH: nagahle = "⬇South"; break;
+                            case NagahleDirection::WEST: nagahle = "W-West"; break;
+                            case NagahleDirection::NORTH: nagahle = "N-North"; break;
+                            case NagahleDirection::EAST: nagahle = "E-East"; break;
+                            case NagahleDirection::SOUTH: nagahle = "S-South"; break;
                         }
                         std::cout << std::setw(6) << std::left << nagahle << " | ";
 
-                        // Religious days column with Buddhist symbols
+                        // Religious days column with Buddhist symbols - NO UNICODE EMOJIS
                         std::string religious;
-                        if (result.myanmarData.isSabbath) religious = "☸Sabbath";
-                        else if (result.myanmarData.isSabbathEve) religious = "☸Eve";
+                        if (result.myanmarData.isSabbath) religious = "Sabbath";
+                        else if (result.myanmarData.isSabbathEve) religious = "S-Eve";
                         else religious = "   -   ";
                         std::cout << std::setw(8) << std::left << religious << " | ";
 
-                        // Astrological days column with enhanced indicators
+                        // Astrological days column with enhanced indicators - NO UNICODE EMOJIS
                         std::vector<std::string> astro;
-                        if (result.myanmarData.isYatyaza) astro.push_back("⚠Yat");
-                        if (result.myanmarData.isPyathada) astro.push_back("⚠Pya");
-                        if (result.myanmarData.isThamanyo) astro.push_back("✅Tha");
-                        if (result.myanmarData.isAmyeittasote) astro.push_back("◇Amy");
-                        if (result.myanmarData.isWarameittugyi) astro.push_back("◇War");
+                        if (result.myanmarData.isYatyaza) astro.push_back("M-Yat");
+                        if (result.myanmarData.isPyathada) astro.push_back("M-Pya");
+                        if (result.myanmarData.isThamanyo) astro.push_back("G-Tha");
+                        if (result.myanmarData.isAmyeittasote) astro.push_back("N-Amy");
+                        if (result.myanmarData.isWarameittugyi) astro.push_back("N-War");
 
                         std::string astroStr;
                         for (size_t i = 0; i < astro.size() && astroStr.length() < 12; ++i) {
@@ -2603,11 +2464,11 @@ int main(int argc, char* argv[]) {
                         if (astroStr.length() > 14) astroStr = astroStr.substr(0, 11) + "...";
                         std::cout << std::setw(14) << std::left << astroStr << " | ";
 
-                        // Score column with quality indicator
+                        // Score column with quality indicator - NO UNICODE EMOJIS
                         std::string scoreDisplay = std::to_string(result.matchScore);
                         if (scoreDisplay.length() > 4) scoreDisplay = scoreDisplay.substr(0, 4);
-                        if (result.matchScore >= 0.90) scoreDisplay = "★" + scoreDisplay;
-                        else if (result.matchScore >= 0.75) scoreDisplay = "◆" + scoreDisplay;
+                        if (result.matchScore >= 0.90) scoreDisplay = "E" + scoreDisplay;
+                        else if (result.matchScore >= 0.75) scoreDisplay = "G" + scoreDisplay;
                         std::cout << std::setw(4) << std::right << scoreDisplay << " |";
 
                         std::cout << "\n";
@@ -2620,46 +2481,70 @@ int main(int argc, char* argv[]) {
 
                     std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
 
-                    // Enhanced professional legend for Myanmar calendar
+                    // Enhanced professional legend for Myanmar calendar - NO UNICODE EMOJIS
                     std::cout << "+---------------------------------------------- MYANMAR LEGEND & SYMBOLS ----------------------------------------------+\n";
-                    std::cout << "| WEEKDAY: ⚡=Power Days(Sun/Tue) ☾=Moon Days(Mon/Thu) •=Regular Days                                                |\n";
-                    std::cout << "| MONTH: ☀=Hot Season(Tagu-Nayon) 🌧=Rainy Season(Waso-Tawthalin) ❄=Cool Season(Thadingyut-Tabaung)                |\n";
-                    std::cout << "| MOON: 🌕=Full Moon 🌑=New Moon 🌔=Waxing 🌖=Waning                                                                |\n";
-                    std::cout << "| MAHABOTE: ♦=Benefic(Binga/Adipati/Puti) ⚠=Malefic(Yaza/Marana) ◇=Neutral(Atun/Thike)                            |\n";
-                    std::cout << "| NAKHAT: 🔴=Orc(Active) 🟢=Elf(Peaceful) 🟡=Human(Balanced) • 3-Year Cycle                                       |\n";
-                    std::cout << "| NAGAHLE: ⬅=West ⬆=North ➡=East ⬇=South • Snake Head Direction                                                   |\n";
-                    std::cout << "| RELIGIOUS: ☸=Buddhist Sabbath/Eve • Important for Merit-making                                                   |\n";
-                    std::cout << "| ASTRO.DAYS: ⚠Yat=Yatyaza(Avoid) ⚠Pya=Pyathada(Caution) ✅Tha=Thamanyo(Auspicious) ◇=Others                     |\n";
-                    std::cout << "| SCORE: ★=Excellent(≥0.9) ◆=Good(≥0.75) •=Standard(<0.75)                                                        |\n";
+                    std::cout << "| WEEKDAY: P=Power Days(Sun/Tue) M=Moon Days(Mon/Thu) •=Regular Days                                                 |\n";
+                    std::cout << "| MONTH: H=Hot Season(Tagu-Nayon) R=Rainy Season(Waso-Tawthalin) C=Cool Season(Thadingyut-Tabaung)                 |\n";
+                    std::cout << "| MOON: F=Full Moon N=New Moon W+=Waxing W-=Waning                                                                  |\n";
+                    std::cout << "| MAHABOTE: B=Benefic(Binga/Adipati/Puti) M=Malefic(Yaza/Marana) N=Neutral(Atun/Thike)                            |\n";
+                    std::cout << "| NAKHAT: A=Orc(Active) P=Elf(Peaceful) B=Human(Balanced) • 3-Year Cycle                                          |\n";
+                    std::cout << "| NAGAHLE: W=West N=North E=East S=South • Snake Head Direction                                                     |\n";
+                    std::cout << "| RELIGIOUS: Sabbath/S-Eve=Buddhist Days • Important for Merit-making                                              |\n";
+                    std::cout << "| ASTRO.DAYS: M-Yat=Yatyaza(Avoid) M-Pya=Pyathada(Caution) G-Tha=Thamanyo(Auspicious) N=Others                   |\n";
+                    std::cout << "| SCORE: E=Excellent(≥0.9) G=Good(≥0.75) •=Standard(<0.75)                                                        |\n";
                     std::cout << "+-------------------------------------------------------------------------------------------------------------------+\n";
                     std::cout << "| YEAR TYPE: " << (searchResults.empty() ? "N/A" :
-                                  (searchResults[0].myanmarData.yearType == MyanmarYearType::COMMON ? "📅 Common Year" :
-                                   searchResults[0].myanmarData.yearType == MyanmarYearType::LITTLE_WATAT ? "📅 Little Watat (13 months)" :
-                                   "📅 Big Watat (13 months + extra day)")) << "                                |\n";
+                                  (searchResults[0].myanmarData.yearType == MyanmarYearType::COMMON ? "Common Year" :
+                                   searchResults[0].myanmarData.yearType == MyanmarYearType::LITTLE_WATAT ? "Little Watat (13 months)" :
+                                   "Big Watat (13 months + extra day)")) << "                                       |\n";
                     std::cout << "| Full detailed analysis available using 'table' format • Buddhist Era: Myanmar Calendar System                     |\n";
                     std::cout << "+-------------------------------------------------------------------------------------------------------------------+\n";
                 } else {
-                    // Default table format
-                    std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
-                    std::cout << "═══════════════════════════════════════════════════════\n";
+                    // Default table format - WITH UNICODE EMOJIS
+                    std::cout << "\n🇲🇲 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
+                    std::cout << "======================================\n";
                     std::cout << "Found " << searchResults.size() << " matching days:\n\n";
 
                     for (const auto& result : searchResults) {
-                        std::cout << "📅 Date: " << result.gregorianDate << " (Score: " << result.matchScore << ")\n";
-                        std::cout << "   Myanmar Year: " << result.myanmarData.myanmarYear << ", Month: " << myanmarCalendar.getMyanmarMonthName(result.myanmarData.month);
-                        std::cout << ", Day: " << result.myanmarData.fortnightDay << " (" << myanmarCalendar.getMoonPhaseName(result.myanmarData.moonPhase) << ")\n";
-                        std::cout << "   Weekday: " << myanmarCalendar.getMyanmarWeekdayName(result.myanmarData.weekday) << "\n";
+                        std::cout << "📅 Date: " << result.gregorianDate << " (Score: ";
+                        if (result.matchScore >= 0.90) std::cout << "⭐ ";
+                        else if (result.matchScore >= 0.75) std::cout << "✨ ";
+                        std::cout << result.matchScore << ")\n";
+
+                        std::cout << "   🌙 Myanmar Year: " << result.myanmarData.myanmarYear << ", Month: " << myanmarCalendar.getMyanmarMonthName(result.myanmarData.month);
+                        std::cout << ", Day: " << result.myanmarData.fortnightDay << " (";
+
+                        // Add moon phase with emoji
+                        std::string moonPhase = myanmarCalendar.getMoonPhaseName(result.myanmarData.moonPhase);
+                        if (moonPhase.find("Full") != std::string::npos) std::cout << "🌕 ";
+                        else if (moonPhase.find("New") != std::string::npos) std::cout << "🌑 ";
+                        else if (moonPhase.find("Waxing") != std::string::npos) std::cout << "🌔 ";
+                        else if (moonPhase.find("Waning") != std::string::npos) std::cout << "🌖 ";
+                        std::cout << moonPhase << ")\n";
+
+                        // Add weekday with emoji
+                        std::string weekday = myanmarCalendar.getMyanmarWeekdayName(result.myanmarData.weekday);
+                        std::cout << "   📆 Weekday: ";
+                        if (weekday == "Sunday" || weekday == "Tuesday") std::cout << "⚡ ";
+                        else if (weekday == "Monday" || weekday == "Thursday") std::cout << "☾ ";
+                        std::cout << weekday << "\n";
 
                         if (!result.matchDescription.empty()) {
-                            std::cout << "   🔮 " << result.matchDescription << "\n";
+                            std::cout << "   ✨ " << result.matchDescription << "\n";
                         }
                         std::cout << "\n";
                     }
                 }
             } else {
-                std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
-                std::cout << "═══════════════════════════════════════════════════════\n";
-                std::cout << "No matching days found for the specified criteria.\n\n";
+                if (args.myanmarSearchFormat == "list") {
+                    std::cout << "\nMYANMAR CALENDAR SEARCH RESULTS - PROFESSIONAL VIEW\n";
+                    std::cout << "=====================================================\n";
+                    std::cout << "No matching days found for the specified criteria.\n\n";
+                } else {
+                    std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
+                    std::cout << "═══════════════════════════════════════════════════════\n";
+                    std::cout << "No matching days found for the specified criteria.\n\n";
+                }
 
                 std::cout << "Search Criteria Summary:\n";
                 std::cout << "• Date Range: " << criteria.searchStartDate << " to " << criteria.searchEndDate << "\n";
