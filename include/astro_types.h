@@ -101,6 +101,9 @@ struct PlanetPosition {
     double latitude;         // Ecliptic latitude in degrees
     double distance;         // Distance from Earth in AU
     double speed;           // Daily motion in degrees
+    double declination;      // Declination in degrees (celestial coordinate)
+    double rightAscension;   // Right ascension in degrees (celestial coordinate)
+    double inclination;      // Orbital inclination in degrees
     ZodiacSign sign;
     int house;              // House number (1-12)
     double housePosition;   // Position within house (0-30 degrees)
@@ -110,6 +113,9 @@ struct PlanetPosition {
 
     // Get formatted position string (e.g., "25°42' Capricorn")
     std::string getFormattedPosition() const;
+
+    // Get formatted astronomical coordinates
+    std::string getAstronomicalCoordinates() const;
 };
 
 // Aspect between two planets

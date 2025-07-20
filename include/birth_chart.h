@@ -27,10 +27,15 @@ public:
     void setAyanamsa(AyanamsaType ayanamsa);
 
     // Get formatted chart as string
+    // Get formatted chart display
     std::string getFormattedChart() const;
+    std::string getFormattedChart(bool showAstronomicalCoordinates) const;
 
     // Get planet positions section
     std::string getPlanetPositionsString() const;
+
+    // Get planet positions with astronomical coordinates
+    std::string getPlanetPositionsWithAstronomicalCoordinates() const;
 
     // Get house cusps section
     std::string getHouseCuspsString() const;

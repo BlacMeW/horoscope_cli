@@ -73,6 +73,7 @@ struct CommandLineArgs {
     bool showFeatures = false;
     bool showSolarSystemOnly = false;
     bool noDrawing = false;
+    bool showAstronomicalCoordinates = false;
 
     // Location search options
     std::string locationName = "";
@@ -513,6 +514,7 @@ void printHelp() {
     std::cout << "                       • Displays planetary orbits around Sun\n\n";
 
     std::cout << "    --no-drawing       Disable all chart and ASCII art drawing\n";
+    std::cout << "    --astronomical     Show astronomical coordinates (declination, RA, inclination)\n";
     std::cout << "                       • Shows only numerical data and calculations\n";
     std::cout << "                       • Useful for data-only output or scripting\n\n";
 
@@ -934,6 +936,8 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.showSolarSystemOnly = true;
         } else if (arg == "--no-drawing") {
             args.noDrawing = true;
+        } else if (arg == "--astronomical") {
+            args.showAstronomicalCoordinates = true;
         } else if (arg == "--location" && i + 1 < argc) {
             args.locationName = argv[++i];
         } else if (arg == "--search-location" && i + 1 < argc) {
@@ -2204,7 +2208,7 @@ int main(int argc, char* argv[]) {
         std::cout << chart.exportToJson() << std::endl;
     } else if (args.noDrawing) {
         // No-drawing mode: show only basic text output without charts or ASCII art
-        std::cout << chart.getFormattedChart() << std::endl;
+        std::cout << chart.getFormattedChart(args.showAstronomicalCoordinates) << std::endl;
     } else {
         // Handle different chart styles
         if (args.chartStyle == "solar-system") {
@@ -2222,7 +2226,7 @@ int main(int argc, char* argv[]) {
             std::cout << westernDrawer.drawAspectGrid(chart) << std::endl;
         } else if (args.chartStyle == "north-indian" || args.chartStyle == "south-indian" || args.chartStyle == "east-indian") {
             // Display traditional Western chart first
-            std::cout << chart.getFormattedChart() << std::endl;
+            std::cout << chart.getFormattedChart(args.showAstronomicalCoordinates) << std::endl;
 
             // Add Eastern chart
             EasternChartDrawer chartDrawer;
@@ -2230,10 +2234,10 @@ int main(int argc, char* argv[]) {
             std::cout << chartDrawer.drawEasternChart(chart) << std::endl;
         } else if (args.chartStyle.empty()) {
             // No chart style specified: show only basic formatted chart data
-            std::cout << chart.getFormattedChart() << std::endl;
+            std::cout << chart.getFormattedChart(args.showAstronomicalCoordinates) << std::endl;
         } else {
             // Default to basic text output
-            std::cout << chart.getFormattedChart() << std::endl;
+            std::cout << chart.getFormattedChart(args.showAstronomicalCoordinates) << std::endl;
         }
     }
 

@@ -43,6 +43,23 @@ std::string BirthChart::getFormattedChart() const {
     return oss.str();
 }
 
+std::string BirthChart::getFormattedChart(bool showAstronomicalCoordinates) const {
+    std::ostringstream oss;
+
+    oss << getChartHeader() << "\n\n";
+
+    if (showAstronomicalCoordinates) {
+        oss << getPlanetPositionsWithAstronomicalCoordinates() << "\n\n";
+    } else {
+        oss << getPlanetPositionsString() << "\n\n";
+    }
+
+    oss << getHouseCuspsString() << "\n\n";
+    oss << getAspectsString();
+
+    return oss.str();
+}
+
 std::string BirthChart::getPlanetPositionsString() const {
     std::ostringstream oss;
     oss << "=== PLANETARY POSITIONS ===\n";
@@ -50,6 +67,20 @@ std::string BirthChart::getPlanetPositionsString() const {
     for (const auto& pos : planetPositions) {
         oss << std::left << std::setw(12) << (planetToString(pos.planet) + ":");
         oss << pos.getFormattedPosition() << "\n";
+    }
+
+    return oss.str();
+}
+
+std::string BirthChart::getPlanetPositionsWithAstronomicalCoordinates() const {
+    std::ostringstream oss;
+    oss << "=== PLANETARY POSITIONS & ASTRONOMICAL COORDINATES ===\n";
+
+    for (const auto& pos : planetPositions) {
+        oss << std::left << std::setw(12) << (planetToString(pos.planet) + ":");
+        oss << pos.getFormattedPosition() << "\n";
+        oss << std::left << std::setw(12) << "";
+        oss << pos.getAstronomicalCoordinates() << "\n\n";
     }
 
     return oss.str();

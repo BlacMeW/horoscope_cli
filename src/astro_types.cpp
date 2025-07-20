@@ -30,6 +30,39 @@ std::string PlanetPosition::getFormattedPosition() const {
     return oss.str();
 }
 
+std::string PlanetPosition::getAstronomicalCoordinates() const {
+    std::ostringstream oss;
+
+    // Format latitude
+    int latDeg = static_cast<int>(std::abs(latitude));
+    int latMin = static_cast<int>((std::abs(latitude) - latDeg) * 60);
+    oss << "Lat: " << (latitude >= 0 ? "+" : "-")
+        << std::setfill('0') << std::setw(2) << latDeg << "°"
+        << std::setw(2) << latMin << "'";
+
+    // Format declination
+    int decDeg = static_cast<int>(std::abs(declination));
+    int decMin = static_cast<int>((std::abs(declination) - decDeg) * 60);
+    oss << " | Dec: " << (declination >= 0 ? "+" : "-")
+        << std::setfill('0') << std::setw(2) << decDeg << "°"
+        << std::setw(2) << decMin << "'";
+
+    // Format right ascension (in hours)
+    double raHours = rightAscension / 15.0; // Convert degrees to hours
+    int raH = static_cast<int>(raHours);
+    int raM = static_cast<int>((raHours - raH) * 60);
+    oss << " | RA: " << std::setfill('0') << std::setw(2) << raH << "h"
+        << std::setw(2) << raM << "m";
+
+    // Format inclination
+    int incDeg = static_cast<int>(std::abs(inclination));
+    int incMin = static_cast<int>((std::abs(inclination) - incDeg) * 60);
+    oss << " | Inc: " << std::setfill('0') << std::setw(2) << incDeg << "°"
+        << std::setw(2) << incMin << "'";
+
+    return oss.str();
+}
+
 std::string Aspect::getDescription() const {
     std::ostringstream oss;
     oss << planetToString(planet1) << " " << aspectTypeToString(type)

@@ -65,6 +65,31 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
     position.house = 0; // Will be set by HouseCalculator
     position.housePosition = 0.0;
 
+    // Calculate equatorial coordinates (declination and right ascension)
+    double xxEqu[6];
+    int32 ret2 = swe_calc_ut(julianDay, ipl, iflag | SEFLG_EQUATORIAL, xxEqu, serr);
+    if (ret2 >= 0) {
+        position.rightAscension = xxEqu[0];
+        position.declination = xxEqu[1];
+    } else {
+        position.rightAscension = 0.0;
+        position.declination = 0.0;
+    }
+
+    // Calculate orbital inclination (for planets, not points like lunar nodes)
+    if (planet != Planet::NORTH_NODE && planet != Planet::SOUTH_NODE &&
+        planet != Planet::LILITH && planet != Planet::CHIRON) {
+        double orbitalElements[6];
+        int32 ret3 = swe_get_orbital_elements(julianDay, ipl, iflag, orbitalElements, serr);
+        if (ret3 >= 0) {
+            position.inclination = orbitalElements[2]; // Inclination is the 3rd orbital element
+        } else {
+            position.inclination = 0.0;
+        }
+    } else {
+        position.inclination = 0.0; // Not applicable for calculated points
+    }
+
     position.calculateSignPosition();
 
     return true;
@@ -107,6 +132,31 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
     position.speed = xx[3];
     position.house = 0; // Will be set by HouseCalculator
     position.housePosition = 0.0;
+
+    // Calculate equatorial coordinates (declination and right ascension)
+    double xxEqu[6];
+    int32 ret2 = swe_calc(julianDay, ipl, iflag | SEFLG_EQUATORIAL, xxEqu, serr);
+    if (ret2 >= 0) {
+        position.rightAscension = xxEqu[0];
+        position.declination = xxEqu[1];
+    } else {
+        position.rightAscension = 0.0;
+        position.declination = 0.0;
+    }
+
+    // Calculate orbital inclination (for planets, not points like lunar nodes)
+    if (planet != Planet::NORTH_NODE && planet != Planet::SOUTH_NODE &&
+        planet != Planet::LILITH && planet != Planet::CHIRON) {
+        double orbitalElements[6];
+        int32 ret3 = swe_get_orbital_elements(julianDay, ipl, iflag, orbitalElements, serr);
+        if (ret3 >= 0) {
+            position.inclination = orbitalElements[2]; // Inclination is the 3rd orbital element
+        } else {
+            position.inclination = 0.0;
+        }
+    } else {
+        position.inclination = 0.0; // Not applicable for calculated points
+    }
 
     position.calculateSignPosition();
 
