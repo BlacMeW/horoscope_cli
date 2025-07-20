@@ -6,105 +6,7 @@
 
 ## 📑 Table of Contents
 
-1. [🌟 Overvi### 🤝 **Conjunction Analysis Options**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--conjunctions` | Show conjunctions near birth | Flag | `--conjunctions` |
-| `--conjunction-range FROM TO` | Conjunction date range | YYYY-MM-DD YYYY-MM-DD | `--conjunction-range 2024-01-01 2024-03-31` |
-| `--conjunction-orb DEGREES` | Maximum orb | Decimal (default: 3.0) | `--conjunction-orb 2.0` |
-
-### 📊 **Ephemeris Table Options**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--ephemeris` | Generate ephemeris table | Flag | `--ephemeris` |
-| `--ephemeris-range FROM TO` | Date range | YYYY-MM-DD YYYY-MM-DD | `--ephemeris-range 2025-01-01 2025-01-31` |
-| `--ephemeris-interval DAYS` | Interval between entries | Integer (default: 1) | `--ephemeris-interval 7` |
-| `--ephemeris-format FORMAT` | Output format | table, csv, json | `--ephemeris-format csv` |
-
-### ⭐ **KP System Options**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--kp-table` | Show KP Sub Lord 5 Levels | Flag | `--kp-table` |
-| `--kp-transitions` | Show KP transitions | Flag | `--kp-transitions` |
-| `--kp-transition-range FROM TO` | KP transition date range | YYYY-MM-DD YYYY-MM-DD | `--kp-transition-range 2025-01-01 2025-01-07` |
-| `--kp-transition-planet PLANET` | Specific planet | SUN, MOON, MERCURY, etc. | `--kp-transition-planet SUN` |
-| `--kp-transition-level LEVEL` | Transition level | sign, star, sub, sub-sub, sub³ | `--kp-transition-level sub` |
-| `--kp-format FORMAT` | KP output format | table, csv, json | `--kp-format json` |
-
-### 🔍 **Hindu Calendar Search Options**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--hindu-search FROM TO` | Search Hindu calendar by criteria | YYYY-MM-DD YYYY-MM-DD | `--hindu-search 2025-01-01 2025-12-31` |
-| `--search-year YEAR` | Search for specific year | Integer | `--search-year 2025` |
-| `--search-year-range START END` | Search for year range | Integer Integer | `--search-year-range 2025 2027` |
-| `--search-month MONTH` | Search for specific month (1-12) | Integer | `--search-month 5` |
-| `--search-month-range START END` | Search for month range | Integer Integer | `--search-month-range 4 6` |
-| `--search-tithi TITHI` | Search for specific tithi (1-30) | Integer | `--search-tithi 15` |
-| `--search-tithi-range START END` | Search for tithi range | Integer Integer | `--search-tithi-range 14 16` |
-| `--search-weekday DAY` | Search for specific weekday (0-6) | Integer | `--search-weekday 0` |
-| `--search-exact` | Use exact matching | Flag | `--search-exact` |
-| `--search-near TOL` | Use near matching with tolerance | Integer | `--search-near 2` |
-| `--hindu-search-format FORMAT` | Search results output format | table, csv, json, list | `--hindu-search-format csv` |
-
-### 🇲🇲 **Myanmar Calendar Options**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--myanmar-calendar` | Show Myanmar calendar for birth date | Flag | `--myanmar-calendar` |
-| `--myanmar-calendar-range FROM TO` | Myanmar calendar date range | YYYY-MM-DD YYYY-MM-DD | `--myanmar-calendar-range 2025-01-01 2025-01-31` |
-| `--myanmar-calendar-format FORMAT` | Myanmar calendar output format | table, csv, json | `--myanmar-calendar-format table` |
-| `--astrological-days-only` | Show only astrological days | Flag | `--astrological-days-only` |
-
-### 🔍 **Myanmar Calendar Search Options**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--myanmar-search FROM TO` | Search Myanmar calendar by criteria | YYYY-MM-DD YYYY-MM-DD | `--myanmar-search 2025-01-01 2025-12-31` |
-| `--myanmar-search-year YEAR` | Search for specific Myanmar year | Integer | `--myanmar-search-year 1385` |
-| `--myanmar-search-year-range START END` | Search for Myanmar year range | Integer Integer | `--myanmar-search-year-range 1385 1387` |
-| `--myanmar-search-month MONTH` | Search for specific month (0-14) | Integer | `--myanmar-search-month 4` |
-| `--myanmar-search-month-range START END` | Search for month range | Integer Integer | `--myanmar-search-month-range 3 5` |
-| `--myanmar-search-moon-phase PHASE` | Search for moon phase (0-3) | Integer | `--myanmar-search-moon-phase 1` |
-| `--myanmar-search-moon-phase-range START END` | Search for moon phase range | Integer Integer | `--myanmar-search-moon-phase-range 0 1` |
-| `--myanmar-search-weekday DAY` | Search for weekday (0-6) | Integer | `--myanmar-search-weekday 1` |
-| `--myanmar-search-fortnight-day DAY` | Search for fortnight day (1-15) | Integer | `--myanmar-search-fortnight-day 15` |
-| `--myanmar-search-fortnight-day-range START END` | Search for fortnight day range | Integer Integer | `--myanmar-search-fortnight-day-range 14 15` |
-| `--myanmar-search-sabbath` | Search for Buddhist sabbath days | Flag | `--myanmar-search-sabbath` |
-| `--myanmar-search-sabbath-eve` | Search for sabbath eve days | Flag | `--myanmar-search-sabbath-eve` |
-| `--myanmar-search-yatyaza` | Search for yatyaza (inauspicious) days | Flag | `--myanmar-search-yatyaza` |
-| `--myanmar-search-pyathada` | Search for pyathada (inauspicious) days | Flag | `--myanmar-search-pyathada` |
-| `--myanmar-search-thamanyo` | Search for thamanyo (auspicious) days | Flag | `--myanmar-search-thamanyo` |
-| `--myanmar-search-exact` | Use exact matching | Flag | `--myanmar-search-exact` |
-| `--myanmar-search-near TOL` | Use near matching with tolerance | Integer | `--myanmar-search-near 2` |
-| `--myanmar-search-format FORMAT` | Myanmar search results output format | table, csv, json, list | `--myanmar-search-format json` |
-
-### 🌟 **Astro Calendar Options (Combined Calendar System)**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--astro-calendar` | Show comprehensive astro-calendar | Flag | `--astro-calendar` |
-| `--astro-calendar-monthly YYYY-MM` | Generate monthly astro-calendar | YYYY-MM format | `--astro-calendar-monthly 2024-01` |
-| `--astro-calendar-format FORMAT` | Astro-calendar output format | calendar, table, professional, json, csv | `--astro-calendar-format professional` |
-| `--planetary-transitions` | Include planetary transitions | Flag | `--planetary-transitions` |
-| `--all-festivals` | Show all festivals from all systems | Flag | `--all-festivals` |
-
-### 🌍 **Location & Utility Options**
-
-| Argument | Description | Format | Example |
-|----------|-------------|--------|---------|
-| `--location NAME` | Search location by name | String | `--location "New York"` |
-| `--search-location NAME` | Search and list matching locations | String | `--search-location "Paris"` |
-| `--list-locations` | Show all available predefined locations | Flag | `--list-locations` |
-| `--solar-system` | Show solar system orbital paths only | Flag | `--solar-system` |
-| `--no-drawing` | Disable all chart and ASCII art | Flag | `--no-drawing` |
-| `--ephe-path PATH` | Custom Swiss Ephemeris data path | String | `--ephe-path /custom/path` |
-| `--help, -h` | Show comprehensive help message | Flag | `--help` |
-| `--features, -f` | Show colorful feature showcase | Flag | `--features` |
-| `--version, -v` | Show version and build information | Flag | `--version` |rview)
+1. [🌟 Overview](#overview)
 2. [🔧 Installation](#installation)
 3. [🚀 Quick Start](#quick-start)
 4. [📋 Command Line Arguments](#command-line-arguments)
@@ -114,6 +16,8 @@
 8. [📊 Output Formats](#output-formats)
 9. [💡 Examples & Use Cases](#examples--use-cases)
 10. [⚠️ Error Handling](#error-handling)
+
+---
 11. [🔬 Technical Details](#technical-details)
 12. [🛠️ Troubleshooting](#troubleshooting)
 
@@ -126,7 +30,8 @@
 - 🪐 **Swiss Ephemeris Precision** - Industry-leading astronomical accuracy
 - 🎨 **Multiple Chart Styles** - Western, North Indian, East Indian, South Indian, Solar System
 - 🏠 **Advanced House Systems** - Placidus, Koch, Equal, Whole Sign, Campanus, Regiomontanus
-- 🌙 **Eclipse & Conjunction Analysis** - Real-time astronomical event calculations
+- 🌙 **Eclipse & Conjunction Analysis** - Real-time astronomical event calculations with latitude filtering
+- ⚔️ **Graha Yuddha (Planetary Wars)** - Traditional Vedic analysis of close planetary conjunctions
 - 🕉️ **Hindu Panchanga System** - Complete traditional Hindu calendar with festivals
 - ⭐ **KP System Support** - Complete Krishnamurti Paddhati with 5-level sub-lord analysis
 - 📅 **Ancient Date Support** - Historical calculations including BC era
@@ -258,42 +163,51 @@ Generate a basic birth chart with just these essentials:
 | `--eclipse-years-before N` | Years before birth | Integer (default: 1) |
 | `--eclipse-years-after N` | Years after birth | Integer (default: 1) |
 
-### Conjunction Options
+### 🤝 **Conjunction Analysis Options**
 
-| Argument | Description | Format |
-|----------|-------------|--------|
-| `--conjunctions` | Show conjunctions near birth | Flag |
-| `--conjunction-range FROM TO` | Conjunction date range | YYYY-MM-DD YYYY-MM-DD |
-| `--conjunction-orb DEGREES` | Maximum orb | Decimal (default: 3.0) |
+| Argument | Description | Format | Example |
+|----------|-------------|--------|---------|
+| `--conjunctions` | Show conjunctions near birth | Flag | `--conjunctions` |
+| `--conjunction-range FROM TO` | Conjunction date range | YYYY-MM-DD YYYY-MM-DD | `--conjunction-range 2024-01-01 2024-03-31` |
+| `--conjunction-orb DEGREES` | Maximum orb | Decimal (default: 3.0) | `--conjunction-orb 2.0` |
+| `--conjunction-latitude-range MIN MAX` | Filter by planetary latitude range | Decimal Decimal (-90.0 to +90.0) | `--conjunction-latitude-range -2.0 2.0` |
+| `--graha-yuddha` | Find Graha Yuddha (Planetary Wars) | Flag | `--graha-yuddha` |
+| `--graha-yuddha-range FROM TO` | Planetary wars in date range | YYYY-MM-DD YYYY-MM-DD | `--graha-yuddha-range 2024-01-01 2024-12-31` |
+| `--graha-yuddha-orb DEGREES` | Maximum orb for planetary wars | Decimal (default: 1.0) | `--graha-yuddha-orb 0.5` |
 
-### Ephemeris Options
+### 📊 **Ephemeris Table Options**
 
-| Argument | Description | Format |
-|----------|-------------|--------|
-| `--ephemeris` | Generate ephemeris table | Flag |
-| `--ephemeris-range FROM TO` | Date range | YYYY-MM-DD YYYY-MM-DD |
-| `--ephemeris-interval DAYS` | Interval between entries | Integer (default: 1) |
-| `--ephemeris-format FORMAT` | Output format | table, csv, json (default: table) |
+| Argument | Description | Format | Example |
+|----------|-------------|--------|---------|
+| `--ephemeris` | Generate ephemeris table | Flag | `--ephemeris` |
+| `--ephemeris-range FROM TO` | Date range | YYYY-MM-DD YYYY-MM-DD | `--ephemeris-range 2025-01-01 2025-01-31` |
+| `--ephemeris-interval DAYS` | Interval between entries | Integer (default: 1) | `--ephemeris-interval 7` |
+| `--ephemeris-format FORMAT` | Output format | table, csv, json | `--ephemeris-format csv` |
 
-### KP System Options
+### ⭐ **KP System Options**
 
-| Argument | Description | Format |
-|----------|-------------|--------|
-| `--kp-table` | Show KP Sub Lord 5 Levels | Flag |
-| `--kp-transitions` | Show KP transitions | Flag |
-| `--kp-transition-range FROM TO` | KP transition date range | YYYY-MM-DD YYYY-MM-DD |
-| `--kp-transition-planet PLANET` | Specific planet | SUN, MOON, MERCURY, etc. |
-| `--kp-transition-level LEVEL` | Transition level | sign, star, sub, sub-sub, sub³ |
-| `--kp-format FORMAT` | KP output format | table, csv, json (default: table) |
+| Argument | Description | Format | Example |
+|----------|-------------|--------|---------|
+| `--kp-table` | Show KP Sub Lord 5 Levels | Flag | `--kp-table` |
+| `--kp-transitions` | Show KP transitions | Flag | `--kp-transitions` |
+| `--kp-transition-range FROM TO` | KP transition date range | YYYY-MM-DD YYYY-MM-DD | `--kp-transition-range 2025-01-01 2025-01-07` |
+| `--kp-transition-planet PLANET` | Specific planet | SUN, MOON, MERCURY, etc. | `--kp-transition-planet SUN` |
+| `--kp-transition-level LEVEL` | Transition level | sign, star, sub, sub-sub, sub³ | `--kp-transition-level sub` |
+| `--kp-format FORMAT` | KP output format | table, csv, json | `--kp-format json` |
 
-### Utility Options
+### 🌍 **Location & Utility Options**
 
-| Argument | Description |
-|----------|-------------|
-| `--solar-system` | Show solar system orbital paths |
-| `--ephe-path PATH` | Custom Swiss Ephemeris data path |
-| `--help, -h` | Show help message |
-| `--version, -v` | Show version information |
+| Argument | Description | Format | Example |
+|----------|-------------|--------|---------|
+| `--location NAME` | Search location by name | String | `--location "New York"` |
+| `--search-location NAME` | Search and list matching locations | String | `--search-location "Paris"` |
+| `--list-locations` | Show all available predefined locations | Flag | `--list-locations` |
+| `--solar-system` | Show solar system orbital paths only | Flag | `--solar-system` |
+| `--no-drawing` | Disable all chart and ASCII art | Flag | `--no-drawing` |
+| `--ephe-path PATH` | Custom Swiss Ephemeris data path | String | `--ephe-path /custom/path` |
+| `--help, -h` | Show comprehensive help message | Flag | `--help` |
+| `--features, -f` | Show colorful feature showcase | Flag | `--features` |
+| `--version, -v` | Show version and build information | Flag | `--version` |
 
 ## Chart Types
 
@@ -822,6 +736,42 @@ The application uses authentic Swiss Ephemeris eclipse algorithms to calculate:
 - **Close Conjunctions** (1-3° orb)
 - **Wide Conjunctions** (3-8° orb)
 - **Stelliums**: Multiple planet groupings
+
+#### 🌐 **Advanced Filtering Options**
+
+##### 📏 **Latitude Range Filtering**
+Filter conjunctions based on planetary ecliptic latitudes:
+- **Purpose**: Find planets aligned in the same orbital plane
+- **Range**: -90° (South) to +90° (North) 
+- **Use Cases**:
+  - `--conjunction-latitude-range -2.0 2.0`: Planets close to ecliptic
+  - `--conjunction-latitude-range -0.5 0.5`: Very tight alignment
+  - `--conjunction-latitude-range 5.0 15.0`: High-latitude interactions
+
+##### ⚔️ **Graha Yuddha (Planetary Wars)**
+Traditional Vedic analysis of very close planetary conjunctions:
+
+**🏛️ War Conditions:**
+- **Maximum Orb**: < 1° separation (configurable)
+- **Participants**: Only visible planets (Mercury, Venus, Mars, Jupiter, Saturn)
+- **Exclusions**: Sun, Moon, nodes, and outer planets don't participate
+
+**🏆 Winner Determination Rules:**
+1. **Primary**: Planet with higher ecliptic latitude (more southward) wins
+2. **Secondary**: If latitudes equal, brighter (closer) planet wins  
+3. **Tertiary**: Traditional hierarchy → Jupiter > Saturn > Mars > Venus > Mercury
+
+**✨ Astrological Effects:**
+- **Winner**: Planet's significations are enhanced and empowered
+- **Loser**: Planet's significations are weakened or modified
+- **Duration**: Effects last during the close approach period
+
+**🔮 Traditional Interpretations:**
+- **Jupiter Wins**: Enhances wisdom, righteousness, and fortune
+- **Saturn Wins**: Brings discipline, delays, and karmic lessons  
+- **Mars Wins**: Increases energy, courage, and potential conflicts
+- **Venus Wins**: Enhances beauty, arts, and relationships
+- **Mercury Wins**: Strengthens intellect, communication, and commerce
 
 ### ⭐ KP System (Krishnamurti Paddhati)
 
@@ -1485,6 +1435,27 @@ The eclipse search functionality allows you to find specific types of eclipses a
 
 # Tight conjunctions only
 ./bin/horoscope_cli --conjunction-range 2024-01-01 2024-12-31 --location "New York" --conjunction-orb 0.5
+
+# Conjunctions with latitude filtering (planets near ecliptic)
+./bin/horoscope_cli --conjunction-range 2024-01-01 2024-12-31 --location "London" --conjunction-latitude-range -2.0 2.0
+
+# Very precise orbital alignment (tight latitude range)
+./bin/horoscope_cli --conjunction-range 2024-01-01 2024-12-31 --location "Tokyo" --conjunction-latitude-range -0.5 0.5
+```
+
+#### ⚔️ **Graha Yuddha (Planetary Wars)**
+```bash
+# Find all planetary wars in 2024
+./bin/horoscope_cli --graha-yuddha-range 2024-01-01 2024-12-31 --location "Delhi"
+
+# Planetary wars around birth date
+./bin/horoscope_cli --date 1990-01-15 --time 14:30:00 --location "Mumbai" --graha-yuddha
+
+# Very tight planetary wars (0.25° orb)
+./bin/horoscope_cli --graha-yuddha-range 2024-01-01 2024-12-31 --location "New York" --graha-yuddha-orb 0.25
+
+# Historical planetary wars during Renaissance
+./bin/horoscope_cli --graha-yuddha-range 1400-01-01 1600-12-31 --location "Florence" --graha-yuddha-orb 0.5
 ```
 
 ### 🔍 **Conjunction Search Features**
@@ -1896,6 +1867,19 @@ The application uses the Swiss Ephemeris library for astronomical calculations:
 
 **Problem**: JSON parsing errors
 **Solution**: Use proper JSON parsing libraries; validate output with JSON validators.
+
+### New Feature Notes
+
+**Latitude Range Filtering**: 
+- Uses ecliptic latitude (not geographic latitude)
+- Filters based on planets' distance from ecliptic plane
+- Useful for finding orbital alignments
+
+**Graha Yuddha (Planetary Wars)**:
+- Based on traditional Vedic astrology principles
+- Uses Swiss Ephemeris for precise latitude calculations
+- Only considers classical visible planets (Mercury through Saturn)
+- Winner determination follows authentic ancient rules
 
 ## 🔗 Support and Resources
 
