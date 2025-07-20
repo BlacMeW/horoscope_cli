@@ -1129,8 +1129,8 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--panchanga-format" && i + 1 < argc) {
             args.panchangaFormat = argv[++i];
             if (args.panchangaFormat != "table" && args.panchangaFormat != "compact" &&
-                args.panchangaFormat != "csv" && args.panchangaFormat != "json") {
-                std::cerr << "Error: Panchanga format must be 'table', 'compact', 'csv', or 'json'\n";
+                args.panchangaFormat != "csv" && args.panchangaFormat != "json" && args.panchangaFormat != "list") {
+                std::cerr << "Error: Panchanga format must be 'table', 'compact', 'csv', 'json', or 'list'\n";
                 return false;
             }
         } else if (arg == "--festivals-only") {
@@ -2001,6 +2001,72 @@ int main(int argc, char* argv[]) {
                         std::cout << "\n";
                     }
                     std::cout << "]\n";
+                } else if (args.panchangaFormat == "list") {
+                    // Professional table format using ProfessionalTable system
+                    ProfessionalTable table = createHinduCalendarTable();
+
+                    std::ostringstream subtitle;
+                    subtitle << panchangaList.size() << " days found | Period: " << fromDate
+                            << " to " << toDate << " | Location: "
+                            << std::fixed << std::setprecision(2) << args.latitude << "N, " << args.longitude << "E";
+                    if (args.showFestivalsOnly) {
+                        subtitle << " | Festivals Only";
+                    }
+                    table.setSubtitle(subtitle.str());
+
+                    // Parse start date to calculate actual dates for each entry
+                    int startYear = std::stoi(fromDate.substr(0, 4));
+                    int startMonth = std::stoi(fromDate.substr(5, 2));
+                    int startDay = std::stoi(fromDate.substr(8, 2));
+                    double startJD = swe_julday(startYear, startMonth, startDay, 12.0, SE_GREG_CAL);
+
+                    for (size_t i = 0; i < panchangaList.size(); ++i) {
+                        const auto& panchanga = panchangaList[i];
+
+                        // Calculate actual gregorian date for this entry
+                        double currentJD = startJD + i;
+                        int gYear, gMonth, gDay;
+                        double gTime;
+                        swe_revjul(currentJD, SE_GREG_CAL, &gYear, &gMonth, &gDay, &gTime);
+
+                        char dateBuffer[16];
+                        snprintf(dateBuffer, sizeof(dateBuffer), "%04d-%02d-%02d", gYear, gMonth, gDay);
+                        std::string date = std::string(dateBuffer);
+
+                        // Convert PanchangaData to strings for the table
+                        std::string weekday = hinduCalendar.getVaraName(panchanga.vara);
+                        std::string tithi = hinduCalendar.getTithiName(panchanga.tithi);
+                        std::string nakshatra = hinduCalendar.getNakshatraName(panchanga.nakshatra);
+                        std::string yoga = hinduCalendar.getYogaName(panchanga.yoga);
+                        std::string karana = hinduCalendar.getKaranaName(panchanga.karana);
+                        std::string month = hinduCalendar.getHinduMonthName(panchanga.month);
+                        std::string paksha = panchanga.isKrishna ? "Krishna" : "Shukla";
+                        std::string year = std::to_string(panchanga.year);
+                        std::string muhurta = panchanga.isShubhaMuhurta ? "Good" : (panchanga.isAshubhaMuhurta ? "Avoid" : "Neutral");
+
+                        // Handle festivals vector
+                        std::string events = "-";
+                        if (!panchanga.festivals.empty()) {
+                            events = panchanga.festivals[0];
+                            if (panchanga.festivals.size() > 1) {
+                                events += " & " + std::to_string(panchanga.festivals.size() - 1) + " more";
+                            }
+                        }
+
+                        // Calculate a basic score based on auspiciousness
+                        double score = 0.5; // Base score
+                        if (panchanga.isShubhaMuhurta) score += 0.3;
+                        if (panchanga.isAshubhaMuhurta) score -= 0.2;
+                        if (panchanga.isEkadashi) score += 0.2;
+                        if (panchanga.isPurnima || panchanga.isAmavasya) score += 0.1;
+                        if (!panchanga.festivals.empty()) score += 0.2;
+                        std::string scoreStr = std::to_string(score).substr(0, 4);
+
+                        addHinduCalendarRow(table, date, weekday, tithi, nakshatra, yoga, karana,
+                                          month, paksha, year, muhurta, events, scoreStr);
+                    }
+
+                    std::cout << table.toString();
                 } else if (args.panchangaFormat == "compact") {
                     // Generate Julian days for compact format - simple calculation
                     std::vector<double> julianDays;
@@ -2020,8 +2086,54 @@ int main(int argc, char* argv[]) {
                     std::string result = hinduCalendar.generatePanchangaTableFormat(panchangaList, julianDays);
                     std::cout << result << std::endl;
                 } else {
-                    std::string result = hinduCalendar.generatePanchangaTable(panchangaList);
-                    std::cout << result << std::endl;
+                    // Default table format - create custom table with actual dates
+                    std::ostringstream oss;
+
+                    oss << "\n═══════════════════════════════════════════════════════════════════\n";
+                    oss << "              🕉️  HINDU PANCHANGA TABLE  🕉️\n";
+                    oss << "═══════════════════════════════════════════════════════════════════\n\n";
+
+                    // Header
+                    oss << "Date       | Tithi        | Vara       | Nakshatra          | Yoga         | Karana       | Festivals\n";
+                    oss << "-----------|--------------|------------|--------------------|--------------|--------------|---------\n";
+
+                    // Parse start date to calculate actual dates for each entry
+                    int startYear = std::stoi(fromDate.substr(0, 4));
+                    int startMonth = std::stoi(fromDate.substr(5, 2));
+                    int startDay = std::stoi(fromDate.substr(8, 2));
+                    double startJD = swe_julday(startYear, startMonth, startDay, 12.0, SE_GREG_CAL);
+
+                    for (size_t i = 0; i < panchangaList.size(); ++i) {
+                        const auto& panchanga = panchangaList[i];
+
+                        // Calculate actual gregorian date for this entry
+                        double currentJD = startJD + i;
+                        int gYear, gMonth, gDay;
+                        double gTime;
+                        swe_revjul(currentJD, SE_GREG_CAL, &gYear, &gMonth, &gDay, &gTime);
+
+                        char dateBuffer[16];
+                        snprintf(dateBuffer, sizeof(dateBuffer), "%04d-%02d-%02d", gYear, gMonth, gDay);
+
+                        // Format table row with actual date
+                        oss << std::setw(10) << std::left << std::string(dateBuffer) << " | ";
+                        oss << std::setw(12) << hinduCalendar.getTithiName(panchanga.tithi) << " | ";
+                        oss << std::setw(10) << hinduCalendar.getVaraName(panchanga.vara) << " | ";
+                        oss << std::setw(18) << hinduCalendar.getNakshatraName(panchanga.nakshatra) << " | ";
+                        oss << std::setw(12) << hinduCalendar.getYogaName(panchanga.yoga) << " | ";
+                        oss << std::setw(12) << hinduCalendar.getKaranaName(panchanga.karana) << " | ";
+
+                        if (!panchanga.festivals.empty()) {
+                            oss << panchanga.festivals[0];
+                            for (size_t j = 1; j < panchanga.festivals.size(); ++j) {
+                                oss << ", " << panchanga.festivals[j];
+                            }
+                        }
+                        oss << "\n";
+                    }
+
+                    oss << "\n═══════════════════════════════════════════════════════════════════\n";
+                    std::cout << oss.str() << std::endl;
                 }
             } else {
                 std::cout << "Failed to generate Panchanga for the specified period." << std::endl;
@@ -2331,9 +2443,9 @@ int main(int argc, char* argv[]) {
                     size_t padding = (180 > contentLength) ? (180 - contentLength) : 0;
                     std::cout << std::string(padding, ' ') << " |\n";
 
-                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
-                    std::cout << "|    DATE     |  WEEKDAY   |MY.YR |    MONTH    | DAY |MOON.PHASE |  MAHABOTE  | NAKHAT  | NAGAHLE| RELIGIOUS|  ASTRO.DAYS    |SCORE |\n";
-                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
+                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+---------+----------+----------------+-------+\n";
+                    std::cout << "|    DATE     |  WEEKDAY   |MY.YR |    MONTH    | DAY |MOON.PHASE |  MAHABOTE  | NAKHAT  | NAGAHLE | RELIGIOUS|  ASTRO.DAYS    |SCORE  |\n";
+                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+---------+----------+----------------+-------+\n";
 
                     // Professional Myanmar table rows with enhanced formatting
                     size_t rowCount = 0;
@@ -2435,7 +2547,7 @@ int main(int argc, char* argv[]) {
                         switch(result.myanmarData.nagahle) {
                             case NagahleDirection::WEST: nagahle = "W-West"; break;
                             case NagahleDirection::NORTH: nagahle = "N-North"; break;
-                            case NagahleDirection::EAST: nagahle = "E-East"; break;
+                            case NagahleDirection::EAST: nagahle = "E-East "; break;
                             case NagahleDirection::SOUTH: nagahle = "S-South"; break;
                         }
                         std::cout << std::setw(6) << std::left << nagahle << " | ";
@@ -2475,11 +2587,11 @@ int main(int argc, char* argv[]) {
 
                         // Add subtle row separators every 5 rows
                         if (rowCount % 5 == 0 && rowCount < searchResults.size()) {
-                            std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
+                            std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+---------+----------+----------------+-------+\n";
                         }
                     }
 
-                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
+                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+---------+----------+----------------+-------+\n";
 
                     // Enhanced professional legend for Myanmar calendar - NO UNICODE EMOJIS
                     std::cout << "+---------------------------------------------- MYANMAR LEGEND & SYMBOLS ----------------------------------------------+\n";
