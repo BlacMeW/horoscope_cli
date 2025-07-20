@@ -124,6 +124,7 @@ struct CommandLineArgs {
     int searchNearTolerance = 1;
     std::string searchStartDate;
     std::string searchEndDate;
+    std::string hinduSearchFormat = "table";
 
     // Myanmar Calendar options
     bool showMyanmarCalendar = false;
@@ -157,6 +158,7 @@ struct CommandLineArgs {
     int myanmarSearchNearTolerance = 1;
     std::string myanmarSearchStartDate;
     std::string myanmarSearchEndDate;
+    std::string myanmarSearchFormat = "table";
 
     // Astro Calendar options (Combined calendar system)
     bool showAstroCalendar = false;
@@ -362,6 +364,12 @@ void printHelp() {
     std::cout << "    --search-near TOL       Use near matching with tolerance\n";
     std::cout << "                            • Example: --search-near 2\n\n";
 
+    std::cout << "    --hindu-search-format FORMAT\n";
+    std::cout << "                            Hindu search results output format\n";
+    std::cout << "                            table = Detailed ASCII table (default)\n";
+    std::cout << "                            csv   = Comma-separated values\n";
+    std::cout << "                            json  = JSON structure for integration\n\n";
+
     std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
     std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
     std::cout << "                       • Displays Myanmar Era (ME) and Sasana Era (SE) years\n";
@@ -430,6 +438,11 @@ void printHelp() {
     std::cout << "    --myanmar-search-exact          Use exact matching (default)\n";
     std::cout << "    --myanmar-search-near TOL       Use near matching with tolerance\n";
     std::cout << "                                     • Example: --myanmar-search-near 2\n\n";
+
+    std::cout << "    --myanmar-search-format FORMAT  Myanmar search results output format\n";
+    std::cout << "                                     table = Detailed ASCII table (default)\n";
+    std::cout << "                                     csv   = Comma-separated values\n";
+    std::cout << "                                     json  = JSON structure for integration\n\n";
 
     std::cout << "ASTRO CALENDAR OPTIONS (Combined Calendar System) 📅🌟🇮🇳🇲🇲\n";
     std::cout << "    --astro-calendar   Show comprehensive astro-calendar for birth date\n";
@@ -610,6 +623,33 @@ void printHelp() {
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
     std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
     std::cout << "                --chart-style solar-system --perspective geocentric\n\n";
+
+    std::cout << "CALENDAR SEARCH EXAMPLES 🔍📅\n";
+    std::cout << "  # Hindu calendar search for Purnima (Full Moon) days in 2025\n";
+    std::cout << "  horoscope_cli --hindu-search 2025-01-01 2025-12-31 \\\n";
+    std::cout << "                --search-tithi 15 \\\n";
+    std::cout << "                --lat 28.6139 --lon 77.2090 \\\n";
+    std::cout << "                --hindu-search-format table\n\n";
+
+    std::cout << "  # Hindu calendar search results in CSV format\n";
+    std::cout << "  horoscope_cli --hindu-search 2025-01-01 2025-03-31 \\\n";
+    std::cout << "                --search-month 2 --search-tithi-range 14 16 \\\n";
+    std::cout << "                --lat 19.0760 --lon 72.8777 \\\n";
+    std::cout << "                --hindu-search-format csv\n\n";
+
+    std::cout << "  # Myanmar calendar search for Full Moon Sabbath days\n";
+    std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
+    std::cout << "                --myanmar-search-moon-phase 1 \\\n";
+    std::cout << "                --myanmar-search-sabbath \\\n";
+    std::cout << "                --lat 16.8661 --lon 96.1951 \\\n";
+    std::cout << "                --myanmar-search-format table\n\n";
+
+    std::cout << "  # Myanmar calendar search in JSON format\n";
+    std::cout << "  horoscope_cli --myanmar-search 2025-06-01 2025-08-31 \\\n";
+    std::cout << "                --myanmar-search-month 4 \\\n";
+    std::cout << "                --myanmar-search-thamanyo \\\n";
+    std::cout << "                --lat 16.8661 --lon 96.1951 \\\n";
+    std::cout << "                --myanmar-search-format json\n\n";
 
     std::cout << "COORDINATE EXAMPLES 🌍\n";
     std::cout << "  # Major cities coordinates for reference:\n";
@@ -938,6 +978,12 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--search-near" && i + 1 < argc) {
             args.searchExactMatch = false;
             args.searchNearTolerance = std::stoi(argv[++i]);
+        } else if (arg == "--hindu-search-format" && i + 1 < argc) {
+            args.hinduSearchFormat = argv[++i];
+            if (args.hinduSearchFormat != "table" && args.hinduSearchFormat != "csv" && args.hinduSearchFormat != "json") {
+                std::cerr << "Error: Invalid Hindu search format. Must be 'table', 'csv', or 'json'\n";
+                return false;
+            }
 
         // Myanmar Calendar options
         } else if (arg == "--myanmar-calendar") {
@@ -1007,6 +1053,12 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--myanmar-search-near" && i + 1 < argc) {
             args.myanmarSearchExactMatch = false;
             args.myanmarSearchNearTolerance = std::stoi(argv[++i]);
+        } else if (arg == "--myanmar-search-format" && i + 1 < argc) {
+            args.myanmarSearchFormat = argv[++i];
+            if (args.myanmarSearchFormat != "table" && args.myanmarSearchFormat != "csv" && args.myanmarSearchFormat != "json") {
+                std::cerr << "Error: Invalid Myanmar search format. Must be 'table', 'csv', or 'json'\n";
+                return false;
+            }
         } else if (arg == "--astro-calendar") {
             args.showAstroCalendar = true;
         } else if (arg == "--astro-calendar-monthly") {
@@ -1539,55 +1591,93 @@ int main(int argc, char* argv[]) {
             std::vector<HinduCalendar::SearchResult> searchResults = hinduCalendar.searchHinduCalendar(criteria, args.latitude, args.longitude);
 
             if (!searchResults.empty()) {
-                std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
-                std::cout << "═══════════════════════════════════════════════\n\n";
-                std::cout << "Found " << searchResults.size() << " matching dates\n";
-                std::cout << "Search criteria: ";
+                // Generate output based on format
+                if (args.hinduSearchFormat == "json") {
+                    // Generate JSON output manually
+                    std::cout << "{\n";
+                    std::cout << "  \"search_criteria\": {\n";
+                    std::cout << "    \"date_range\": \"" << criteria.searchStartDate << " to " << criteria.searchEndDate << "\",\n";
+                    std::cout << "    \"exact_match\": " << (criteria.exactMatch ? "true" : "false") << ",\n";
+                    std::cout << "    \"tolerance\": " << criteria.nearMatchTolerance << "\n";
+                    std::cout << "  },\n";
+                    std::cout << "  \"results_count\": " << searchResults.size() << ",\n";
+                    std::cout << "  \"results\": [\n";
+                    for (size_t i = 0; i < searchResults.size(); ++i) {
+                        const auto& result = searchResults[i];
+                        std::cout << "    {\n";
+                        std::cout << "      \"gregorian_date\": \"" << result.gregorianDate << "\",\n";
+                        std::cout << "      \"match_score\": " << result.matchScore << ",\n";
+                        std::cout << "      \"panchanga\": " << hinduCalendar.generateJSON(result.panchangaData) << "\n";
+                        std::cout << "    }" << (i < searchResults.size() - 1 ? "," : "") << "\n";
+                    }
+                    std::cout << "  ]\n";
+                    std::cout << "}\n";
+                } else if (args.hinduSearchFormat == "csv") {
+                    // Generate CSV output manually
+                    std::cout << "Date,Score,HinduYear,Month,Tithi,Vara,Nakshatra,Yoga,Karana\n";
+                    for (const auto& result : searchResults) {
+                        std::cout << result.gregorianDate << ","
+                                  << result.matchScore << ","
+                                  << result.panchangaData.year << ","
+                                  << static_cast<int>(result.panchangaData.month) << ","
+                                  << static_cast<int>(result.panchangaData.tithi) << ","
+                                  << static_cast<int>(result.panchangaData.vara) << ","
+                                  << static_cast<int>(result.panchangaData.nakshatra) << ","
+                                  << static_cast<int>(result.panchangaData.yoga) << ","
+                                  << static_cast<int>(result.panchangaData.karana) << "\n";
+                    }
+                } else {
+                    // Default table format
+                    std::cout << "\n🔍 HINDU CALENDAR SEARCH RESULTS 🕉️\n";
+                    std::cout << "═══════════════════════════════════════════════\n\n";
+                    std::cout << "Found " << searchResults.size() << " matching dates\n";
+                    std::cout << "Search criteria: ";
 
-                bool first = true;
-                if (criteria.exactYear > 0) {
-                    if (!first) std::cout << ", ";
-                    std::cout << "Year=" << criteria.exactYear;
-                    first = false;
-                } else if (criteria.yearRangeStart > 0) {
-                    if (!first) std::cout << ", ";
-                    std::cout << "Year=" << criteria.yearRangeStart << "-" << criteria.yearRangeEnd;
-                    first = false;
-                }
-                if (criteria.exactMonth > 0) {
-                    if (!first) std::cout << ", ";
-                    std::cout << "Month=" << criteria.exactMonth;
-                    first = false;
-                } else if (criteria.monthRangeStart > 0) {
-                    if (!first) std::cout << ", ";
-                    std::cout << "Month=" << criteria.monthRangeStart << "-" << criteria.monthRangeEnd;
-                    first = false;
-                }
-                if (criteria.exactTithi > 0) {
-                    if (!first) std::cout << ", ";
-                    std::cout << "Tithi=" << criteria.exactTithi;
-                    first = false;
-                } else if (criteria.tithiRangeStart > 0) {
-                    if (!first) std::cout << ", ";
-                    std::cout << "Tithi=" << criteria.tithiRangeStart << "-" << criteria.tithiRangeEnd;
-                    first = false;
-                }
-                if (criteria.exactWeekday >= 0) {
-                    if (!first) std::cout << ", ";
-                    std::string weekdayNames[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                    std::cout << "Weekday=" << weekdayNames[criteria.exactWeekday];
-                    first = false;
-                }
-                std::cout << "\n";
-                std::cout << "Match type: " << (criteria.exactMatch ? "Exact" : "Near (tolerance=" + std::to_string(criteria.nearMatchTolerance) + ")") << "\n\n";
+                    bool first = true;
+                    if (criteria.exactYear > 0) {
+                        if (!first) std::cout << ", ";
+                        std::cout << "Year=" << criteria.exactYear;
+                        first = false;
+                    } else if (criteria.yearRangeStart > 0) {
+                        if (!first) std::cout << ", ";
+                        std::cout << "Year=" << criteria.yearRangeStart << "-" << criteria.yearRangeEnd;
+                        first = false;
+                    }
+                    if (criteria.exactMonth > 0) {
+                        if (!first) std::cout << ", ";
+                        std::cout << "Month=" << criteria.exactMonth;
+                        first = false;
+                    } else if (criteria.monthRangeStart > 0) {
+                        if (!first) std::cout << ", ";
+                        std::cout << "Month=" << criteria.monthRangeStart << "-" << criteria.monthRangeEnd;
+                        first = false;
+                    }
+                    if (criteria.exactTithi > 0) {
+                        if (!first) std::cout << ", ";
+                        std::cout << "Tithi=" << criteria.exactTithi;
+                        first = false;
+                    } else if (criteria.tithiRangeStart > 0) {
+                        if (!first) std::cout << ", ";
+                        std::cout << "Tithi=" << criteria.tithiRangeStart << "-" << criteria.tithiRangeEnd;
+                        first = false;
+                    }
+                    if (criteria.exactWeekday >= 0) {
+                        if (!first) std::cout << ", ";
+                        std::string weekdayNames[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+                        std::cout << "Weekday=" << weekdayNames[criteria.exactWeekday];
+                        first = false;
+                    }
+                    std::cout << "\n";
+                    std::cout << "Match type: " << (criteria.exactMatch ? "Exact" : "Near (tolerance=" + std::to_string(criteria.nearMatchTolerance) + ")") << "\n\n";
 
-                for (size_t i = 0; i < searchResults.size(); ++i) {
-                    const auto& result = searchResults[i];
-                    std::cout << "Result #" << (i + 1) << " (Score: " << result.matchScore << ")\n";
-                    std::cout << "Date: " << result.gregorianDate << "\n";
-                    std::cout << hinduCalendar.generatePanchangaTable(result.panchangaData) << "\n";
-                    if (i < searchResults.size() - 1) {
-                        std::cout << "───────────────────────────────────────────────\n\n";
+                    for (size_t i = 0; i < searchResults.size(); ++i) {
+                        const auto& result = searchResults[i];
+                        std::cout << "Result #" << (i + 1) << " (Score: " << result.matchScore << ")\n";
+                        std::cout << "Date: " << result.gregorianDate << "\n";
+                        std::cout << hinduCalendar.generatePanchangaTable(result.panchangaData) << "\n";
+                        if (i < searchResults.size() - 1) {
+                            std::cout << "───────────────────────────────────────────────\n\n";
+                        }
                     }
                 }
             } else {
@@ -1704,20 +1794,58 @@ int main(int argc, char* argv[]) {
             std::vector<MyanmarCalendar::SearchResult> searchResults = myanmarCalendar.searchMyanmarCalendar(criteria, args.latitude, args.longitude);
 
             if (!searchResults.empty()) {
-                std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
-                std::cout << "═══════════════════════════════════════════════════════\n";
-                std::cout << "Found " << searchResults.size() << " matching days:\n\n";
-
-                for (const auto& result : searchResults) {
-                    std::cout << "📅 Date: " << result.gregorianDate << " (Score: " << result.matchScore << ")\n";
-                    std::cout << "   Myanmar Year: " << result.myanmarData.myanmarYear << ", Month: " << myanmarCalendar.getMyanmarMonthName(result.myanmarData.month);
-                    std::cout << ", Day: " << result.myanmarData.fortnightDay << " (" << myanmarCalendar.getMoonPhaseName(result.myanmarData.moonPhase) << ")\n";
-                    std::cout << "   Weekday: " << myanmarCalendar.getMyanmarWeekdayName(result.myanmarData.weekday) << "\n";
-
-                    if (!result.matchDescription.empty()) {
-                        std::cout << "   🔮 " << result.matchDescription << "\n";
+                // Generate output based on format
+                if (args.myanmarSearchFormat == "json") {
+                    // Generate JSON output manually
+                    std::cout << "{\n";
+                    std::cout << "  \"search_criteria\": {\n";
+                    std::cout << "    \"date_range\": \"" << criteria.searchStartDate << " to " << criteria.searchEndDate << "\",\n";
+                    std::cout << "    \"exact_match\": " << (criteria.exactMatch ? "true" : "false") << ",\n";
+                    std::cout << "    \"tolerance\": " << criteria.nearMatchTolerance << "\n";
+                    std::cout << "  },\n";
+                    std::cout << "  \"results_count\": " << searchResults.size() << ",\n";
+                    std::cout << "  \"results\": [\n";
+                    for (size_t i = 0; i < searchResults.size(); ++i) {
+                        const auto& result = searchResults[i];
+                        std::cout << "    {\n";
+                        std::cout << "      \"gregorian_date\": \"" << result.gregorianDate << "\",\n";
+                        std::cout << "      \"match_score\": " << result.matchScore << ",\n";
+                        std::cout << "      \"match_description\": \"" << result.matchDescription << "\",\n";
+                        std::cout << "      \"myanmar_data\": " << myanmarCalendar.generateJSON(result.myanmarData) << "\n";
+                        std::cout << "    }" << (i < searchResults.size() - 1 ? "," : "") << "\n";
                     }
-                    std::cout << "\n";
+                    std::cout << "  ]\n";
+                    std::cout << "}\n";
+                } else if (args.myanmarSearchFormat == "csv") {
+                    // Generate CSV output manually
+                    std::cout << "Date,Score,Description,MyanmarYear,Month,MoonPhase,FortnightDay,Weekday\n";
+                    for (const auto& result : searchResults) {
+                        std::cout << result.gregorianDate << ","
+                                  << result.matchScore << ","
+                                  << "\"" << result.matchDescription << "\","
+                                  << result.myanmarData.myanmarYear << ","
+                                  << static_cast<int>(result.myanmarData.month) << ","
+                                  << static_cast<int>(result.myanmarData.moonPhase) << ","
+                                  << result.myanmarData.fortnightDay << ","
+                                  << static_cast<int>(result.myanmarData.weekday) << "\n";
+                    }
+                } else {
+                    // Default table format
+                    std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
+                    std::cout << "═══════════════════════════════════════════════════════\n";
+                    std::cout << "Found " << searchResults.size() << " matching days:\n\n";
+
+                    for (const auto& result : searchResults) {
+                        std::cout << "📅 Date: " << result.gregorianDate << " (Score: " << result.matchScore << ")\n";
+                        std::cout << "   Myanmar Year: " << result.myanmarData.myanmarYear << ", Month: " << myanmarCalendar.getMyanmarMonthName(result.myanmarData.month);
+                        std::cout << ", Day: " << result.myanmarData.fortnightDay << " (" << myanmarCalendar.getMoonPhaseName(result.myanmarData.moonPhase) << ")\n";
+                        std::cout << "   Weekday: " << myanmarCalendar.getMyanmarWeekdayName(result.myanmarData.weekday) << "\n";
+
+                        if (!result.matchDescription.empty()) {
+                            std::cout << "   🔮 " << result.matchDescription << "\n";
+                        }
+                        std::cout << "\n";
+                    }
                 }
             } else {
                 std::cout << "\n🔍 MYANMAR CALENDAR SEARCH RESULTS 🇲🇲\n";
