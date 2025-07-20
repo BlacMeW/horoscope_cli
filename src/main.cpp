@@ -2259,9 +2259,9 @@ int main(int argc, char* argv[]) {
                     size_t padding = (180 > contentLength) ? (180 - contentLength) : 0;
                     std::cout << std::string(padding, ' ') << " |\n";
 
-                    std::cout << "+-------------+----------+------+-------------+-----+-----------+----------+---------+--------+----------+----------------+------+\n";
-                    std::cout << "|    DATE     | WEEKDAY  |MY.YR |    MONTH    | DAY |MOON.PHASE | MAHABOTE | NAKHAT  | NAGAHLE| RELIGIOUS|  ASTRO.DAYS    |SCORE |\n";
-                    std::cout << "+-------------+----------+------+-------------+-----+-----------+----------+---------+--------+----------+----------------+------+";
+                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
+                    std::cout << "|    DATE     |  WEEKDAY   |MY.YR |    MONTH    | DAY |MOON.PHASE |  MAHABOTE  | NAKHAT  | NAGAHLE| RELIGIOUS|  ASTRO.DAYS    |SCORE |\n";
+                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+";
 
                     // Professional Myanmar table rows with enhanced formatting
                     size_t rowCount = 0;
@@ -2271,17 +2271,22 @@ int main(int argc, char* argv[]) {
                         // Date column with center alignment
                         std::cout << "| " << std::setw(11) << std::left << result.gregorianDate << " | ";
 
-                        // Weekday column with Myanmar cultural indicators
+                        // Weekday column with Myanmar cultural indicators - fixed 10 chars
                         std::string weekday = myanmarCalendar.getMyanmarWeekdayName(result.myanmarData.weekday);
-                        if (weekday.length() > 8) weekday = weekday.substr(0, 6) + "..";
-                        // Add auspiciousness indicator for Myanmar tradition
                         std::string weekdayDisplay = weekday;
-                        if (weekday.find("Sunday") != std::string::npos || weekday.find("Tuesday") != std::string::npos) {
-                            weekdayDisplay = "⚡" + weekday.substr(0, 7);  // Power days in Myanmar tradition
-                        } else if (weekday.find("Monday") != std::string::npos || weekday.find("Thursday") != std::string::npos) {
-                            weekdayDisplay = "☾" + weekday.substr(0, 7);  // Moon-influenced days
-                        }
-                        std::cout << std::setw(8) << std::left << weekdayDisplay << " | ";
+
+                        // Create consistent weekday abbreviations
+                        if (weekday == "Sunday") weekdayDisplay = "⚡Sunday";
+                        else if (weekday == "Monday") weekdayDisplay = "☾Monday";
+                        else if (weekday == "Tuesday") weekdayDisplay = "⚡Tuesday";
+                        else if (weekday == "Wednesday") weekdayDisplay = "Wednesday";
+                        else if (weekday == "Thursday") weekdayDisplay = "☾Thursday";
+                        else if (weekday == "Friday") weekdayDisplay = "Friday";
+                        else if (weekday == "Saturday") weekdayDisplay = "Saturday";
+
+                        // Ensure fixed width of exactly 10 characters
+                        if (weekdayDisplay.length() > 10) weekdayDisplay = weekdayDisplay.substr(0, 10);
+                        std::cout << std::setw(10) << std::left << weekdayDisplay << " | ";
 
                         // Myanmar Year column - right aligned
                         std::cout << std::setw(4) << std::right << result.myanmarData.myanmarYear << " | ";
@@ -2328,19 +2333,21 @@ int main(int argc, char* argv[]) {
                         else if (moonPhase.find("Waning") != std::string::npos) moonPhase = "🌖" + moonPhase.substr(0, 8);
                         std::cout << std::setw(9) << std::left << moonPhase << " | ";
 
-                        // Mahabote column with quality indicators
+                        // Mahabote column with quality indicators - fixed 10 chars
                         std::string mahabote;
                         switch(result.myanmarData.mahabote) {
-                            case Mahabote::BINGA: mahabote = "♦Binga"; break;   // Benefic
-                            case Mahabote::ATUN: mahabote = "◇Atun"; break;     // Neutral
-                            case Mahabote::YAZA: mahabote = "⚠Yaza"; break;     // Malefic
-                            case Mahabote::ADIPATI: mahabote = "♦Adipati"; break; // Benefic
-                            case Mahabote::MARANA: mahabote = "⚠Marana"; break;  // Malefic
-                            case Mahabote::THIKE: mahabote = "◇Thike"; break;    // Neutral
-                            case Mahabote::PUTI: mahabote = "♦Puti"; break;      // Benefic
+                            case Mahabote::BINGA: mahabote = "♦Binga"; break;      // Benefic
+                            case Mahabote::ATUN: mahabote = "◇Atun"; break;       // Neutral
+                            case Mahabote::YAZA: mahabote = "⚠Yaza"; break;       // Malefic
+                            case Mahabote::ADIPATI: mahabote = "♦Adipati"; break;  // Benefic
+                            case Mahabote::MARANA: mahabote = "⚠Marana"; break;   // Malefic
+                            case Mahabote::THIKE: mahabote = "◇Thike"; break;     // Neutral
+                            case Mahabote::PUTI: mahabote = "♦Puti"; break;       // Benefic
                         }
-                        if (mahabote.length() > 8) mahabote = mahabote.substr(0, 6) + "..";
-                        std::cout << std::setw(8) << std::left << mahabote << " | ";
+
+                        // Ensure fixed width of exactly 10 characters
+                        if (mahabote.length() > 10) mahabote = mahabote.substr(0, 10);
+                        std::cout << std::setw(10) << std::left << mahabote << " | ";
 
                         // Nakhat column with cycle indicators
                         std::string nakhat;
@@ -2396,11 +2403,11 @@ int main(int argc, char* argv[]) {
 
                         // Add subtle row separators every 5 rows
                         if (rowCount % 5 == 0 && rowCount < searchResults.size()) {
-                            std::cout << "+-------------+----------+------+-------------+-----+-----------+----------+---------+--------+----------+----------------+------+\n";
+                            std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
                         }
                     }
 
-                    std::cout << "+-------------+----------+------+-------------+-----+-----------+----------+---------+--------+----------+----------------+------+\n";
+                    std::cout << "+-------------+------------+------+-------------+-----+-----------+------------+---------+--------+----------+----------------+------+\n";
 
                     // Enhanced professional legend for Myanmar calendar
                     std::cout << "+---------------------------------------------- MYANMAR LEGEND & SYMBOLS ----------------------------------------------+\n";
