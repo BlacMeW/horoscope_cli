@@ -91,6 +91,12 @@ struct CommandLineArgs {
     std::string conjunctionFromDate;
     std::string conjunctionToDate;
     double conjunctionMaxOrb = 3.0;
+    double conjunctionMinLatitude = -90.0;
+    double conjunctionMaxLatitude = 90.0;
+    bool showGrahaYuddha = false;
+    double grahaYuddhaMaxOrb = 1.0;
+    std::string grahaYuddhaFromDate;
+    std::string grahaYuddhaToDate;
     std::string ephemerisFromDate;
     std::string ephemerisToDate;
     int ephemerisIntervalDays = 1;
@@ -294,6 +300,23 @@ void printHelp() {
     std::cout << "                       Maximum orb for conjunctions (default: 3.0)\n";
     std::cout << "                       • Smaller values = tighter conjunctions\n";
     std::cout << "                       • Range: 0.1 to 15.0 degrees\n\n";
+
+    std::cout << "    --conjunction-latitude-range MIN MAX\n";
+    std::cout << "                       Filter conjunctions by planetary latitude range\n";
+    std::cout << "                       • MIN/MAX in degrees (-90.0 to +90.0)\n";
+    std::cout << "                       • Example: --conjunction-latitude-range -5.0 5.0\n\n";
+
+    std::cout << "    --graha-yuddha     Find Graha Yuddha (Planetary Wars)\n";
+    std::cout << "                       • Very close conjunctions (< 1°) between visible planets\n";
+    std::cout << "                       • Determines winner based on Vedic rules\n\n";
+
+    std::cout << "    --graha-yuddha-range FROM TO\n";
+    std::cout << "                       Find planetary wars in specific date range\n";
+    std::cout << "                       • Shows winner and astrological effects\n\n";
+
+    std::cout << "    --graha-yuddha-orb DEGREES\n";
+    std::cout << "                       Maximum orb for planetary wars (default: 1.0)\n";
+    std::cout << "                       • Range: 0.1 to 2.0 degrees\n\n";
 
     std::cout << "EPHEMERIS TABLE OPTIONS 📊📈\n";
     std::cout << "    --ephemeris        Generate ephemeris table\n\n";
@@ -636,6 +659,20 @@ void printHelp() {
     std::cout << "                --lat 40.7128 --lon -74.0060 \\\n";
     std::cout << "                --conjunction-orb 5.0\n\n";
 
+    std::cout << "  # Conjunctions with latitude filtering (planets near ecliptic)\n";
+    std::cout << "  horoscope_cli --conjunction-range 2024-01-01 2024-12-31 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 \\\n";
+    std::cout << "                --conjunction-latitude-range -2.0 2.0\n\n";
+
+    std::cout << "  # Find Graha Yuddha (Planetary Wars) in 2024\n";
+    std::cout << "  horoscope_cli --graha-yuddha-range 2024-01-01 2024-12-31 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060\n\n";
+
+    std::cout << "  # Planetary wars around birth with custom orb\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --graha-yuddha --graha-yuddha-orb 0.5\n\n";
+
     std::cout << "KP SYSTEM ANALYSIS 🧮\n";
     std::cout << "  # Complete KP Sub Lord table\n";
     std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
@@ -977,6 +1014,27 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 std::cerr << "Error: Invalid conjunction orb value\n";
                 return false;
             }
+        } else if (arg == "--conjunction-latitude-range" && i + 2 < argc) {
+            try {
+                args.conjunctionMinLatitude = std::stod(argv[++i]);
+                args.conjunctionMaxLatitude = std::stod(argv[++i]);
+            } catch (const std::exception&) {
+                std::cerr << "Error: Invalid latitude range values\n";
+                return false;
+            }
+        } else if (arg == "--graha-yuddha") {
+            args.showGrahaYuddha = true;
+        } else if (arg == "--graha-yuddha-range" && i + 2 < argc) {
+            args.grahaYuddhaFromDate = argv[++i];
+            args.grahaYuddhaToDate = argv[++i];
+            args.showGrahaYuddha = true;
+        } else if (arg == "--graha-yuddha-orb" && i + 1 < argc) {
+            try {
+                args.grahaYuddhaMaxOrb = std::stod(argv[++i]);
+            } catch (const std::exception&) {
+                std::cerr << "Error: Invalid graha yuddha orb value\n";
+                return false;
+            }
         } else if (arg == "--ephemeris") {
             args.showEphemerisTable = true;
         } else if (arg == "--ephemeris-range" && i + 2 < argc) {
@@ -1189,14 +1247,16 @@ bool validateArgs(const CommandLineArgs& args) {
 
     // Eclipse, ephemeris, panchanga, Myanmar calendar, and Hindu/Myanmar search features can work without full birth data
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
-        args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch || args.showMyanmarSearch) {
+        args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch || args.showMyanmarSearch ||
+        args.showGrahaYuddha) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
         if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() ||
-             !args.myanmarCalendarFromDate.empty() || !args.searchStartDate.empty() || !args.myanmarSearchStartDate.empty()) &&
+             !args.myanmarCalendarFromDate.empty() || !args.searchStartDate.empty() || !args.myanmarSearchStartDate.empty() ||
+             !args.grahaYuddhaFromDate.empty()) &&
             args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
              args.longitude < -180.0 || args.longitude > 180.0)) {
-            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar/Hindu/Myanmar search\n";
+            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar/Hindu/Myanmar search/Graha Yuddha\n";
             return false;
         }
 
@@ -1241,6 +1301,35 @@ bool validateArgs(const CommandLineArgs& args) {
     }
 
     return true;
+}
+
+// Helper function to parse date string into BirthData for conjunction calculations
+BirthData parseDateStringToBirthData(const std::string& dateStr) {
+    BirthData birthData;
+
+    // Parse the date string
+    if (parseDate(dateStr, birthData.year, birthData.month, birthData.day)) {
+        // Set default values for time and location
+        birthData.hour = 12;      // Noon UTC
+        birthData.minute = 0;
+        birthData.second = 0;
+        birthData.timezone = 0.0; // UTC
+        birthData.latitude = 0.0; // Equator
+        birthData.longitude = 0.0; // Prime Meridian
+    } else {
+        // If parsing fails, set to epoch
+        birthData.year = 1970;
+        birthData.month = 1;
+        birthData.day = 1;
+        birthData.hour = 0;
+        birthData.minute = 0;
+        birthData.second = 0;
+        birthData.timezone = 0.0;
+        birthData.latitude = 0.0;
+        birthData.longitude = 0.0;
+    }
+
+    return birthData;
 }
 
 int main(int argc, char* argv[]) {
@@ -1413,11 +1502,27 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            std::vector<ConjunctionEvent> conjunctions = conjCalc.findConjunctions(fromDate, toDate);
+            std::vector<ConjunctionEvent> conjunctions;
+
+            // Check if latitude range filtering is requested
+            if (args.conjunctionMinLatitude != -90.0 || args.conjunctionMaxLatitude != 90.0) {
+                conjunctions = conjCalc.findConjunctionsWithLatitudeRange(
+                    parseDateStringToBirthData(fromDate),
+                    parseDateStringToBirthData(toDate),
+                    args.conjunctionMaxOrb,
+                    args.conjunctionMinLatitude,
+                    args.conjunctionMaxLatitude);
+            } else {
+                conjunctions = conjCalc.findConjunctions(fromDate, toDate, args.conjunctionMaxOrb);
+            }
 
             std::cout << "\nPlanetary Conjunctions (" << fromDate << " to " << toDate << "):\n";
-            std::cout << "Orb: " << args.conjunctionMaxOrb << "°\n";
-            std::cout << std::string(80, '=') << std::endl;
+            std::cout << "Orb: " << args.conjunctionMaxOrb << "°";
+            if (args.conjunctionMinLatitude != -90.0 || args.conjunctionMaxLatitude != 90.0) {
+                std::cout << " | Latitude Range: " << args.conjunctionMinLatitude
+                          << "° to " << args.conjunctionMaxLatitude << "°";
+            }
+            std::cout << "\n" << std::string(80, '=') << std::endl;
 
             for (const auto& conjunction : conjunctions) {
                 conjCalc.printConjunctionEvent(conjunction);
@@ -1427,6 +1532,49 @@ int main(int argc, char* argv[]) {
             if (conjunctions.empty()) {
                 std::cout << "No conjunctions found in the specified period.\n";
             }
+        }
+
+        // Handle Graha Yuddha (Planetary Wars) analysis
+        if (args.showGrahaYuddha || !args.grahaYuddhaFromDate.empty()) {
+            ConjunctionCalculator conjCalc;
+            if (!conjCalc.initialize(args.ephemerisPath)) {
+                std::cerr << "Failed to initialize conjunction calculator for Graha Yuddha" << std::endl;
+                return 1;
+            }
+
+            std::string fromDate = args.grahaYuddhaFromDate;
+            std::string toDate = args.grahaYuddhaToDate;
+
+            // If no range specified, use birth date
+            if (fromDate.empty()) {
+                fromDate = args.date;
+                if (toDate.empty()) {
+                    struct tm tm = {};
+                    if (strptime(fromDate.c_str(), "%Y-%m-%d", &tm)) {
+                        tm.tm_year += 1;  // Add 1 year
+                        char buffer[16];
+                        strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm);
+                        toDate = std::string(buffer);
+                    }
+                }
+            }
+
+            if (toDate.empty()) {
+                struct tm tm = {};
+                if (strptime(fromDate.c_str(), "%Y-%m-%d", &tm)) {
+                    tm.tm_year += 1;
+                    char buffer[16];
+                    strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm);
+                    toDate = std::string(buffer);
+                }
+            }
+
+            std::vector<ConjunctionEvent> wars = conjCalc.findGrahaYuddha(
+                parseDateStringToBirthData(fromDate),
+                parseDateStringToBirthData(toDate),
+                args.grahaYuddhaMaxOrb);
+
+            std::cout << conjCalc.generateGrahaYuddhaReport(wars);
         }
 
         // Handle ephemeris table generation
@@ -1987,7 +2135,7 @@ int main(int argc, char* argv[]) {
         // Return early if only special features were requested
         if (args.showEclipses || args.showConjunctions || args.showEphemerisTable ||
             args.showKPTransitions || args.showPanchangaRange || args.showMyanmarCalendarRange ||
-            args.showHinduSearch || args.showMyanmarSearch) {
+            args.showHinduSearch || args.showMyanmarSearch || args.showGrahaYuddha) {
             return 0;
         }
     } catch (const std::exception& e) {

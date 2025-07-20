@@ -27,6 +27,9 @@ struct ConjunctionEvent {
     double duration;                // Duration of conjunction (orb < 3°) in days
     bool isApplying;                // True if planets are approaching
     std::string house;              // House location if birth chart provided
+    bool isGrahaYuddha;             // True if this is a planetary war
+    Planet grahaYuddhaWinner;       // Winner in planetary war (if applicable)
+    std::string grahaYuddhaEffect;  // Effect description for planetary war
 
     // Get formatted date string
     std::string getDateString() const;
@@ -73,8 +76,26 @@ public:
     // Check for conjunctions on specific date
     std::vector<ConjunctionEvent> checkConjunctionsOnDate(const BirthData& date, double maxOrb = 3.0) const;
 
+    // Find conjunctions with latitude range filtering
+    std::vector<ConjunctionEvent> findConjunctionsWithLatitudeRange(const BirthData& fromDate, const BirthData& toDate,
+                                                                   double maxOrb = 3.0, double minLatitude = -90.0,
+                                                                   double maxLatitude = 90.0) const;
+
+    // Find Graha Yuddha (Planetary Wars) - very close conjunctions with specific conditions
+    std::vector<ConjunctionEvent> findGrahaYuddha(const BirthData& fromDate, const BirthData& toDate,
+                                                  double maxOrb = 1.0) const;
+
+    // Check if conjunction qualifies as Graha Yuddha
+    bool isGrahaYuddha(const ConjunctionEvent& conjunction) const;
+
+    // Get winner planet in Graha Yuddha based on Vedic rules
+    Planet getGrahaYuddhaWinner(Planet planet1, Planet planet2, double julianDay) const;
+
     // Generate formatted conjunction report
     std::string generateConjunctionReport(const std::vector<ConjunctionEvent>& conjunctions) const;
+
+    // Generate Graha Yuddha report with winners and effects
+    std::string generateGrahaYuddhaReport(const std::vector<ConjunctionEvent>& wars) const;
 
     // Print conjunction event to console
     void printConjunctionEvent(const ConjunctionEvent& conjunction) const;
@@ -120,6 +141,10 @@ private:
 
     // Sort conjunctions by date
     void sortConjunctionsByDate(std::vector<ConjunctionEvent>& conjunctions) const;
+
+    // Helper methods for Graha Yuddha
+    Planet getStrongerPlanetByHierarchy(Planet planet1, Planet planet2) const;
+    std::string getGrahaYuddhaEffectDescription(Planet winner, Planet planet1, Planet planet2) const;
 };
 
 } // namespace Astro

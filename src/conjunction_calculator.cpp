@@ -8,6 +8,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <map>
 
 namespace Astro {
 
@@ -350,6 +351,11 @@ ConjunctionEvent ConjunctionCalculator::calculateConjunction(Planet planet1, Pla
     conjunction.isApplying = conjunction.orb < previousOrb;
     conjunction.duration = 3.0; // Approximate duration for orb < 3°
 
+    // Initialize Graha Yuddha fields
+    conjunction.isGrahaYuddha = false;
+    conjunction.grahaYuddhaWinner = Planet::SUN; // Default, will be set if it's actually a war
+    conjunction.grahaYuddhaEffect = "";
+
     return conjunction;
 }
 
@@ -480,7 +486,210 @@ void ConjunctionCalculator::printConjunctionEvent(const ConjunctionEvent& conjun
     std::cout << conjunction.getDateString() << " - " << conjunction.getPlanetsString()
               << " (" << conjunction.getTypeString() << ")\n";
     std::cout << "  Orb: " << std::fixed << std::setprecision(2) << conjunction.orb << "°";
-    std::cout << "  Description: " << conjunction.getDescription() << "\n";
+    std::cout << "  Description: " << conjunction.getDescription();
+
+    if (conjunction.isGrahaYuddha) {
+        std::cout << " [GRAHA YUDDHA - Winner: " << planetToString(conjunction.grahaYuddhaWinner) << "]";
+    }
+    std::cout << "\n";
+}
+
+std::vector<ConjunctionEvent> ConjunctionCalculator::findConjunctionsWithLatitudeRange(
+    const BirthData& fromDate, const BirthData& toDate,
+    double maxOrb, double minLatitude, double maxLatitude) const {
+
+    if (!isInitialized) {
+        lastError = "Conjunction calculator not initialized";
+        return {};
+    }
+
+    std::vector<ConjunctionEvent> allConjunctions = findConjunctions(fromDate, toDate, maxOrb);
+    std::vector<ConjunctionEvent> filteredConjunctions;
+
+    EphemerisManager ephMgr;
+    ephMgr.initialize(ephemerisPath);
+
+    for (const auto& conjunction : allConjunctions) {
+        bool withinLatitudeRange = true;
+
+        // Check each planet's latitude at the conjunction time
+        for (Planet planet : conjunction.planets) {
+            PlanetPosition position;
+            if (ephMgr.calculatePlanetPosition(conjunction.julianDay, planet, position)) {
+                double latitude = position.latitude;
+                if (latitude < minLatitude || latitude > maxLatitude) {
+                    withinLatitudeRange = false;
+                    break;
+                }
+            }
+        }
+
+        if (withinLatitudeRange) {
+            filteredConjunctions.push_back(conjunction);
+        }
+    }
+
+    return filteredConjunctions;
+}
+
+std::vector<ConjunctionEvent> ConjunctionCalculator::findGrahaYuddha(
+    const BirthData& fromDate, const BirthData& toDate, double maxOrb) const {
+
+    if (!isInitialized) {
+        lastError = "Conjunction calculator not initialized";
+        return {};
+    }
+
+    std::vector<ConjunctionEvent> allConjunctions = findConjunctions(fromDate, toDate, maxOrb);
+    std::vector<ConjunctionEvent> grahaYuddhaEvents;
+
+    for (auto conjunction : allConjunctions) {
+        if (isGrahaYuddha(conjunction)) {
+            conjunction.isGrahaYuddha = true;
+
+            // Determine winner if it's a two-planet war
+            if (conjunction.planets.size() == 2) {
+                conjunction.grahaYuddhaWinner = getGrahaYuddhaWinner(
+                    conjunction.planets[0], conjunction.planets[1], conjunction.julianDay);
+
+                // Add effect description
+                conjunction.grahaYuddhaEffect = getGrahaYuddhaEffectDescription(
+                    conjunction.grahaYuddhaWinner, conjunction.planets[0], conjunction.planets[1]);
+            }
+
+            grahaYuddhaEvents.push_back(conjunction);
+        }
+    }
+
+    return grahaYuddhaEvents;
+}
+
+bool ConjunctionCalculator::isGrahaYuddha(const ConjunctionEvent& conjunction) const {
+    // Graha Yuddha conditions:
+    // 1. Very tight orb (usually < 1°)
+    // 2. Involves visible planets (not nodes, Chiron, or outer planets in traditional Vedic)
+    // 3. Planets should be in the same sign
+    // 4. Not involving Sun or Moon (they don't participate in wars in traditional sense)
+
+    if (conjunction.orb > 1.0) return false;
+    if (conjunction.planets.size() != 2) return false; // Only two-planet wars for now
+
+    std::vector<Planet> traditionalPlanets = {
+        Planet::MARS, Planet::MERCURY, Planet::JUPITER, Planet::VENUS, Planet::SATURN
+    };
+
+    int validPlanets = 0;
+    for (Planet p : conjunction.planets) {
+        if (std::find(traditionalPlanets.begin(), traditionalPlanets.end(), p) != traditionalPlanets.end()) {
+            validPlanets++;
+        }
+    }
+
+    return validPlanets == 2;
+}
+
+Planet ConjunctionCalculator::getGrahaYuddhaWinner(Planet planet1, Planet planet2, double julianDay) const {
+    // Graha Yuddha winner determination based on Vedic astrology rules:
+    // 1. The planet that is further south (higher latitude) wins
+    // 2. If latitudes are very close, the brighter planet wins
+    // 3. Hierarchical rules: Jupiter > Saturn > Mars > Venus > Mercury
+
+    EphemerisManager ephMgr;
+    ephMgr.initialize(ephemerisPath);
+
+    PlanetPosition pos1, pos2;
+    if (!ephMgr.calculatePlanetPosition(julianDay, planet1, pos1) ||
+        !ephMgr.calculatePlanetPosition(julianDay, planet2, pos2)) {
+        // Fallback to hierarchy if calculation fails
+        return getStrongerPlanetByHierarchy(planet1, planet2);
+    }
+
+    // Primary rule: Southern planet (higher latitude) wins
+    if (std::abs(pos1.latitude - pos2.latitude) > 0.1) {
+        return (pos1.latitude > pos2.latitude) ? planet1 : planet2;
+    }
+
+    // Secondary rule: Brighter planet wins (approximated by distance)
+    if (std::abs(pos1.distance - pos2.distance) > 0.01) {
+        return (pos1.distance < pos2.distance) ? planet1 : planet2;
+    }
+
+    // Tertiary rule: Hierarchical strength
+    return getStrongerPlanetByHierarchy(planet1, planet2);
+}
+
+Planet ConjunctionCalculator::getStrongerPlanetByHierarchy(Planet planet1, Planet planet2) const {
+    // Traditional Vedic hierarchy for Graha Yuddha
+    std::map<Planet, int> hierarchy = {
+        {Planet::JUPITER, 5},
+        {Planet::SATURN, 4},
+        {Planet::MARS, 3},
+        {Planet::VENUS, 2},
+        {Planet::MERCURY, 1}
+    };
+
+    int strength1 = hierarchy.count(planet1) ? hierarchy[planet1] : 0;
+    int strength2 = hierarchy.count(planet2) ? hierarchy[planet2] : 0;
+
+    return (strength1 > strength2) ? planet1 : planet2;
+}
+
+std::string ConjunctionCalculator::getGrahaYuddhaEffectDescription(Planet winner, Planet planet1, Planet planet2) const {
+    std::string loser = (winner == planet1) ? planetToString(planet2) : planetToString(planet1);
+    std::string winnerStr = planetToString(winner);
+
+    std::stringstream ss;
+    ss << winnerStr << " defeats " << loser << " in planetary war. ";
+
+    // Add traditional effects based on winner
+    if (winner == Planet::JUPITER) {
+        ss << "Enhances wisdom, righteousness, and fortune.";
+    } else if (winner == Planet::SATURN) {
+        ss << "Brings discipline, delays, and karmic lessons.";
+    } else if (winner == Planet::MARS) {
+        ss << "Increases energy, courage, and potential conflicts.";
+    } else if (winner == Planet::VENUS) {
+        ss << "Enhances beauty, arts, and relationships.";
+    } else if (winner == Planet::MERCURY) {
+        ss << "Strengthens intellect, communication, and commerce.";
+    }
+
+    return ss.str();
+}
+
+std::string ConjunctionCalculator::generateGrahaYuddhaReport(const std::vector<ConjunctionEvent>& wars) const {
+    std::stringstream ss;
+
+    ss << "\n=== GRAHA YUDDHA (PLANETARY WAR) REPORT ===\n\n";
+    ss << "Total planetary wars found: " << wars.size() << "\n\n";
+
+    if (wars.empty()) {
+        ss << "No Graha Yuddha events found in the specified time range.\n";
+        ss << "Graha Yuddha occurs when two visible planets are within 1° of each other.\n";
+        return ss.str();
+    }
+
+    ss << "Graha Yuddha Events:\n";
+    ss << "════════════════════\n\n";
+
+    for (const auto& war : wars) {
+        ss << "📅 Date: " << war.getDateString() << "\n";
+        ss << "🪐 Combatants: " << war.getPlanetsString() << "\n";
+        ss << "📍 Location: " << war.longitude << "° " << zodiacSignToString(war.sign) << "\n";
+        ss << "🎯 Orb: " << std::fixed << std::setprecision(3) << war.orb << "°\n";
+        ss << "🏆 Winner: " << planetToString(war.grahaYuddhaWinner) << "\n";
+        ss << "✨ Effect: " << war.grahaYuddhaEffect << "\n";
+        ss << "───────────────────────────────────────────────────────\n\n";
+    }
+
+    ss << "📚 GRAHA YUDDHA PRINCIPLES:\n";
+    ss << "• The planet that is more southward (higher ecliptic latitude) wins\n";
+    ss << "• If latitudes are equal, the brighter (closer) planet wins\n";
+    ss << "• Traditional hierarchy: Jupiter > Saturn > Mars > Venus > Mercury\n";
+    ss << "• The winning planet's significations are enhanced\n";
+    ss << "• The losing planet's significations are weakened or modified\n";
+
+    return ss.str();
 }
 
 } // namespace Astro
