@@ -785,4 +785,117 @@ void addMyanmarCalendarRow(ProfessionalTable& table,
     table.addRow(rowData);
 }
 
+// Eclipse Events Table Functions
+void addEclipseEventRow(ProfessionalTable& table,
+                       const std::string& date,
+                       const std::string& type,
+                       const std::string& time,
+                       const std::string& magnitude,
+                       const std::string& duration,
+                       const std::string& visibility,
+                       const std::string& saros,
+                       const std::string& pathWidth,
+                       const std::string& centralLine) {
+    std::vector<std::string> rowData = {date, type, time, magnitude, duration,
+                                       visibility, saros, pathWidth, centralLine};
+    table.addRow(rowData);
+}
+
+// Conjunction Events Table Functions
+void addConjunctionEventRow(ProfessionalTable& table,
+                           const std::string& date,
+                           const std::string& time,
+                           const std::string& planet1,
+                           const std::string& planet2,
+                           const std::string& separation,
+                           const std::string& orb,
+                           const std::string& sign,
+                           const std::string& strength,
+                           const std::string& significance) {
+    std::vector<std::string> rowData = {date, time, planet1, planet2, separation,
+                                       orb, sign, strength, significance};
+    table.addRow(rowData);
+}
+
+// KP System Table Functions
+void addKPSystemRow(ProfessionalTable& table,
+                   const std::string& planet,
+                   const std::string& longitude,
+                   const std::string& sign,
+                   const std::string& nakshatra,
+                   const std::string& subLord,
+                   const std::string& subSub,
+                   const std::string& subSubSub,
+                   const std::string& kpNotation,
+                   const std::string& signification) {
+    std::vector<std::string> rowData = {planet, longitude, sign, nakshatra, subLord,
+                                       subSub, subSubSub, kpNotation, signification};
+    table.addRow(rowData);
+}
+
+// Factory functions for new table types
+ProfessionalTable createEclipseTable() {
+    ProfessionalTable table;
+    table.setBorderStyle(BorderStyle::ASCII)
+         .setGlobalFormat(CellFormat().align(FontAlign::LEFT))
+         .setTitle("Eclipse Events Analysis");
+
+    // Add headers
+    std::vector<std::string> headers = {
+        "DATE", "TYPE", "TIME (UTC)", "MAGNITUDE", "DURATION",
+        "VISIBILITY", "SAROS", "PATH WIDTH", "CENTRAL LINE"
+    };
+    table.addRow(headers);
+
+    return table;
+}
+
+ProfessionalTable createConjunctionTable() {
+    ProfessionalTable table;
+    table.setBorderStyle(BorderStyle::ASCII)
+         .setGlobalFormat(CellFormat().align(FontAlign::LEFT))
+         .setTitle("Planetary Conjunctions Analysis");
+
+    // Add headers
+    std::vector<std::string> headers = {
+        "DATE", "TIME (UTC)", "PLANET 1", "PLANET 2", "SEPARATION",
+        "ORB", "SIGN", "STRENGTH", "SIGNIFICANCE"
+    };
+    table.addRow(headers);
+
+    return table;
+}
+
+ProfessionalTable createKPSystemTable() {
+    ProfessionalTable table;
+    table.setBorderStyle(BorderStyle::ASCII)
+         .setGlobalFormat(CellFormat().align(FontAlign::LEFT))
+         .setTitle("KP System - Sub Lord Analysis");
+
+    // Add headers
+    std::vector<std::string> headers = {
+        "PLANET", "LONGITUDE", "SIGN", "NAKSHATRA", "SUB LORD",
+        "SUB-SUB", "SUB³", "KP NOTATION", "SIGNIFICATION"
+    };
+    table.addRow(headers);
+
+    return table;
+}
+
+ProfessionalTable createGrahaYuddhaTable() {
+    ProfessionalTable table;
+    table.setBorderStyle(BorderStyle::ASCII)
+         .setGlobalFormat(CellFormat().align(FontAlign::LEFT))
+         .setTitle("Graha Yuddha - Planetary Wars Analysis");
+
+    // Add headers
+    std::vector<std::string> headers = {
+        "DATE", "TIME (UTC)", "COMBATANTS", "SEPARATION", "WINNER",
+        "LOSER", "VICTORY MARGIN", "EFFECTS", "SIGNIFICANCE"
+    };
+    table.addRow(headers);
+
+    return table;
+}
+
 } // namespace Astro

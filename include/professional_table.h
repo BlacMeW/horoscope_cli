@@ -238,4 +238,46 @@ void addMyanmarCalendarRow(ProfessionalTable& table,
                           const std::string& astroDays,
                           const std::string& score);
 
+// Utility functions for Eclipse Events
+void addEclipseEventRow(ProfessionalTable& table,
+                       const std::string& date,
+                       const std::string& type,
+                       const std::string& time,
+                       const std::string& magnitude,
+                       const std::string& duration,
+                       const std::string& visibility,
+                       const std::string& saros,
+                       const std::string& pathWidth,
+                       const std::string& centralLine);
+
+// Utility functions for Conjunction Events
+void addConjunctionEventRow(ProfessionalTable& table,
+                           const std::string& date,
+                           const std::string& time,
+                           const std::string& planet1,
+                           const std::string& planet2,
+                           const std::string& separation,
+                           const std::string& orb,
+                           const std::string& sign,
+                           const std::string& strength,
+                           const std::string& significance);
+
+// Utility functions for KP System
+void addKPSystemRow(ProfessionalTable& table,
+                   const std::string& planet,
+                   const std::string& longitude,
+                   const std::string& sign,
+                   const std::string& nakshatra,
+                   const std::string& subLord,
+                   const std::string& subSub,
+                   const std::string& subSubSub,
+                   const std::string& kpNotation,
+                   const std::string& signification);
+
+// Factory functions for new table types
+ProfessionalTable createEclipseTable();
+ProfessionalTable createConjunctionTable();
+ProfessionalTable createKPSystemTable();
+ProfessionalTable createGrahaYuddhaTable();
+
 } // namespace Astro
