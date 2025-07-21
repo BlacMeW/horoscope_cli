@@ -752,13 +752,14 @@ void printHelp() {
     std::cout << "                       • Cultural celebrations and fasting days\n\n";
 
     std::cout << "MYANMAR MONTHLY CALENDAR 🇲🇲📅 (NEW)\n";
-    std::cout << "    --myanmar-monthly YYYY-MM\n";
+    std::cout << "    --myanmar-monthly YYYY-MM, -m YYYY-MM\n";
     std::cout << "                       Generate Myanmar monthly calendar inspired by mmcal.blogspot.com\n";
     std::cout << "                       • Format: 2024-01 for January 2024 (Gregorian)\n";
     std::cout << "                       • Beautiful traditional Myanmar calendar layout\n";
     std::cout << "                       • Shows both Gregorian and Myanmar dates\n";
     std::cout << "                       • Includes astrological days, festivals, moon phases\n";
     std::cout << "                       • Multiple output formats available\n";
+    std::cout << "                       • Short option: -m 2025-07 (equivalent to --myanmar-monthly 2025-07)\n";
 
     std::cout << "    --myanmar-monthly-format FORMAT\n";
     std::cout << "                       Myanmar monthly calendar output format\n";
@@ -1143,6 +1144,22 @@ void printHelp() {
     std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
     std::cout << "                --myanmar-search-moon-phase 1 \\\n";
     std::cout << "                --myanmar-search-format list\n\n";
+
+    std::cout << "MYANMAR MONTHLY CALENDAR 🇲🇲📅\n";
+    std::cout << "  # Myanmar monthly calendar with multi-calendar view and Hindu dates\n";
+    std::cout << "  horoscope_cli --myanmar-monthly 2025-07 \\\n";
+    std::cout << "                --myanmar-monthly-format multi-calendar \\\n";
+    std::cout << "                --include-hindu\n\n";
+
+    std::cout << "  # Short form (equivalent to above)\n";
+    std::cout << "  horoscope_cli -m 2025-07\n\n";
+
+    std::cout << "  # Other Myanmar monthly formats\n";
+    std::cout << "  horoscope_cli --myanmar-monthly 2025-07 \\\n";
+    std::cout << "                --myanmar-monthly-format traditional\n\n";
+
+    std::cout << "  horoscope_cli --myanmar-monthly 2025-07 \\\n";
+    std::cout << "                --myanmar-monthly-format blog-style\n\n";
 
     std::cout << "NEW ENHANCED FEATURES EXAMPLES 🚀✨\n\n";
 
@@ -1829,10 +1846,15 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.showPlanetaryTransitions = true;
         } else if (arg == "--all-festivals") {
             args.showAllFestivals = true;
-        } else if (arg == "--myanmar-monthly") {
+        } else if (arg == "--myanmar-monthly" || arg == "-m") {
             if (i + 1 < argc) {
                 args.myanmarMonthlyCalendarDate = argv[++i];
                 args.showMyanmarMonthlyCalendar = true;
+                // Set default format to multi-calendar and include Hindu for short option convenience
+                if (arg == "-m") {
+                    args.myanmarMonthlyCalendarFormat = "multi-calendar";
+                    args.includeHindu = true;
+                }
                 // Validate YYYY-MM format
                 if (args.myanmarMonthlyCalendarDate.length() != 7 || args.myanmarMonthlyCalendarDate[4] != '-') {
                     std::cerr << "Error: --myanmar-monthly requires YYYY-MM format (e.g., 2024-01)\n";
