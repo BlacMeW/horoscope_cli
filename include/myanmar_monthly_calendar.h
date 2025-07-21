@@ -9,6 +9,7 @@
 
 #include "myanmar_calendar.h"
 #include "astro_calendar.h"
+#include "hindu_calendar.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -22,6 +23,12 @@ struct MyanmarMonthlyData {
     int gregorianYear;
     int gregorianMonth;
     std::string gregorianMonthName;
+
+    // Include flags to know which calendars are active
+    bool includeGregorian;
+    bool includeHindu;
+    bool includePlanetary;
+    bool includeAdvancedAstro;
     long myanmarYear;
     MyanmarMonth myanmarMonth;
     std::string myanmarMonthName;
@@ -39,6 +46,46 @@ struct MyanmarMonthlyData {
         std::vector<std::string> festivals;
         std::string qualityIndicator; // ⭐ ✅ ⚠️ 🚫
         double julianDay;
+
+        // Enhanced multi-calendar system data
+        struct GregorianData {
+            int day;
+            int month;
+            int year;
+            std::string dayOfWeek;
+            std::string monthName;
+            bool isWeekend;
+            std::vector<std::string> holidays;
+        } gregorian;
+
+        struct HinduCalendarData {
+            Tithi tithi;
+            std::string tithiName;
+            HinduNakshatra nakshatra;
+            std::string nakshatraName;
+            Yoga yoga;
+            std::string yogaName;
+            Karana karana;
+            std::string karanaName;
+            HinduMonth hinduMonth;
+            std::string hinduMonthName;
+            int hinduDay;
+            int hinduYear;
+            bool isEkadashi;
+            bool isPurnima;
+            bool isAmavasya;
+            std::vector<std::string> hinduFestivals;
+        } hindu;
+
+        struct PlanetaryData {
+            std::vector<PlanetaryTransition> transitions;
+            std::vector<std::string> significantEvents;
+            std::string planetaryWeather; // Overall planetary influence
+            bool hasRetrograde;
+            bool hasConjunction;
+            bool hasEclipse;
+            std::vector<std::string> aspectsFormed;
+        } planetary;
     };
 
     std::vector<DayData> days;
@@ -53,13 +100,44 @@ struct MyanmarMonthlyData {
     std::vector<std::string> majorFestivals;
     std::vector<std::string> importantDays;
     std::map<int, std::string> specialDays; // day -> description
+
+    // Multi-calendar monthly summaries
+    struct MonthlyStats {
+        // Gregorian stats
+        int weekendDays;
+        int holidayDays;
+        std::vector<std::string> gregorianHolidays;
+
+        // Hindu calendar stats
+        int ekadashiDays;
+        int purnimaCount;
+        int amavasyaCount;
+        std::vector<std::string> hinduFestivals;
+        std::map<std::string, int> nakshatraCount;
+
+        // Planetary stats
+        int retrogradeEvents;
+        int conjunctionEvents;
+        int eclipseEvents;
+        int signChangeEvents;
+        std::vector<PlanetaryTransition> majorTransitions;
+        std::string monthlyPlanetaryTrend;
+    } stats;
 };
 
 class MyanmarMonthlyCalendar {
 private:
     MyanmarCalendar myanmarCalendar;
+    HinduCalendar hinduCalendar;
+    AstroCalendar astroCalendar;
     bool initialized;
     std::string lastError;
+
+    // Calendar inclusion options
+    bool includeGregorian;
+    bool includeHindu;
+    bool includePlanetary;
+    bool includeAdvancedAstro;
 
     // Helper methods for calendar layout
     std::string generateTraditionalLayout(const MyanmarMonthlyData& monthData) const;
@@ -89,7 +167,9 @@ private:
     std::string formatCompactCell(const MyanmarMonthlyData::DayData& day) const;
     std::string formatBlogStyleCell(const MyanmarMonthlyData::DayData& day) const;
 
-    // Quality and indicator methods
+    // Fixed-width formatting methods for multi-calendar view
+    std::string formatFixedWidthDayCell(const MyanmarMonthlyData::DayData& day, const MyanmarMonthlyData& monthData) const;
+    std::string formatFixedWidthQualityCell(const MyanmarMonthlyData::DayData& day, const MyanmarMonthlyData& monthData) const;    // Quality and indicator methods
     std::string getDayQualityIndicator(const MyanmarMonthlyData::DayData& day) const;
     std::string getMyanmarSymbols(const MyanmarMonthlyData::DayData& day) const;
     std::string getMoonPhaseSymbol(MyanmarMoonPhase phase) const;
@@ -98,6 +178,12 @@ private:
     // Statistical methods
     void calculateMonthlyStatistics(MyanmarMonthlyData& monthData) const;
     void identifySpecialDays(MyanmarMonthlyData& monthData) const;
+
+    // Multi-calendar data calculation methods
+    void calculateGregorianData(MyanmarMonthlyData::DayData& dayData, int year, int month, int day) const;
+    void calculateHinduCalendarData(MyanmarMonthlyData::DayData& dayData, double julianDay) const;
+    void calculatePlanetaryData(MyanmarMonthlyData::DayData& dayData, double julianDay) const;
+    void calculateMultiCalendarStatistics(MyanmarMonthlyData& monthData) const;
 
     // Tabulate helper methods
     tabulate::Table createCalendarTable(const MyanmarMonthlyData& monthData) const;
@@ -111,8 +197,21 @@ public:
 
     bool initialize();
 
+    // Calendar system inclusion controls
+    void setIncludeGregorian(bool include) { includeGregorian = include; }
+    void setIncludeHindu(bool include) { includeHindu = include; }
+    void setIncludePlanetary(bool include) { includePlanetary = include; }
+    void setIncludeAdvancedAstro(bool include) { includeAdvancedAstro = include; }
+
+    bool isGregorianIncluded() const { return includeGregorian; }
+    bool isHinduIncluded() const { return includeHindu; }
+    bool isPlanetaryIncluded() const { return includePlanetary; }
+    bool isAdvancedAstroIncluded() const { return includeAdvancedAstro; }
+
     // Main calendar generation methods
-    MyanmarMonthlyData calculateMonthlyData(int year, int month, double latitude = 0.0, double longitude = 0.0) const;
+    MyanmarMonthlyData calculateMonthlyData(int year, int month, double latitude = 0.0, double longitude = 0.0,
+                                          bool includeGregorian = false, bool includeHindu = false,
+                                          bool includePlanetary = false, bool includeAdvancedAstro = false) const;
 
     // Output format methods
     std::string generateMonthlyCalendar(const MyanmarMonthlyData& monthData, const std::string& format = "traditional") const;
@@ -120,6 +219,12 @@ public:
     std::string generateModernMyanmarCalendar(const MyanmarMonthlyData& monthData) const;
     std::string generateCompactMyanmarCalendar(const MyanmarMonthlyData& monthData) const;
     std::string generateBlogStyleMyanmarCalendar(const MyanmarMonthlyData& monthData) const;
+
+    // Multi-calendar enhanced formats
+    std::string generateMultiCalendarView(const MyanmarMonthlyData& monthData) const;
+    std::string generatePlanetaryCalendar(const MyanmarMonthlyData& monthData) const;
+    std::string generateHinduMyanmarCalendar(const MyanmarMonthlyData& monthData) const;
+    std::string generateFullAstronomicalCalendar(const MyanmarMonthlyData& monthData) const;
 
     // Export methods
     std::string generateJSON(const MyanmarMonthlyData& monthData) const;
@@ -132,7 +237,9 @@ public:
 
     // Format list
     static std::vector<std::string> getAvailableFormats() {
-        return {"traditional", "modern", "compact", "blog-style", "tabulate", "tabulate-modern", "tabulate-classic", "tabulate-minimal", "json", "csv", "html"};
+        return {"traditional", "modern", "compact", "blog-style", "tabulate", "tabulate-modern",
+                "tabulate-classic", "tabulate-minimal", "json", "csv", "html",
+                "multi-calendar", "planetary", "hindu-myanmar", "full-astronomical"};
     }
 
     // Static utility methods

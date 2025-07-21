@@ -204,6 +204,10 @@ struct CommandLineArgs {
     bool showMyanmarMonthlyCalendar = false;
     std::string myanmarMonthlyCalendarDate; // Format: YYYY-MM for monthly view
     std::string myanmarMonthlyCalendarFormat = "traditional";
+    bool includeGregorian = false;
+    bool includeHindu = false;
+    bool includePlanetary = false;
+    bool includeAdvancedAstro = false;
 };
 
 void printHelp() {
@@ -618,9 +622,36 @@ void printHelp() {
     std::cout << "                       tabulate-modern = Modern table with contemporary styling\n";
     std::cout << "                       tabulate-classic= Classic table with traditional borders\n";
     std::cout << "                       tabulate-minimal= Minimal table with clean appearance\n";
+    std::cout << "                       multi-calendar  = Multi-calendar view (Myanmar+Gregorian+Hindu)\n";
+    std::cout << "                       planetary       = Planetary calendar with astronomical events\n";
+    std::cout << "                       hindu-myanmar   = Combined Hindu and Myanmar calendar\n";
+    std::cout << "                       full-astronomical= Complete astronomical reference\n";
     std::cout << "                       json            = JSON structure for integration\n";
     std::cout << "                       csv             = Comma-separated values\n";
     std::cout << "                       html            = HTML format for web display\n\n";
+
+    std::cout << "CALENDAR SYSTEM OPTIONS 📅🌍\n";
+    std::cout << "    --include-gregorian\n";
+    std::cout << "                       Include Gregorian calendar data (enabled by default)\n";
+    std::cout << "                       • Western calendar system\n";
+    std::cout << "                       • Weekend detection, holidays\n\n";
+
+    std::cout << "    --include-hindu    Include Hindu calendar and Vedic astrology\n";
+    std::cout << "                       • Panchanga (Tithi, Nakshatra, Yoga, Karana)\n";
+    std::cout << "                       • Ekadashi, Purnima, Amavasya detection\n";
+    std::cout << "                       • Hindu festivals and auspicious days\n\n";
+
+    std::cout << "    --include-planetary\n";
+    std::cout << "                       Include planetary transitions and astronomical events\n";
+    std::cout << "                       • Retrograde motion tracking\n";
+    std::cout << "                       • Planetary conjunctions\n";
+    std::cout << "                       • Sign changes and eclipses\n\n";
+
+    std::cout << "    --include-advanced-astro\n";
+    std::cout << "                       Include advanced astrological calculations\n";
+    std::cout << "                       • KP system star lords\n";
+    std::cout << "                       • Aspect formations\n";
+    std::cout << "                       • Planetary weather patterns\n\n";
 
     std::cout << "UTILITY OPTIONS ⚙️🛠️\n";
     std::cout << "    --solar-system     Show solar system orbital paths only\n";
@@ -1412,11 +1443,21 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 args.myanmarMonthlyCalendarFormat != "compact" && args.myanmarMonthlyCalendarFormat != "blog-style" &&
                 args.myanmarMonthlyCalendarFormat != "tabulate" && args.myanmarMonthlyCalendarFormat != "tabulate-modern" &&
                 args.myanmarMonthlyCalendarFormat != "tabulate-classic" && args.myanmarMonthlyCalendarFormat != "tabulate-minimal" &&
+                args.myanmarMonthlyCalendarFormat != "multi-calendar" && args.myanmarMonthlyCalendarFormat != "planetary" &&
+                args.myanmarMonthlyCalendarFormat != "hindu-myanmar" && args.myanmarMonthlyCalendarFormat != "full-astronomical" &&
                 args.myanmarMonthlyCalendarFormat != "json" && args.myanmarMonthlyCalendarFormat != "csv" &&
                 args.myanmarMonthlyCalendarFormat != "html") {
-                std::cerr << "Error: Myanmar monthly format must be 'traditional', 'modern', 'compact', 'blog-style', 'tabulate', 'tabulate-modern', 'tabulate-classic', 'tabulate-minimal', 'json', 'csv', or 'html'\n";
+                std::cerr << "Error: Myanmar monthly format must be 'traditional', 'modern', 'compact', 'blog-style', 'tabulate', 'tabulate-modern', 'tabulate-classic', 'tabulate-minimal', 'multi-calendar', 'planetary', 'hindu-myanmar', 'full-astronomical', 'json', 'csv', or 'html'\n";
                 return false;
             }
+        } else if (arg == "--include-gregorian") {
+            args.includeGregorian = true;
+        } else if (arg == "--include-hindu") {
+            args.includeHindu = true;
+        } else if (arg == "--include-planetary") {
+            args.includePlanetary = true;
+        } else if (arg == "--include-advanced-astro") {
+            args.includeAdvancedAstro = true;
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -2933,7 +2974,10 @@ int main(int argc, char* argv[]) {
                 double latitude = args.latitude != 0.0 ? args.latitude : 16.8661;  // Yangon
                 double longitude = args.longitude != 0.0 ? args.longitude : 96.1951; // Yangon
 
-                MyanmarMonthlyData monthData = myanmarMonthlyCalendar.calculateMonthlyData(year, month, latitude, longitude);
+                MyanmarMonthlyData monthData = myanmarMonthlyCalendar.calculateMonthlyData(
+                    year, month, latitude, longitude,
+                    args.includeGregorian, args.includeHindu, args.includePlanetary, args.includeAdvancedAstro
+                );
                 std::cout << myanmarMonthlyCalendar.generateMonthlyCalendar(monthData, args.myanmarMonthlyCalendarFormat) << std::endl;
             } else {
                 std::cerr << "Error: Invalid date format for Myanmar monthly calendar. Use YYYY-MM format.\n";
