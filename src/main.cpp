@@ -10,6 +10,7 @@
 #include "location_manager.h"
 #include "hindu_calendar.h"
 #include "myanmar_calendar.h"
+#include "myanmar_monthly_calendar.h"
 #include "astro_calendar.h"
 #include "professional_table.h"
 #include "swephexp.h"
@@ -198,6 +199,11 @@ struct CommandLineArgs {
     std::string astroCalendarFormat = "calendar";
     bool showPlanetaryTransitions = false;
     bool showAllFestivals = false;
+
+    // Myanmar Monthly Calendar options
+    bool showMyanmarMonthlyCalendar = false;
+    std::string myanmarMonthlyCalendarDate; // Format: YYYY-MM for monthly view
+    std::string myanmarMonthlyCalendarFormat = "traditional";
 };
 
 void printHelp() {
@@ -592,6 +598,29 @@ void printHelp() {
     std::cout << "                       • Hindu festivals, Myanmar observances\n";
     std::cout << "                       • Religious holidays, special events\n";
     std::cout << "                       • Cultural celebrations and fasting days\n\n";
+
+    std::cout << "MYANMAR MONTHLY CALENDAR 🇲🇲📅 (NEW)\n";
+    std::cout << "    --myanmar-monthly YYYY-MM\n";
+    std::cout << "                       Generate Myanmar monthly calendar inspired by mmcal.blogspot.com\n";
+    std::cout << "                       • Format: 2024-01 for January 2024 (Gregorian)\n";
+    std::cout << "                       • Beautiful traditional Myanmar calendar layout\n";
+    std::cout << "                       • Shows both Gregorian and Myanmar dates\n";
+    std::cout << "                       • Includes astrological days, festivals, moon phases\n";
+    std::cout << "                       • Multiple output formats available\n";
+
+    std::cout << "    --myanmar-monthly-format FORMAT\n";
+    std::cout << "                       Myanmar monthly calendar output format\n";
+    std::cout << "                       traditional     = Traditional Myanmar style with script (default)\n";
+    std::cout << "                       modern          = Modern layout with visual elements\n";
+    std::cout << "                       compact         = Compact view for quick reference\n";
+    std::cout << "                       blog-style      = mmcal.blogspot.com inspired layout\n";
+    std::cout << "                       tabulate        = Beautiful table using tabulate library\n";
+    std::cout << "                       tabulate-modern = Modern table with contemporary styling\n";
+    std::cout << "                       tabulate-classic= Classic table with traditional borders\n";
+    std::cout << "                       tabulate-minimal= Minimal table with clean appearance\n";
+    std::cout << "                       json            = JSON structure for integration\n";
+    std::cout << "                       csv             = Comma-separated values\n";
+    std::cout << "                       html            = HTML format for web display\n\n";
 
     std::cout << "UTILITY OPTIONS ⚙️🛠️\n";
     std::cout << "    --solar-system     Show solar system orbital paths only\n";
@@ -1359,6 +1388,35 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.showPlanetaryTransitions = true;
         } else if (arg == "--all-festivals") {
             args.showAllFestivals = true;
+        } else if (arg == "--myanmar-monthly") {
+            if (i + 1 < argc) {
+                args.myanmarMonthlyCalendarDate = argv[++i];
+                args.showMyanmarMonthlyCalendar = true;
+                // Validate YYYY-MM format
+                if (args.myanmarMonthlyCalendarDate.length() != 7 || args.myanmarMonthlyCalendarDate[4] != '-') {
+                    std::cerr << "Error: --myanmar-monthly requires YYYY-MM format (e.g., 2024-01)\n";
+                    return false;
+                }
+            } else {
+                std::cerr << "Error: --myanmar-monthly requires a month argument (YYYY-MM)\n";
+                return false;
+            }
+        } else if (arg == "--myanmar-monthly-format") {
+            if (i + 1 < argc) {
+                args.myanmarMonthlyCalendarFormat = argv[++i];
+            } else {
+                std::cerr << "Error: --myanmar-monthly-format requires a format argument\n";
+                return false;
+            }
+            if (args.myanmarMonthlyCalendarFormat != "traditional" && args.myanmarMonthlyCalendarFormat != "modern" &&
+                args.myanmarMonthlyCalendarFormat != "compact" && args.myanmarMonthlyCalendarFormat != "blog-style" &&
+                args.myanmarMonthlyCalendarFormat != "tabulate" && args.myanmarMonthlyCalendarFormat != "tabulate-modern" &&
+                args.myanmarMonthlyCalendarFormat != "tabulate-classic" && args.myanmarMonthlyCalendarFormat != "tabulate-minimal" &&
+                args.myanmarMonthlyCalendarFormat != "json" && args.myanmarMonthlyCalendarFormat != "csv" &&
+                args.myanmarMonthlyCalendarFormat != "html") {
+                std::cerr << "Error: Myanmar monthly format must be 'traditional', 'modern', 'compact', 'blog-style', 'tabulate', 'tabulate-modern', 'tabulate-classic', 'tabulate-minimal', 'json', 'csv', or 'html'\n";
+                return false;
+            }
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -1371,6 +1429,16 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
 bool validateArgs(const CommandLineArgs& args) {
     if (args.showHelp || args.showVersion || args.showFeatures || args.showSolarSystemOnly ||
         args.listLocations || !args.searchLocation.empty()) {
+        return true;
+    }
+
+    // Astro calendar can work without location data for monthly view
+    if (args.showAstroCalendarMonthly) {
+        return true;
+    }
+
+    // Myanmar monthly calendar can work without location data
+    if (args.showMyanmarMonthlyCalendar) {
         return true;
     }
 
@@ -2846,6 +2914,37 @@ int main(int argc, char* argv[]) {
         }
 
         return 0; // Exit after monthly astro-calendar
+    }
+
+    // Handle Myanmar Monthly Calendar (doesn't need birth data)
+    if (args.showMyanmarMonthlyCalendar) {
+        MyanmarMonthlyCalendar myanmarMonthlyCalendar;
+
+        if (!myanmarMonthlyCalendar.initialize()) {
+            std::cerr << "Error: Failed to initialize Myanmar Monthly Calendar: " << myanmarMonthlyCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        try {
+            // Parse year and month from myanmarMonthlyCalendarDate
+            int year, month;
+            if (sscanf(args.myanmarMonthlyCalendarDate.c_str(), "%d-%d", &year, &month) == 2) {
+                // Use Yangon coordinates as default if not provided
+                double latitude = args.latitude != 0.0 ? args.latitude : 16.8661;  // Yangon
+                double longitude = args.longitude != 0.0 ? args.longitude : 96.1951; // Yangon
+
+                MyanmarMonthlyData monthData = myanmarMonthlyCalendar.calculateMonthlyData(year, month, latitude, longitude);
+                std::cout << myanmarMonthlyCalendar.generateMonthlyCalendar(monthData, args.myanmarMonthlyCalendarFormat) << std::endl;
+            } else {
+                std::cerr << "Error: Invalid date format for Myanmar monthly calendar. Use YYYY-MM format.\n";
+                return 1;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error generating Myanmar monthly calendar: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after Myanmar monthly calendar
     }
 
     // Parse date and time (required for all other functions)
