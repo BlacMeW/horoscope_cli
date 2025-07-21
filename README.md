@@ -9,6 +9,9 @@ A powerful C++ command-line astrology tool featuring comprehensive horoscope cal
 - 🔮 **Planetary Positions** - Calculate exact positions for any date, time, and location worldwide
 - 🌙 **Lunar Calculations** - Precise moon phases, nodes, and lunar mansion positions
 - ☀️ **Solar Analysis** - Solar returns, transits, and seasonal transitions
+- 📿 **Historical Coverage** - Complete astronomical calculations from ancient BC era through 2400 AD
+- 🏛️ **Ancient Astronomy** - Calculate planetary positions for historical events like Julius Caesar's assassination (44 BC)
+- 🌍 **Eclipse History** - Find eclipses visible from any location across millennia of recorded history
 
 ### 🏠 **Advanced House Systems**
 - 🏛️ **Multiple House Systems** - Placidus, Koch, Equal House, Whole Sign, and more
@@ -58,6 +61,26 @@ A powerful C++ command-line astrology tool featuring comprehensive horoscope cal
 - Standard C math library
 
 **Note:** Swiss Ephemeris is embedded in the project - no external installation required!
+
+### 📿 **Historical Calculation Coverage**
+The project includes comprehensive ephemeris data files covering:
+- **Ancient Era**: 6000 BC through 0 AD (BC/AD boundary calculations)
+- **Classical Period**: 0 AD through 600 AD (early civilizations)
+- **Medieval Era**: 600 AD through 1200 AD (medieval period)
+- **Renaissance**: 1200 AD through 1800 AD (renaissance to modern)
+- **Contemporary**: 1800 AD through 2400 AD (modern era and future)
+
+**Historical Examples:**
+```bash
+# Julius Caesar's assassination (44 BC)
+./bin/horoscope_cli --date -0044-03-15 --time 12:00:00 --lat 41.9028 --lon 12.4964 --timezone 1
+
+# Ancient eclipse calculations
+./bin/horoscope_cli --eclipse-range -0100-01-01 -0001-12-31 --lat 41.9028 --lon 12.4964
+
+# Myanmar calendar for historical dates
+./bin/horoscope_cli --date 1200-01-01 --myanmar-calendar --lat 16.8661 --lon 96.1951 --timezone 6.5
+```
 
 ## Installation
 
