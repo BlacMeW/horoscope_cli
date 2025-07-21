@@ -59,6 +59,7 @@ struct MyanmarMonthlyData {
         } gregorian;
 
         struct HinduCalendarData {
+            // Core Panchanga Elements
             Tithi tithi;
             std::string tithiName;
             HinduNakshatra nakshatra;
@@ -67,14 +68,33 @@ struct MyanmarMonthlyData {
             std::string yogaName;
             Karana karana;
             std::string karanaName;
+
+            // Hindu calendar date information
             HinduMonth hinduMonth;
             std::string hinduMonthName;
             int hinduDay;
             int hinduYear;
+
+            // Enhanced Panchanga data (following DrikPanchang structure)
+            std::string paksha;              // Shukla/Krishna Paksha
+            std::string moonSign;            // Moon's zodiac sign (Rashi)
+            int nakshatraPada;              // Nakshatra pada (1-4)
+            int vikramSamvat;               // Vikram Samvat year
+            std::string ritu;               // Season (Vasanta, Grishma, etc.)
+
+            // Special days detection
             bool isEkadashi;
             bool isPurnima;
             bool isAmavasya;
+            bool isAuspiciousDay;          // General auspicious day marker
+            bool isInauspiciousDay;        // General inauspicious day marker
+
+            // Festival and event information
+            std::vector<std::string> festivals;
             std::vector<std::string> hinduFestivals;
+
+            // Comprehensive Panchanga information (key-value pairs for detailed display)
+            std::map<std::string, std::string> comprehensiveInfo;
         } hindu;
 
         struct PlanetaryData {

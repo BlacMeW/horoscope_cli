@@ -2974,9 +2974,29 @@ int main(int argc, char* argv[]) {
                 double latitude = args.latitude != 0.0 ? args.latitude : 16.8661;  // Yangon
                 double longitude = args.longitude != 0.0 ? args.longitude : 96.1951; // Yangon
 
+                // Auto-enable calendars based on format
+                bool enableHindu = args.includeHindu;
+                bool enablePlanetary = args.includePlanetary;
+                bool enableAdvancedAstro = args.includeAdvancedAstro;
+
+                if (args.myanmarMonthlyCalendarFormat == "multi-calendar" ||
+                    args.myanmarMonthlyCalendarFormat == "hindu-myanmar" ||
+                    args.myanmarMonthlyCalendarFormat == "full-astronomical") {
+                    enableHindu = true;
+                }
+
+                if (args.myanmarMonthlyCalendarFormat == "planetary" ||
+                    args.myanmarMonthlyCalendarFormat == "full-astronomical") {
+                    enablePlanetary = true;
+                }
+
+                if (args.myanmarMonthlyCalendarFormat == "full-astronomical") {
+                    enableAdvancedAstro = true;
+                }
+
                 MyanmarMonthlyData monthData = myanmarMonthlyCalendar.calculateMonthlyData(
                     year, month, latitude, longitude,
-                    args.includeGregorian, args.includeHindu, args.includePlanetary, args.includeAdvancedAstro
+                    args.includeGregorian, enableHindu, enablePlanetary, enableAdvancedAstro
                 );
                 std::cout << myanmarMonthlyCalendar.generateMonthlyCalendar(monthData, args.myanmarMonthlyCalendarFormat) << std::endl;
             } else {
