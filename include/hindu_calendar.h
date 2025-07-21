@@ -504,6 +504,10 @@ public:
     std::vector<SearchResult> searchByJulianDay(double julianDay, const std::string& startDate, const std::string& endDate, double latitude, double longitude, double tolerance = 0.5) const;
     std::vector<SearchResult> searchByJulianDayRange(double jdStart, double jdEnd, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
 
+    // Simplified JD search methods (no date range required)
+    SearchResult searchJulianDayOnly(double julianDay, double latitude = 0.0, double longitude = 0.0) const;
+    PanchangaData calculatePanchangaFromJD(double julianDay, double latitude = 0.0, double longitude = 0.0) const;
+
     // Varna (Savarna) search methods
     std::vector<SearchResult> searchByVarnaDay(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchByVarnaTithi(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;

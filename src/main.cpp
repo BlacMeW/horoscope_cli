@@ -172,6 +172,10 @@ struct CommandLineArgs {
     bool searchVaishyaDays = false;
     bool searchShudradays = false;
 
+    // Simplified JD-only search
+    double searchJdOnly = -1.0;           // Search by JD only, no date range needed
+    std::string searchVarnaOnly = "";     // Search by Varna only, no date range needed
+
     // Myanmar Calendar options
     bool showMyanmarCalendar = false;
     bool showMyanmarCalendarRange = false;
@@ -660,22 +664,36 @@ void printHelp() {
     std::cout << "    --hindu-search-nakshatra N Search for specific Nakshatra (1-27)\n";
     std::cout << "    --hindu-search-yoga N   Search for specific Yoga (1-27)\n\n";
 
-    std::cout << "    --search-julian-day JD  Search for specific Julian Day number\n";
-    std::cout << "                            • Example: --search-julian-day 1948438.5\n";
-    std::cout << "    --search-julian-day-range START END  Search for Julian Day range\n";
-    std::cout << "                                          • Example: --search-julian-day-range 1948438.5 1948468.5\n\n";
+    std::cout << "JULIAN DAY (JD) SEARCH OPTIONS 🔢📅\n";
+    std::cout << "    --search-jd JD          🎯 SIMPLE: Search single day by Julian Day number\n";
+    std::cout << "                            • Example: horoscope_cli --search-jd 1555550\n";
+    std::cout << "                            • Shows complete Hindu Panchanga for that exact day\n";
+    std::cout << "                            • No date range required - JD defines exactly one day\n\n";
 
+    std::cout << "    --search-julian-day JD  Search for specific Julian Day number\n";
+    std::cout << "                            • Example: --search-julian-day 1555550\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-julian-day 1555550\n";
+    std::cout << "    --search-julian-day-range START END  Search for Julian Day range\n";
+    std::cout << "                                          • Example: --search-julian-day-range 1555550 1555580\n";
+    std::cout << "                                          • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-julian-day-range 1555550 1555580\n\n";
+
+    std::cout << "SAVARNA (VARNA) DAY SEARCH OPTIONS 🕉️⚡\n";
     std::cout << "    --search-varna-day TYPE Search for specific Varna day type\n";
-    std::cout << "                            • brahmin = Brahmin Varna days\n";
-    std::cout << "                            • kshatriya = Kshatriya Varna days\n";
-    std::cout << "                            • vaishya = Vaishya Varna days\n";
-    std::cout << "                            • shudra = Shudra Varna days\n";
-    std::cout << "                            • Example: --search-varna-day brahmin\n\n";
+    std::cout << "                            • brahmin = Brahmin Varna days (spiritual/priestly)\n";
+    std::cout << "                            • kshatriya = Kshatriya Varna days (warrior/ruling)\n";
+    std::cout << "                            • vaishya = Vaishya Varna days (merchant/farming)\n";
+    std::cout << "                            • shudra = Shudra Varna days (service/labor)\n";
+    std::cout << "                            • Example: --search-varna-day brahmin\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-varna-day brahmin\n\n";
 
     std::cout << "    --search-brahmin-days   Search for all Brahmin Varna days\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-brahmin-days\n";
     std::cout << "    --search-kshatriya-days Search for all Kshatriya Varna days\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-kshatriya-days\n";
     std::cout << "    --search-vaishya-days   Search for all Vaishya Varna days\n";
-    std::cout << "    --search-shudra-days    Search for all Shudra Varna days\n\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-vaishya-days\n";
+    std::cout << "    --search-shudra-days    Search for all Shudra Varna days\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-shudra-days\n\n";
 
     std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
     std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
@@ -828,6 +846,8 @@ void printHelp() {
     std::cout << "                       • BC era support (unlike Myanmar calendar)\n";
     std::cout << "                       • Tithi, Nakshatra, Yoga, Karana for each day\n";
     std::cout << "                       • Supports multiple Hindu calendar systems\n";
+    std::cout << "                       • Enhanced format shows Julian Day (JD) and Varna info\n";
+    std::cout << "                       • Use JD values from monthly display for --search-julian-day\n";
     std::cout << "                       • Short option: -hm 2025-07 (equivalent to --hindu-monthly 2025-07)\n";
 
     std::cout << "    --hindu-monthly-format FORMAT\n";
@@ -1209,6 +1229,41 @@ void printHelp() {
     std::cout << "                --hindu-search-logic and \\\n";
     std::cout << "                --hindu-search-format json\n\n";
 
+    std::cout << "  # 🎯 SIMPLE Julian Day search - show Hindu Panchanga for exact day\n";
+    std::cout << "  horoscope_cli --search-jd 1555550\n\n";
+
+    std::cout << "  # 🎯 SIMPLE Julian Day search with coordinates for accurate timings\n";
+    std::cout << "  horoscope_cli --search-jd 1555550 --lat 27.7172 --lon 85.3240\n\n";
+
+    std::cout << "  # Julian Day search - find dates by specific JD number\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-julian-day 1555550 \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240\n\n";
+
+    std::cout << "  # Julian Day range search - find all dates in JD range\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-julian-day-range 1555550 1555580 \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240 \\\n";
+    std::cout << "                --hindu-search-format list\n\n";
+
+    std::cout << "  # Savarna (Varna) day search - find Brahmin Varna days\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-brahmin-days \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240\n\n";
+
+    std::cout << "  # Varna type search - find specific Varna days\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-varna-day kshatriya \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240 \\\n";
+    std::cout << "                --hindu-search-format table\n\n";
+
+    std::cout << "  # Combined search - Brahmin days OR Purnima (Full Moon)\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-brahmin-days \\\n";
+    std::cout << "                --hindu-search-purnima \\\n";
+    std::cout << "                --hindu-search-logic or \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240\n\n";
+
     std::cout << "  # Myanmar calendar search - simple date list format\n";
     std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
     std::cout << "                --myanmar-search-moon-phase 1 \\\n";
@@ -1242,6 +1297,10 @@ void printHelp() {
     std::cout << "  # Hindu calendar for BC era (500 BC example)\n";
     std::cout << "  horoscope_cli --hindu-monthly 500BC-03 \\\n";
     std::cout << "                --hindu-monthly-format panchanga\n\n";
+
+    std::cout << "  # Hindu calendar with JD and Varna values (enhanced format - default)\n";
+    std::cout << "  horoscope_cli -hm 563BC-05 --lat 27.7172 --lon 85.3240\n";
+    std::cout << "  # Note: JD numbers from calendar can be used with --search-julian-day\n\n";
 
     std::cout << "  # Hindu calendar using astronomical year format for BC\n";
     std::cout << "  horoscope_cli --hindu-monthly -0499-03 \\\n";
@@ -1832,6 +1891,10 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.searchJulianDayStart = std::stod(argv[++i]);
             args.searchJulianDayEnd = std::stod(argv[++i]);
 
+        // Simplified JD search options
+        } else if (arg == "--search-jd" && i + 1 < argc) {
+            args.searchJdOnly = std::stod(argv[++i]);
+
         // Varna search options
         } else if (arg == "--search-varna-day" && i + 1 < argc) {
             std::string varnaType = argv[++i];
@@ -2096,12 +2159,13 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    if (args.date.empty() && !args.showAstroCalendarMonthly) {
+    // Skip date/time requirements for --search-jd command
+    if (args.date.empty() && !args.showAstroCalendarMonthly && !args.searchJdOnly) {
         std::cerr << "Error: --date is required\n";
         return false;
     }
 
-    if (args.time.empty() && !args.showAstroCalendarMonthly) {
+    if (args.time.empty() && !args.showAstroCalendarMonthly && !args.searchJdOnly) {
         std::cerr << "Error: --time is required\n";
         return false;
     }
@@ -2914,6 +2978,36 @@ int main(int argc, char* argv[]) {
                 }
             } else {
                 std::cout << "Failed to generate Panchanga for the specified period." << std::endl;
+            }
+        }
+
+        // Handle Simplified Julian Day Search
+        if (args.searchJdOnly > 0) {
+            HinduCalendar hinduCalendar;
+            if (!hinduCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Hindu Calendar system: " << hinduCalendar.getLastError() << std::endl;
+                return 1;
+            }
+
+            try {
+                // Search for the specific Julian Day
+                HinduCalendar::SearchResult result = hinduCalendar.searchJulianDayOnly(args.searchJdOnly, args.latitude, args.longitude);
+
+                std::cout << "🔢 JULIAN DAY SEARCH RESULT 🕉️\n";
+                std::cout << "=================================\n\n";
+                std::cout << "Julian Day: " << std::fixed << std::setprecision(1) << result.julianDay << "\n";
+                std::cout << "Gregorian Date: " << result.gregorianDate << "\n";
+                std::cout << "Weekday: " << hinduCalendar.getVaraName(result.panchangaData.vara) << "\n\n";
+
+                // Display complete Panchanga information
+                std::cout << hinduCalendar.generatePanchangaTable(result.panchangaData) << std::endl;
+
+                // Exit after successful JD search
+                return 0;
+
+            } catch (const std::exception& e) {
+                std::cerr << "Error searching Julian Day " << args.searchJdOnly << ": " << e.what() << std::endl;
+                return 1;
             }
         }
 

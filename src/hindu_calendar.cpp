@@ -605,7 +605,8 @@ void HinduCalendar::julianDayToHinduDate(double jd, int& year, int& month, int& 
 }
 
 void HinduCalendar::julianDayToGregorianDate(double jd, int& year, int& month, int& day) const {
-    swe_jdut1_to_utc(jd, SE_GREG_CAL, &year, &month, &day, nullptr, nullptr, nullptr);
+    double gTime;
+    swe_revjul(jd, SE_GREG_CAL, &year, &month, &day, &gTime);
 }
 
 double HinduCalendar::gregorianDateToJulianDay(int year, int month, int day, double hour) const {
@@ -2494,6 +2495,38 @@ std::vector<HinduCalendar::SearchResult> HinduCalendar::searchShudradays(const s
     criteria.searchEndDate = endDate;
 
     return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Simplified JD search methods
+HinduCalendar::SearchResult HinduCalendar::searchJulianDayOnly(double julianDay, double latitude, double longitude) const {
+    SearchResult result;
+
+    // Calculate Panchanga data for this JD
+    result.panchangaData = calculatePanchanga(julianDay, latitude, longitude);
+    result.julianDay = julianDay;
+
+    // Convert JD to Gregorian date
+    int year, month, day;
+    julianDayToGregorianDate(julianDay, year, month, day);
+
+    std::ostringstream dateStream;
+    dateStream << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setw(2) << day;
+    result.gregorianDate = dateStream.str();
+
+    // Calculate weekday (0=Sunday, 6=Saturday)
+    result.weekday = static_cast<int>(calculateVara(julianDay));
+
+    result.matchScore = 1.0;  // Perfect match since we found the exact JD
+    result.matchDescription = "Exact Julian Day match: " + std::to_string(julianDay);
+
+    result.matchScore = 1.0;  // Perfect match since we found the exact JD
+    result.matchDescription = "Exact Julian Day match: " + std::to_string(julianDay);
+
+    return result;
+}
+
+PanchangaData HinduCalendar::calculatePanchangaFromJD(double julianDay, double latitude, double longitude) const {
+    return calculatePanchanga(julianDay, latitude, longitude);
 }
 
 } // namespace Astro
