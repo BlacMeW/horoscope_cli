@@ -187,6 +187,10 @@ private:
     std::string formatCompactCell(const MyanmarMonthlyData::DayData& day) const;
     std::string formatBlogStyleCell(const MyanmarMonthlyData::DayData& day) const;
 
+    // Unicode-aware string formatting utilities
+    int getDisplayWidth(const std::string& str) const;
+    std::string padToDisplayWidth(const std::string& str, int targetWidth, bool rightAlign = false) const;
+
     // Fixed-width formatting methods for multi-calendar view
     std::string formatFixedWidthDayCell(const MyanmarMonthlyData::DayData& day, const MyanmarMonthlyData& monthData) const;
     std::string formatFixedWidthQualityCell(const MyanmarMonthlyData::DayData& day, const MyanmarMonthlyData& monthData) const;    // Quality and indicator methods

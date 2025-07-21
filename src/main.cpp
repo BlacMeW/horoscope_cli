@@ -198,6 +198,154 @@ struct CommandLineArgs {
     bool showAstroCalendarMonthly = false;
     std::string astroCalendarFormat = "calendar";
     bool showPlanetaryTransitions = false;
+
+    // NEW ENHANCED FEATURES 🚀
+
+    // Interactive Mode
+    bool interactiveMode = false;
+    bool quickWizard = false;
+    bool beginnerMode = false;
+    bool professionalMode = false;
+
+    // AI-Powered Interpretation
+    bool aiInterpretation = false;
+    bool personalityProfile = false;
+    bool careerGuidance = false;
+    bool relationshipProfile = false;
+    bool healthInsights = false;
+    bool spiritualGuidance = false;
+    std::string interpretationStyle = "balanced"; // psychological, spiritual, practical, balanced
+    std::string interpretationDetail = "standard"; // brief, standard, detailed
+    std::vector<std::string> interpretationFocus; // personality, career, relationships, health, spiritual
+
+    // Advanced Astrological Analysis
+    bool advancedAnalysis = false;
+    bool midpointAnalysis = false;
+    bool harmonicAnalysis = false;
+    std::vector<int> specificHarmonics; // 4, 5, 7, 9, etc.
+    bool arabicParts = false;
+    bool fixedStarsAnalysis = false;
+    bool asteroidsAnalysis = false;
+    bool vertexAnalysis = false;
+
+    // Predictive Astrology
+    bool predictiveAnalysis = false;
+    bool dashaAnalysis = false;
+    std::string dashaType = "vimshottari"; // vimshottari, ashtottari, etc.
+    bool progressionAnalysis = false;
+    std::string progressionTargetDate;
+    bool transitAnalysis = false;
+    std::string transitStartDate;
+    std::string transitEndDate;
+    bool returnAnalysis = false;
+    std::string returnType = "solar"; // solar, lunar, planetary
+    int returnYear = -1;
+    bool yearlyForecast = false;
+    bool monthlyForecast = false;
+    int forecastYear = -1;
+    int forecastMonth = -1;
+
+    // Electional Astrology
+    bool electionalAnalysis = false;
+    std::string electionalStartDate;
+    std::string electionalEndDate;
+    std::string electionalPurpose; // marriage, business, travel, etc.
+    bool auspiciousTimings = false;
+
+    // Relationship Analysis (Synastry)
+    bool synastryAnalysis = false;
+    bool compositeAnalysis = false;
+    std::string partnerBirthDate;
+    std::string partnerBirthTime;
+    double partnerLatitude = 0.0;
+    double partnerLongitude = 0.0;
+    double partnerTimezone = 0.0;
+    std::string partnerLocation;
+
+    // Relocation Astrology
+    bool relocationAnalysis = false;
+    double relocationLatitude = 0.0;
+    double relocationLongitude = 0.0;
+    std::string relocationLocation;
+
+    // Financial Astrology
+    bool financialAnalysis = false;
+    std::string stockSymbol;
+    bool marketAnalysis = false;
+    bool cryptoAnalysis = false;
+    std::string investmentDate;
+
+    // Medical Astrology
+    bool medicalAnalysis = false;
+    bool healthPredictions = false;
+    std::string healthConcern;
+    bool ayurvedicAnalysis = false;
+
+    // Mundane Astrology
+    bool mundaneAnalysis = false;
+    std::string country;
+    std::string region;
+    bool weatherPredictions = false;
+    bool politicalAnalysis = false;
+    bool economicAnalysis = false;
+
+    // Multi-language Support
+    std::string language = "english";
+    bool useNativeScript = false;
+    std::string culturalRegion;
+    std::string numberFormat = "western";
+    std::string dateFormat = "YYYY-MM-DD";
+    std::string timeFormat = "24h";
+
+    // Batch Processing
+    bool batchMode = false;
+    std::string batchInputFile;
+    std::string batchOutputFile;
+    std::string batchOperation;
+
+    // Data Management
+    bool exportData = false;
+    bool importData = false;
+    std::string dataFile;
+    std::string dataFormat = "json";
+    bool backup = false;
+    bool restore = false;
+
+    // Visualization Enhancements
+    bool colorOutput = true;
+    bool unicodeSymbols = true;
+    std::string chartTheme = "default"; // default, dark, light, classic
+    bool showProgressBars = true;
+    bool verboseOutput = false;
+
+    // Configuration
+    std::string configFile;
+    bool saveConfig = false;
+    bool loadConfig = false;
+    bool resetConfig = false;
+    std::string userProfile;
+
+    // Output Enhancements
+    bool saveToFile = false;
+    std::string outputFile;
+    bool printToPDF = false;
+    bool emailResults = false;
+    std::string emailAddress;
+    bool uploadToCloud = false;
+
+    // Development and Testing
+    bool debugMode = false;
+    bool testMode = false;
+    bool benchmarkMode = false;
+    bool validateData = false;
+    std::string logLevel = "info"; // debug, info, warn, error
+
+    // API Integration
+    bool apiMode = false;
+    std::string apiEndpoint;
+    std::string apiKey;
+    bool webhookNotification = false;
+    std::string webhookUrl;
     bool showAllFestivals = false;
 
     // Myanmar Monthly Calendar options
@@ -686,6 +834,110 @@ void printHelp() {
     std::cout << "    --features, -f     Show colorful feature showcase\n";
     std::cout << "    --version, -v      Show version and build information\n\n";
 
+    std::cout << "NEW ENHANCED FEATURES 🚀✨\n";
+    std::cout << "    --interactive      Launch interactive mode with guided wizards\n";
+    std::cout << "    --quick-wizard     Quick setup wizard for beginners\n";
+    std::cout << "    --professional     Professional mode with advanced options\n\n";
+
+    std::cout << "AI-POWERED INTERPRETATION 🤖🧠\n";
+    std::cout << "    --ai-interpretation  Generate AI-powered chart interpretation\n";
+    std::cout << "    --personality        Generate detailed personality profile\n";
+    std::cout << "    --career-guidance    AI-generated career guidance and advice\n";
+    std::cout << "    --relationship-profile  Relationship patterns and compatibility\n";
+    std::cout << "    --health-insights    Health insights and wellness guidance\n";
+    std::cout << "    --spiritual-guidance Spiritual path and life purpose analysis\n\n";
+
+    std::cout << "    --interpretation-style STYLE\n";
+    std::cout << "                       Interpretation approach (default: balanced)\n";
+    std::cout << "                       psychological = Jungian psychological approach\n";
+    std::cout << "                       spiritual     = Esoteric and spiritual focus\n";
+    std::cout << "                       practical     = Practical life guidance\n";
+    std::cout << "                       balanced      = Holistic balanced approach\n\n";
+
+    std::cout << "    --interpretation-detail LEVEL\n";
+    std::cout << "                       Detail level (default: standard)\n";
+    std::cout << "                       brief         = Concise summary format\n";
+    std::cout << "                       standard      = Comprehensive analysis\n";
+    std::cout << "                       detailed      = In-depth exploration\n\n";
+
+    std::cout << "ADVANCED ASTROLOGICAL ANALYSIS 🔮⭐\n";
+    std::cout << "    --advanced-analysis  Complete advanced astrological analysis\n";
+    std::cout << "    --midpoints         Planetary midpoint analysis\n";
+    std::cout << "    --harmonics         Harmonic chart analysis (4th, 5th, 7th, 9th)\n";
+    std::cout << "    --harmonic N        Specific harmonic analysis (e.g., --harmonic 7)\n";
+    std::cout << "    --arabic-parts      Calculate Arabic Parts/Lots\n";
+    std::cout << "    --fixed-stars       Fixed star analysis and influences\n";
+    std::cout << "    --asteroids         Asteroid analysis (Ceres, Pallas, Juno, Vesta)\n";
+    std::cout << "    --vertex            Vertex and Anti-Vertex analysis\n\n";
+
+    std::cout << "PREDICTIVE ASTROLOGY 🔮🌟\n";
+    std::cout << "    --predictive        Complete predictive analysis package\n";
+    std::cout << "    --dasha            Vedic Dasha analysis (Vimshottari by default)\n";
+    std::cout << "    --dasha-type TYPE  Specify dasha system (vimshottari, ashtottari)\n";
+    std::cout << "    --progressions DATE Secondary progressions for target date\n";
+    std::cout << "    --transits FROM TO  Transit analysis for date range\n";
+    std::cout << "    --returns TYPE YEAR Planetary returns (solar, lunar, jupiter, saturn)\n";
+    std::cout << "    --yearly-forecast YEAR  Complete yearly forecast\n";
+    std::cout << "    --monthly-forecast YYYY-MM  Monthly forecast\n\n";
+
+    std::cout << "ELECTIONAL ASTROLOGY ⏰🌙\n";
+    std::cout << "    --electional FROM TO PURPOSE\n";
+    std::cout << "                       Find auspicious timing for specific purpose\n";
+    std::cout << "                       Purposes: marriage, business, travel, surgery,\n";
+    std::cout << "                                education, moving, investment\n";
+    std::cout << "    --auspicious-times  Find generally auspicious times in date range\n\n";
+
+    std::cout << "RELATIONSHIP ANALYSIS 💕👥\n";
+    std::cout << "    --synastry         Synastry analysis with partner's chart\n";
+    std::cout << "    --composite        Composite chart analysis\n";
+    std::cout << "    --partner-date DATE --partner-time TIME\n";
+    std::cout << "                       Partner's birth date and time\n";
+    std::cout << "    --partner-lat LAT --partner-lon LON --partner-tz TZ\n";
+    std::cout << "                       Partner's birth location\n";
+    std::cout << "    --partner-location \"CITY\"\n";
+    std::cout << "                       Partner's birth city (alternative to coordinates)\n\n";
+
+    std::cout << "SPECIALIZED ASTROLOGY 🎯🏥💰\n";
+    std::cout << "    --financial        Financial astrology analysis\n";
+    std::cout << "    --market-analysis  Stock market and crypto predictions\n";
+    std::cout << "    --stock-symbol SYM Analyze specific stock symbol\n";
+    std::cout << "    --medical          Medical astrology and health analysis\n";
+    std::cout << "    --ayurvedic        Ayurvedic constitution analysis\n";
+    std::cout << "    --mundane COUNTRY  Mundane astrology for country/region\n";
+    std::cout << "    --relocation LAT LON  Relocation astrology analysis\n\n";
+
+    std::cout << "MULTI-LANGUAGE SUPPORT 🌍🗣️\n";
+    std::cout << "    --language LANG    Set language (english, hindi, sanskrit, spanish,\n";
+    std::cout << "                       french, german, italian, portuguese, russian,\n";
+    std::cout << "                       chinese, japanese, korean, arabic, thai, burmese)\n";
+    std::cout << "    --native-script    Use native script (Devanagari, Arabic, etc.)\n";
+    std::cout << "    --cultural-region REGION  Set cultural preferences\n";
+    std::cout << "    --date-format FORMAT  Date format (YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY)\n";
+    std::cout << "    --time-format FORMAT  Time format (24h, 12h)\n\n";
+
+    std::cout << "BATCH PROCESSING 📊⚡\n";
+    std::cout << "    --batch INPUT.csv OUTPUT.csv OPERATION\n";
+    std::cout << "                       Batch process multiple charts\n";
+    std::cout << "                       Operations: charts, predictions, compatibility\n";
+    std::cout << "    --batch-charts     Generate charts for multiple birth data\n";
+    std::cout << "    --batch-predictions Predictions for multiple people\n\n";
+
+    std::cout << "CONFIGURATION & PROFILES 🛠️👤\n";
+    std::cout << "    --config FILE      Load configuration from file\n";
+    std::cout << "    --save-config FILE Save current settings to configuration\n";
+    std::cout << "    --user-profile PROFILE  Load user profile\n";
+    std::cout << "    --save-profile PROFILE  Save current data as profile\n";
+    std::cout << "    --reset-config     Reset to default configuration\n\n";
+
+    std::cout << "OUTPUT ENHANCEMENTS 🎨📄\n";
+    std::cout << "    --color           Enable colorized output (default: on)\n";
+    std::cout << "    --no-color        Disable colorized output\n";
+    std::cout << "    --theme THEME     Output theme (default, dark, light, classic)\n";
+    std::cout << "    --save-to FILE    Save results to file\n";
+    std::cout << "    --pdf             Generate PDF output\n";
+    std::cout << "    --email ADDRESS   Email results to address\n";
+    std::cout << "    --verbose         Verbose output with detailed progress\n\n";
+
     std::cout << "═══════════════════════════════════════════════════════════════════════════════\n";
     std::cout << "                                 EXAMPLES 💡\n";
     std::cout << "═══════════════════════════════════════════════════════════════════════════════\n\n";
@@ -891,6 +1143,164 @@ void printHelp() {
     std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
     std::cout << "                --myanmar-search-moon-phase 1 \\\n";
     std::cout << "                --myanmar-search-format list\n\n";
+
+    std::cout << "NEW ENHANCED FEATURES EXAMPLES 🚀✨\n\n";
+
+    std::cout << "INTERACTIVE MODE 🖥️\n";
+    std::cout << "  # Launch interactive mode\n";
+    std::cout << "  horoscope_cli --interactive\n\n";
+
+    std::cout << "  # Quick wizard for beginners\n";
+    std::cout << "  horoscope_cli --quick-wizard\n\n";
+
+    std::cout << "  # Professional mode with all features\n";
+    std::cout << "  horoscope_cli --professional\n\n";
+
+    std::cout << "AI-POWERED INTERPRETATION 🤖\n";
+    std::cout << "  # Complete AI interpretation\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --ai-interpretation\n\n";
+
+    std::cout << "  # Detailed personality profile\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --personality --interpretation-detail detailed\n\n";
+
+    std::cout << "  # Career guidance with practical focus\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --career-guidance --interpretation-style practical\n\n";
+
+    std::cout << "  # Spiritual guidance with esoteric focus\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --spiritual-guidance --interpretation-style spiritual\n\n";
+
+    std::cout << "ADVANCED ANALYSIS 🔮\n";
+    std::cout << "  # Complete advanced astrological analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --advanced-analysis\n\n";
+
+    std::cout << "  # Midpoint and harmonic analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --midpoints --harmonics\n\n";
+
+    std::cout << "  # Specific 7th harmonic analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --harmonic 7\n\n";
+
+    std::cout << "  # Fixed stars and Arabic parts\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --fixed-stars --arabic-parts\n\n";
+
+    std::cout << "PREDICTIVE ASTROLOGY 🔮\n";
+    std::cout << "  # Complete predictive analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --predictive\n\n";
+
+    std::cout << "  # Dasha analysis with progressions\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --dasha --progressions 2025-07-21\n\n";
+
+    std::cout << "  # Transit analysis for next 6 months\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --transits 2025-07-21 2026-01-21\n\n";
+
+    std::cout << "  # Solar return for 2025\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --returns solar 2025\n\n";
+
+    std::cout << "  # Monthly forecast for August 2025\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --monthly-forecast 2025-08\n\n";
+
+    std::cout << "ELECTIONAL ASTROLOGY ⏰\n";
+    std::cout << "  # Find best timing for marriage\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --electional 2025-08-01 2025-12-31 marriage\n\n";
+
+    std::cout << "  # Find auspicious business start times\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --electional 2025-09-01 2025-11-30 business\n\n";
+
+    std::cout << "RELATIONSHIP ANALYSIS 💕\n";
+    std::cout << "  # Synastry with partner\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --synastry \\\n";
+    std::cout << "                --partner-date 1992-06-10 --partner-time 16:45:00 \\\n";
+    std::cout << "                --partner-lat 51.5074 --partner-lon -0.1278 --partner-tz 0\n\n";
+
+    std::cout << "  # Composite chart using location names\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --location \"New York\" \\\n";
+    std::cout << "                --composite \\\n";
+    std::cout << "                --partner-date 1992-06-10 --partner-time 16:45:00 \\\n";
+    std::cout << "                --partner-location \"London\"\n\n";
+
+    std::cout << "SPECIALIZED ASTROLOGY 🎯\n";
+    std::cout << "  # Financial astrology for stock analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --financial --stock-symbol AAPL\n\n";
+
+    std::cout << "  # Medical astrology with Ayurvedic analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --medical --ayurvedic\n\n";
+
+    std::cout << "  # Relocation astrology\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --relocation 51.5074 -0.1278\n\n";
+
+    std::cout << "MULTI-LANGUAGE EXAMPLES 🌍\n";
+    std::cout << "  # Chart in Hindi with Devanagari script\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 28.6139 --lon 77.2090 --timezone 5.5 \\\n";
+    std::cout << "                --language hindi --native-script\n\n";
+
+    std::cout << "  # Chart in Spanish with European date format\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.4168 --lon -3.7038 --timezone 1 \\\n";
+    std::cout << "                --language spanish --date-format DD/MM/YYYY\n\n";
+
+    std::cout << "  # Chinese chart with traditional Chinese\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 39.9042 --lon 116.4074 --timezone 8 \\\n";
+    std::cout << "                --language chinese --cultural-region china\n\n";
+
+    std::cout << "BATCH PROCESSING 📊\n";
+    std::cout << "  # Batch generate charts from CSV file\n";
+    std::cout << "  horoscope_cli --batch birth_data.csv charts_output.csv charts\n\n";
+
+    std::cout << "  # Batch compatibility analysis\n";
+    std::cout << "  horoscope_cli --batch couples_data.csv compatibility.csv compatibility\n\n";
+
+    std::cout << "CONFIGURATION EXAMPLES 🛠️\n";
+    std::cout << "  # Save current settings\n";
+    std::cout << "  horoscope_cli --save-config my_settings.conf\n\n";
+
+    std::cout << "  # Load user profile\n";
+    std::cout << "  horoscope_cli --user-profile john_doe.profile --ai-interpretation\n\n";
+
+    std::cout << "  # Professional setup with dark theme and verbose output\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --professional --theme dark --verbose \\\n";
+    std::cout << "                --advanced-analysis --save-to detailed_report.html\n\n";
 
     std::cout << "COORDINATE EXAMPLES 🌍\n";
     std::cout << "  # Major cities coordinates for reference:\n";

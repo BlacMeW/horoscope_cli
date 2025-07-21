@@ -106,7 +106,23 @@ void HinduCalendar::initializeTithiData() {
         {"Dwadashi", "द्वादशी", Planet::MERCURY, "Twelfth", true, "Communication, travel"},
         {"Trayodashi", "त्रयोदशी", Planet::JUPITER, "Thirteenth", true, "Learning, teaching"},
         {"Chaturdashi", "चतुर्दशी", Planet::VENUS, "Fourteenth", true, "Devotion, prayers"},
-        {"Purnima", "पूर्णिमा", Planet::SATURN, "Full Moon", true, "Completion, fulfillment"}
+        {"Purnima", "पूर्णिमा", Planet::SATURN, "Full Moon", true, "Completion, fulfillment"},
+        // Krishna Paksha
+        {"Pratipad K", "प्रतिपदा कृष्ण", Planet::SUN, "Beginning Dark", false, "New challenges"},
+        {"Dwitiya K", "द्वितीया कृष्ण", Planet::MOON, "Second Dark", false, "Letting go"},
+        {"Tritiya K", "तृतीया कृष्ण", Planet::MARS, "Third Dark", false, "Inner strength"},
+        {"Chaturthi K", "चतुर्थी कृष्ण", Planet::MERCURY, "Fourth Dark", false, "Mental clarity"},
+        {"Panchami K", "पंचमी कृष्ण", Planet::JUPITER, "Fifth Dark", false, "Wisdom through trials"},
+        {"Shashthi K", "षष्ठी कृष्ण", Planet::VENUS, "Sixth Dark", false, "Purification"},
+        {"Saptami K", "सप्तमी कृष्ण", Planet::SATURN, "Seventh Dark", false, "Patience"},
+        {"Ashtami K", "अष्टमी कृष्ण", Planet::NORTH_NODE, "Eighth Dark", false, "Power struggles"},
+        {"Navami K", "नवमी कृष्ण", Planet::SUN, "Ninth Dark", false, "Spiritual completion"},
+        {"Dashami K", "दशमी कृष्ण", Planet::MOON, "Tenth Dark", false, "Emotional release"},
+        {"Ekadashi K", "एकादशी कृष्ण", Planet::MARS, "Eleventh Dark", false, "Deep fasting"},
+        {"Dwadashi K", "द्वादशी कृष्ण", Planet::MERCURY, "Twelfth Dark", false, "Mental preparation"},
+        {"Trayodashi K", "त्रयोदशी कृष्ण", Planet::JUPITER, "Thirteenth Dark", false, "Final learning"},
+        {"Chaturdashi K", "चतुर्दशी कृष्ण", Planet::VENUS, "Fourteenth Dark", false, "Last prayers"},
+        {"Amavasya", "अमावस्या", Planet::SATURN, "New Moon", false, "Rebirth, renewal"}
     };
 }
 
@@ -173,13 +189,68 @@ void HinduCalendar::initializeFestivalData() {
     festivalMap["Magha_Purnima"] = {"Maghi Purnima"};
     festivalMap["Phalguna_Purnima"] = {"Holi", "Holika Dahan"};
 
-    // Ekadashi festivals
-    festivalMap["Ekadashi"] = {"Ekadashi Vrata", "Hari Vasara"};
+    // Ekadashi festivals - detailed list
+    festivalMap["Chaitra_Ekadashi_S"] = {"Kamada Ekadashi"};
+    festivalMap["Chaitra_Ekadashi_K"] = {"Papmochani Ekadashi"};
+    festivalMap["Vaishakha_Ekadashi_S"] = {"Varuthini Ekadashi"};
+    festivalMap["Vaishakha_Ekadashi_K"] = {"Mohini Ekadashi"};
+    festivalMap["Jyeshtha_Ekadashi_S"] = {"Apara Ekadashi"};
+    festivalMap["Jyeshtha_Ekadashi_K"] = {"Nirjala Ekadashi"};
+    festivalMap["Ashadha_Ekadashi_S"] = {"Yogini Ekadashi"};
+    festivalMap["Ashadha_Ekadashi_K"] = {"Kamika Ekadashi"};
+    festivalMap["Shravana_Ekadashi_S"] = {"Putrada Ekadashi"};
+    festivalMap["Shravana_Ekadashi_K"] = {"Aja Ekadashi"};
+    festivalMap["Bhadrapada_Ekadashi_S"] = {"Parsva Ekadashi"};
+    festivalMap["Bhadrapada_Ekadashi_K"] = {"Indira Ekadashi"};
+    festivalMap["Ashwini_Ekadashi_S"] = {"Papankusha Ekadashi"};
+    festivalMap["Ashwini_Ekadashi_K"] = {"Rama Ekadashi"};
+    festivalMap["Kartika_Ekadashi_S"] = {"Devuthani Ekadashi", "Prabodhini Ekadashi"};
+    festivalMap["Kartika_Ekadashi_K"] = {"Utpanna Ekadashi"};
+    festivalMap["Margashirsha_Ekadashi_S"] = {"Mokshada Ekadashi"};
+    festivalMap["Margashirsha_Ekadashi_K"] = {"Saphala Ekadashi"};
+    festivalMap["Pausha_Ekadashi_S"] = {"Putrada Ekadashi"};
+    festivalMap["Pausha_Ekadashi_K"] = {"Shattila Ekadashi"};
+    festivalMap["Magha_Ekadashi_S"] = {"Jaya Ekadashi"};
+    festivalMap["Magha_Ekadashi_K"] = {"Vijaya Ekadashi"};
+    festivalMap["Phalguna_Ekadashi_S"] = {"Amalaki Ekadashi"};
+    festivalMap["Phalguna_Ekadashi_K"] = {"Papamochani Ekadashi"};
 
     // Amavasya festivals
     festivalMap["Chaitra_Amavasya"] = {"Chaitra Amavasya"};
-    festivalMap["Kartika_Amavasya"] = {"Diwali", "Kali Chaudas"};
-    festivalMap["Magha_Amavasya"] = {"Mauni Amavasya"};
+    festivalMap["Vaishakha_Amavasya"] = {"Shani Amavasya"};
+    festivalMap["Jyeshtha_Amavasya"] = {"Vat Savitri Amavasya"};
+    festivalMap["Ashadha_Amavasya"] = {"Hariyali Amavasya"};
+    festivalMap["Shravana_Amavasya"] = {"Pithori Amavasya"};
+    festivalMap["Bhadrapada_Amavasya"] = {"Pitru Amavasya", "Sarva Pitru Amavasya"};
+    festivalMap["Ashwini_Amavasya"] = {"Sharad Amavasya"};
+    festivalMap["Kartika_Amavasya"] = {"Diwali", "Kali Chaudas", "Lakshmi Puja"};
+    festivalMap["Margashirsha_Amavasya"] = {"Margashirsha Amavasya"};
+    festivalMap["Pausha_Amavasya"] = {"Pausha Amavasya"};
+    festivalMap["Magha_Amavasya"] = {"Mauni Amavasya", "Maghi Amavasya"};
+    festivalMap["Phalguna_Amavasya"] = {"Phalguna Amavasya"};
+
+    // Navratri festivals
+    festivalMap["Chaitra_Navratri"] = {"Vasant Navratri", "Chaitra Navratri"};
+    festivalMap["Ashwini_Navratri"] = {"Sharad Navratri", "Maha Navratri"};
+
+    // Sankranti festivals
+    festivalMap["Mesha_Sankranti"] = {"Mesha Sankranti", "Baisakhi"};
+    festivalMap["Vrishabha_Sankranti"] = {"Vrishabha Sankranti"};
+    festivalMap["Mithuna_Sankranti"] = {"Mithuna Sankranti"};
+    festivalMap["Karka_Sankranti"] = {"Karka Sankranti", "Dakshinayana"};
+    festivalMap["Simha_Sankranti"] = {"Simha Sankranti"};
+    festivalMap["Kanya_Sankranti"] = {"Kanya Sankranti"};
+    festivalMap["Tula_Sankranti"] = {"Tula Sankranti"};
+    festivalMap["Vrishchika_Sankranti"] = {"Vrishchika Sankranti"};
+    festivalMap["Dhanu_Sankranti"] = {"Dhanu Sankranti"};
+    festivalMap["Makara_Sankranti"] = {"Makar Sankranti", "Uttarayana"};
+    festivalMap["Kumbha_Sankranti"] = {"Kumbha Sankranti"};
+    festivalMap["Meena_Sankranti"] = {"Meena Sankranti"};
+
+    // Krishna Paksha special days
+    festivalMap["Janmashtami"] = {"Krishna Janmashtami", "Gokulashtami"};
+    festivalMap["Shivratri"] = {"Maha Shivratri"};
+    festivalMap["Ganesh_Chaturthi"] = {"Ganesh Chaturthi", "Vinayaka Chavithi"};
 }
 
 PanchangaData HinduCalendar::calculatePanchanga(const BirthData& birthData) const {
@@ -261,6 +332,27 @@ PanchangaData HinduCalendar::calculatePanchanga(double julianDay, double latitud
         // Identify festivals and special events
         identifyFestivals(panchanga);
         identifySpecialEvents(panchanga);
+
+        // Calculate enhanced timing information
+        calculateSunMoonTimes(panchanga, latitude, longitude);
+        calculateRahuKaal(panchanga);
+        calculateYamaganda(panchanga);
+        calculateGulikai(panchanga);
+        calculateDurMuhurtam(panchanga);
+        calculateVarjyam(panchanga);
+        calculateSpecialYogas(panchanga);
+        calculateNakshatraPada(panchanga);
+        calculateChandraTaraBalam(panchanga);
+        calculateRituAyana(panchanga);
+        calculateShoolDirections(panchanga);
+        identifyVrataUpavas(panchanga);
+
+        // Set additional astronomical data
+        panchanga.ayanamsaValue = getAyanamsaValue(julianDay);
+        panchanga.julianDay = julianDay;
+        panchanga.kaliyugaYear = calculateKaliYear(julianDay);
+        panchanga.shakaYear = calculateShakaYear(julianDay);
+        panchanga.vikramYear = calculateVikramYear(julianDay);
 
         // Calculate muhurta
         calculateMuhurta(panchanga);
@@ -540,12 +632,14 @@ std::string HinduCalendar::gregorianDateToHindu(int gregYear, int gregMonth, int
 void HinduCalendar::identifyFestivals(PanchangaData& panchanga) const {
     // Check for major festivals based on tithi and month
     std::string monthName = getHinduMonthName(panchanga.month);
+    panchanga.festivals.clear();
+    panchanga.ekadashiNames.clear();
 
     if (panchanga.isPurnima) {
         std::string key = monthName + "_Purnima";
         auto it = festivalMap.find(key);
         if (it != festivalMap.end()) {
-            panchanga.festivals = it->second;
+            panchanga.festivals.insert(panchanga.festivals.end(), it->second.begin(), it->second.end());
         }
     }
 
@@ -553,12 +647,61 @@ void HinduCalendar::identifyFestivals(PanchangaData& panchanga) const {
         std::string key = monthName + "_Amavasya";
         auto it = festivalMap.find(key);
         if (it != festivalMap.end()) {
-            panchanga.festivals = it->second;
+            panchanga.festivals.insert(panchanga.festivals.end(), it->second.begin(), it->second.end());
         }
     }
 
     if (panchanga.isEkadashi) {
-        panchanga.festivals.push_back("Ekadashi Vrata");
+        // Determine specific Ekadashi name based on month and paksha
+        std::string paksha = panchanga.isShukla ? "S" : "K";
+        std::string key = monthName + "_Ekadashi_" + paksha;
+        auto it = festivalMap.find(key);
+        if (it != festivalMap.end()) {
+            panchanga.ekadashiNames = it->second;
+            panchanga.festivals.insert(panchanga.festivals.end(), it->second.begin(), it->second.end());
+        } else {
+            panchanga.festivals.push_back("Ekadashi Vrata");
+        }
+    }
+
+    // Check for Sankranti festivals
+    if (panchanga.isSankranti) {
+        std::string rashiName = getRashiName(panchanga.sunRashi);
+        // Extract just the rashi name without the English translation
+        size_t spacePos = rashiName.find(' ');
+        if (spacePos != std::string::npos) {
+            rashiName = rashiName.substr(0, spacePos);
+        }
+        std::string key = rashiName + "_Sankranti";
+        auto it = festivalMap.find(key);
+        if (it != festivalMap.end()) {
+            panchanga.festivals.insert(panchanga.festivals.end(), it->second.begin(), it->second.end());
+        }
+    }
+
+    // Check for special tithi festivals
+    int tithiNum = static_cast<int>(panchanga.tithi);
+    if (tithiNum == 8 && monthName == "Bhadrapada" && panchanga.isKrishna) {
+        panchanga.festivals.push_back("Krishna Janmashtami");
+    }
+
+    if (tithiNum == 14 && monthName == "Phalguna" && panchanga.isKrishna) {
+        panchanga.festivals.push_back("Maha Shivratri");
+    }
+
+    if (tithiNum == 4 && monthName == "Bhadrapada" && panchanga.isShukla) {
+        panchanga.festivals.push_back("Ganesh Chaturthi");
+    }
+
+    // Check for Navratri periods
+    if ((monthName == "Chaitra" && tithiNum >= 1 && tithiNum <= 9 && panchanga.isShukla) ||
+        (monthName == "Ashwini" && tithiNum >= 1 && tithiNum <= 9 && panchanga.isShukla)) {
+        panchanga.isNavratri = true;
+        if (monthName == "Chaitra") {
+            panchanga.festivals.push_back("Chaitra Navratri - Day " + std::to_string(tithiNum));
+        } else {
+            panchanga.festivals.push_back("Sharad Navratri - Day " + std::to_string(tithiNum));
+        }
     }
 }
 
@@ -596,7 +739,409 @@ void HinduCalendar::calculateMuhurta(PanchangaData& panchanga) const {
     }
 }
 
+void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latitude, double longitude) const {
+    try {
+        char errorString[256];
+        double geopos[3] = {longitude, latitude, 0.0}; // longitude, latitude, altitude
+        double riseSet[2];
+
+        // Calculate sunrise and sunset
+        int result = swe_rise_trans(panchanga.julianDay - 0.5, SE_SUN, nullptr, SEFLG_SIDEREAL,
+                                   SE_CALC_RISE, geopos, 1013.25, 10.0, riseSet, errorString);
+        if (result >= 0) {
+            // Convert to local time (approximate)
+            panchanga.sunriseTime = (riseSet[0] - floor(riseSet[0])) * 24.0;
+            if (panchanga.sunriseTime < 0) panchanga.sunriseTime += 24.0;
+        } else {
+            panchanga.sunriseTime = 6.0; // Default sunrise
+        }
+
+        result = swe_rise_trans(panchanga.julianDay - 0.5, SE_SUN, nullptr, SEFLG_SIDEREAL,
+                               SE_CALC_SET, geopos, 1013.25, 10.0, riseSet, errorString);
+        if (result >= 0) {
+            panchanga.sunsetTime = (riseSet[0] - floor(riseSet[0])) * 24.0;
+            if (panchanga.sunsetTime < 0) panchanga.sunsetTime += 24.0;
+        } else {
+            panchanga.sunsetTime = 18.0; // Default sunset
+        }
+
+        // Calculate moonrise and moonset
+        result = swe_rise_trans(panchanga.julianDay - 0.5, SE_MOON, nullptr, SEFLG_SIDEREAL,
+                               SE_CALC_RISE, geopos, 1013.25, 10.0, riseSet, errorString);
+        if (result >= 0) {
+            panchanga.moonriseTime = (riseSet[0] - floor(riseSet[0])) * 24.0;
+            if (panchanga.moonriseTime < 0) panchanga.moonriseTime += 24.0;
+        } else {
+            panchanga.moonriseTime = 7.0; // Default moonrise
+        }
+
+        result = swe_rise_trans(panchanga.julianDay - 0.5, SE_MOON, nullptr, SEFLG_SIDEREAL,
+                               SE_CALC_SET, geopos, 1013.25, 10.0, riseSet, errorString);
+        if (result >= 0) {
+            panchanga.moonsetTime = (riseSet[0] - floor(riseSet[0])) * 24.0;
+            if (panchanga.moonsetTime < 0) panchanga.moonsetTime += 24.0;
+        } else {
+            panchanga.moonsetTime = 19.0; // Default moonset
+        }
+
+        // Calculate day and night lengths
+        panchanga.dayLength = panchanga.sunsetTime - panchanga.sunriseTime;
+        if (panchanga.dayLength < 0) panchanga.dayLength += 24.0;
+        panchanga.nightLength = 24.0 - panchanga.dayLength;
+
+        // Calculate Brahma Muhurta (1.5 hours before sunrise)
+        panchanga.brahmaMuhurtaStart = calculateBrahmaMuhurta(panchanga.sunriseTime, true);
+        panchanga.brahmaMuhurtaEnd = calculateBrahmaMuhurta(panchanga.sunriseTime, false);
+
+        // Calculate Abhijit Muhurta (middle of the day)
+        panchanga.abhijitStart = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, true);
+        panchanga.abhijitEnd = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, false);
+
+        // Calculate Godhuli Bela (evening twilight)
+        panchanga.godhuliBelStart = calculateGodhuliBela(panchanga.sunsetTime, true);
+        panchanga.godhuliBelEnd = calculateGodhuliBela(panchanga.sunsetTime, false);
+
+        // Calculate Nishita Muhurta (midnight)
+        double nextSunrise = panchanga.sunriseTime + 24.0; // Next day sunrise
+        panchanga.nishitaMuhurtaStart = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, true);
+        panchanga.nishitaMuhurtaEnd = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, false);
+
+    } catch (const std::exception& e) {
+        // Set default values in case of error
+        panchanga.sunriseTime = 6.0;
+        panchanga.sunsetTime = 18.0;
+        panchanga.moonriseTime = 7.0;
+        panchanga.moonsetTime = 19.0;
+        panchanga.dayLength = 12.0;
+        panchanga.nightLength = 12.0;
+    }
+}
+
+void HinduCalendar::calculateRahuKaal(PanchangaData& panchanga) const {
+    // Rahu Kaal is 1/8th of day length, starting at different times for each weekday
+    double dayEighth = panchanga.dayLength / 8.0;
+    int weekday = static_cast<int>(panchanga.vara);
+
+    // Starting periods for each weekday (0=Sunday)
+    int rahuPeriods[] = {7, 1, 6, 4, 5, 3, 2}; // Sunday to Saturday
+
+    if (weekday >= 0 && weekday <= 6) {
+        int period = rahuPeriods[weekday] - 1; // Convert to 0-based
+        panchanga.rahuKaalStart = panchanga.sunriseTime + (period * dayEighth);
+        panchanga.rahuKaalEnd = panchanga.rahuKaalStart + dayEighth;
+    }
+}
+
+void HinduCalendar::calculateYamaganda(PanchangaData& panchanga) const {
+    // Yamaganda is also 1/8th of day length, different periods for each weekday
+    double dayEighth = panchanga.dayLength / 8.0;
+    int weekday = static_cast<int>(panchanga.vara);
+
+    // Starting periods for Yamaganda
+    int yamagandaPeriods[] = {4, 3, 2, 1, 7, 6, 5}; // Sunday to Saturday
+
+    if (weekday >= 0 && weekday <= 6) {
+        int period = yamagandaPeriods[weekday] - 1; // Convert to 0-based
+        panchanga.yamagandaStart = panchanga.sunriseTime + (period * dayEighth);
+        panchanga.yamagandaEnd = panchanga.yamagandaStart + dayEighth;
+    }
+}
+
+void HinduCalendar::calculateGulikai(PanchangaData& panchanga) const {
+    // Gulikai periods
+    double dayEighth = panchanga.dayLength / 8.0;
+    int weekday = static_cast<int>(panchanga.vara);
+
+    // Starting periods for Gulikai
+    int gulikaiPeriods[] = {6, 5, 4, 3, 2, 1, 7}; // Sunday to Saturday
+
+    if (weekday >= 0 && weekday <= 6) {
+        int period = gulikaiPeriods[weekday] - 1; // Convert to 0-based
+        panchanga.gulikaiStart = panchanga.sunriseTime + (period * dayEighth);
+        panchanga.gulikaiEnd = panchanga.gulikaiStart + dayEighth;
+    }
+}
+
+void HinduCalendar::calculateDurMuhurtam(PanchangaData& panchanga) const {
+    // Dur Muhurtam is typically around midday
+    double dayCenter = panchanga.sunriseTime + (panchanga.dayLength / 2.0);
+    panchanga.durMuhurtamStart = dayCenter - 0.75; // 45 minutes before midday
+    panchanga.durMuhurtamEnd = dayCenter + 0.75;   // 45 minutes after midday
+}
+
+void HinduCalendar::calculateVarjyam(PanchangaData& panchanga) const {
+    // Varjyam calculations based on nakshatra
+    // This is a simplified calculation - actual Varjyam is complex
+    panchanga.varjyamTimes.clear();
+
+    // Sample calculation based on nakshatra number
+    int nakNum = static_cast<int>(panchanga.nakshatra);
+    double varjyamDuration = 1.0 + (nakNum % 3) * 0.5; // 1 to 2 hours
+
+    // Add multiple Varjyam periods during the day
+    double startTime = panchanga.sunriseTime + 6.0;
+    panchanga.varjyamTimes.push_back({startTime, startTime + varjyamDuration});
+
+    startTime = panchanga.sunriseTime + 9.0;
+    panchanga.varjyamTimes.push_back({startTime, startTime + varjyamDuration/2});
+}
+
+void HinduCalendar::calculateSpecialYogas(PanchangaData& panchanga) const {
+    // Calculate special astronomical yogas
+    panchanga.isSarvarthaSiddhi = false;
+    panchanga.isAmritaSiddhi = false;
+    panchanga.isDwipushkar = false;
+    panchanga.isTripushkar = false;
+    panchanga.isRaviPushya = false;
+    panchanga.isGuruPushya = false;
+
+    // Sarvartha Siddhi Yoga conditions
+    if ((panchanga.vara == Vara::WEDNESDAY && panchanga.nakshatra == HinduNakshatra::HASTA) ||
+        (panchanga.vara == Vara::FRIDAY && panchanga.nakshatra == HinduNakshatra::REVATI) ||
+        (panchanga.vara == Vara::SUNDAY && panchanga.nakshatra == HinduNakshatra::PUSHYA)) {
+        panchanga.isSarvarthaSiddhi = true;
+    }
+
+    // Amrita Siddhi Yoga conditions
+    if ((panchanga.vara == Vara::MONDAY && panchanga.nakshatra == HinduNakshatra::ROHINI) ||
+        (panchanga.vara == Vara::TUESDAY && panchanga.nakshatra == HinduNakshatra::ASHWINI) ||
+        (panchanga.vara == Vara::THURSDAY && panchanga.nakshatra == HinduNakshatra::PUNARVASU)) {
+        panchanga.isAmritaSiddhi = true;
+    }
+
+    // Ravi Pushya Yoga (Sunday + Pushya nakshatra)
+    if (panchanga.vara == Vara::SUNDAY && panchanga.nakshatra == HinduNakshatra::PUSHYA) {
+        panchanga.isRaviPushya = true;
+    }
+
+    // Check for Dwipushkar and Tripushkar based on complex calculations
+    // This is simplified - actual calculation involves planetary positions
+    int tithiNum = static_cast<int>(panchanga.tithi);
+    int nakNum = static_cast<int>(panchanga.nakshatra);
+
+    if ((tithiNum + nakNum) % 7 == 0) {
+        panchanga.isDwipushkar = true;
+    }
+
+    if ((tithiNum + nakNum) % 9 == 0) {
+        panchanga.isTripushkar = true;
+    }
+}
+
+void HinduCalendar::calculateNakshatraPada(PanchangaData& panchanga) const {
+    // Each nakshatra has 4 padas, each spanning 3°20' (200 minutes)
+    double nakshatraStart = (static_cast<int>(panchanga.nakshatra) - 1) * 13.333333;
+    double offsetInNakshatra = fmod(panchanga.moonLongitude - nakshatraStart, 13.333333);
+    if (offsetInNakshatra < 0) offsetInNakshatra += 13.333333;
+
+    panchanga.nakshatraPada = static_cast<int>(offsetInNakshatra / 3.333333) + 1;
+    if (panchanga.nakshatraPada > 4) panchanga.nakshatraPada = 4;
+
+    // Calculate when current pada ends
+    double nextPadaStart = panchanga.nakshatraPada * 3.333333;
+    double remainingDegrees = nextPadaStart - offsetInNakshatra;
+
+    // Approximate time calculation (simplified)
+    panchanga.nakshatraPadaEndTime = remainingDegrees / 0.5; // Rough estimate
+}
+
+void HinduCalendar::calculateChandraTaraBalam(PanchangaData& panchanga) const {
+    // Good Chandra Balam rashis (simplified calculation)
+    panchanga.goodChandraBalam.clear();
+    panchanga.goodTaraBalam.clear();
+
+    Rashi currentMoonRashi = panchanga.moonRashi;
+    int currentMoonRashiNum = static_cast<int>(currentMoonRashi);
+
+    // Add favorable rashis (2, 3, 4, 6, 8, 9, 12 from moon rashi)
+    std::vector<int> favorableOffsets = {2, 3, 4, 6, 8, 9, 12};
+    for (int offset : favorableOffsets) {
+        int favorableRashi = ((currentMoonRashiNum - 1 + offset - 1) % 12) + 1;
+        panchanga.goodChandraBalam.push_back(static_cast<Rashi>(favorableRashi));
+    }
+
+    // Good Tara Balam nakshatras (simplified)
+    HinduNakshatra currentNak = panchanga.nakshatra;
+    int currentNakNum = static_cast<int>(currentNak);
+
+    // Add favorable nakshatras
+    std::vector<int> favorableNakOffsets = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19};
+    for (int offset : favorableNakOffsets) {
+        int favorableNak = ((currentNakNum - 1 + offset - 1) % 27) + 1;
+        panchanga.goodTaraBalam.push_back(static_cast<HinduNakshatra>(favorableNak));
+    }
+}
+
+void HinduCalendar::calculateRituAyana(PanchangaData& panchanga) const {
+    // Determine Ritu (season) based on sun's longitude
+    double sunLong = panchanga.sunLongitude;
+
+    if (sunLong >= 320 || sunLong < 50) {
+        panchanga.ritu = "Shishira (Late Winter)";
+    } else if (sunLong >= 50 && sunLong < 80) {
+        panchanga.ritu = "Vasanta (Spring)";
+    } else if (sunLong >= 80 && sunLong < 110) {
+        panchanga.ritu = "Grishma (Summer)";
+    } else if (sunLong >= 110 && sunLong < 140) {
+        panchanga.ritu = "Varsha (Monsoon)";
+    } else if (sunLong >= 140 && sunLong < 170) {
+        panchanga.ritu = "Sharad (Autumn)";
+    } else {
+        panchanga.ritu = "Hemanta (Early Winter)";
+    }
+
+    // Determine Ayana (solar movement)
+    if (sunLong >= 270 || sunLong < 90) {
+        panchanga.ayana = "Uttarayana (Northward)";
+    } else {
+        panchanga.ayana = "Dakshinayana (Southward)";
+    }
+}
+
+void HinduCalendar::calculateShoolDirections(PanchangaData& panchanga) const {
+    // Disha Shool based on weekday
+    int weekday = static_cast<int>(panchanga.vara);
+    std::vector<std::string> dishaShools = {
+        "East", "North", "South", "West", "North", "South", "West"
+    };
+
+    if (weekday >= 0 && weekday <= 6) {
+        panchanga.dishaShool = dishaShools[weekday];
+    }
+
+    // Nakshatra Shool based on nakshatra
+    int nakNum = static_cast<int>(panchanga.nakshatra);
+    std::vector<std::string> nakShools = {
+        "South", "East", "West", "North", "South", "East", "West", "North", "South",
+        "East", "West", "North", "South", "East", "West", "North", "South", "East",
+        "West", "North", "South", "East", "West", "North", "South", "East", "West"
+    };
+
+    if (nakNum >= 1 && nakNum <= 27) {
+        panchanga.nakshatraShool = nakShools[nakNum - 1];
+    }
+}
+
+void HinduCalendar::identifyVrataUpavas(PanchangaData& panchanga) const {
+    panchanga.vrataList.clear();
+    panchanga.isFastingDay = false;
+
+    // Identify major vratas
+    if (panchanga.isEkadashi) {
+        panchanga.vrataList.push_back("Ekadashi Vrata");
+        panchanga.isFastingDay = true;
+    }
+
+    if (panchanga.isPurnima) {
+        panchanga.vrataList.push_back("Purnima Vrata");
+    }
+
+    if (panchanga.isAmavasya) {
+        panchanga.vrataList.push_back("Amavasya Vrata");
+    }
+
+    // Weekly vratas
+    if (panchanga.vara == Vara::MONDAY) {
+        panchanga.vrataList.push_back("Somwar Vrata");
+    } else if (panchanga.vara == Vara::TUESDAY) {
+        panchanga.vrataList.push_back("Mangalwar Vrata");
+    } else if (panchanga.vara == Vara::SATURDAY) {
+        panchanga.vrataList.push_back("Shaniwar Vrata");
+    }
+
+    // Nakshatra-based vratas
+    if (panchanga.nakshatra == HinduNakshatra::ROHINI) {
+        panchanga.vrataList.push_back("Rohini Vrata");
+    }
+
+    // Check for Ganda Mool
+    std::vector<HinduNakshatra> gandaMoolNaks = {
+        HinduNakshatra::ASHWINI, HinduNakshatra::ASHLESHA, HinduNakshatra::MAGHA,
+        HinduNakshatra::JYESHTHA, HinduNakshatra::MULA, HinduNakshatra::REVATI
+    };
+
+    for (auto gnak : gandaMoolNaks) {
+        if (panchanga.nakshatra == gnak) {
+            panchanga.isGandaMool = true;
+            panchanga.vrataList.push_back("Ganda Mool Shanti");
+            break;
+        }
+    }
+
+    // Check for Panchak (simplified)
+    std::vector<HinduNakshatra> panchakNaks = {
+        HinduNakshatra::DHANISHTA, HinduNakshatra::SHATABHISHA,
+        HinduNakshatra::PURVA_BHADRAPADA, HinduNakshatra::UTTARA_BHADRAPADA,
+        HinduNakshatra::REVATI
+    };
+
+    for (auto pnak : panchakNaks) {
+        if (panchanga.nakshatra == pnak) {
+            panchanga.isPanchak = true;
+            break;
+        }
+    }
+
+    // Check for Bhadra (Vishti Karana)
+    if (panchanga.karana == Karana::VISHTI) {
+        panchanga.isBhadra = true;
+    }
+}
+
+// Helper methods for muhurta calculations
+double HinduCalendar::calculateBrahmaMuhurta(double sunriseTime, bool isStart) const {
+    // Brahma Muhurta is 1.5 hours before sunrise, lasting for 48 minutes
+    if (isStart) {
+        return sunriseTime - 1.5;
+    } else {
+        return sunriseTime - 0.7; // 42 minutes duration
+    }
+}
+
+double HinduCalendar::calculateAbhijitMuhurta(double sunriseTime, double sunsetTime, bool isStart) const {
+    // Abhijit is in the middle of the day, lasting for 48 minutes
+    double midday = sunriseTime + ((sunsetTime - sunriseTime) / 2.0);
+    if (isStart) {
+        return midday - 0.4; // 24 minutes before midday
+    } else {
+        return midday + 0.4; // 24 minutes after midday
+    }
+}
+
+double HinduCalendar::calculateGodhuliBela(double sunsetTime, bool isStart) const {
+    // Godhuli Bela is around sunset time
+    if (isStart) {
+        return sunsetTime - 0.25; // 15 minutes before sunset
+    } else {
+        return sunsetTime + 0.25; // 15 minutes after sunset
+    }
+}
+
+double HinduCalendar::calculateNishitaMuhurta(double sunsetTime, double nextSunriseTime, bool isStart) const {
+    // Nishita Muhurta is around midnight
+    double midnight = sunsetTime + ((nextSunriseTime - sunsetTime) / 2.0);
+    if (isStart) {
+        return midnight - 0.4; // 24 minutes before midnight
+    } else {
+        return midnight + 0.4; // 24 minutes after midnight
+    }
+}
+
 // Formatting methods
+std::string PanchangaData::getTimeString(double hours) const {
+    if (hours < 0 || hours >= 24) {
+        hours = fmod(hours, 24.0);
+        if (hours < 0) hours += 24.0;
+    }
+
+    int h = static_cast<int>(hours);
+    int m = static_cast<int>((hours - h) * 60);
+
+    char timeStr[16];
+    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", h, m);
+    return std::string(timeStr);
+}
+
 std::string PanchangaData::getFormattedTithi() const {
     return "Tithi: " + std::to_string(static_cast<int>(tithi)) + " (" +
            (isKrishna ? "Krishna Paksha" : "Shukla Paksha") + ")";
@@ -628,46 +1173,114 @@ std::string PanchangaData::getSummary() const {
 std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga) const {
     std::ostringstream oss;
 
-    oss << "\n═══════════════════════════════════════════════════════════════════\n";
-    oss << "                          🕉️  HINDU PANCHANGA  🕉️\n";
-    oss << "═══════════════════════════════════════════════════════════════════\n\n";
+    oss << "\n══════════════════════════════════════════════════════════════════════════════════\n";
+    oss << "                          🕉️  COMPLETE HINDU PANCHANGA  🕉️\n";
+    oss << "══════════════════════════════════════════════════════════════════════════════════\n\n";
 
-    oss << "� CALCULATION SETTINGS:\n";
-    oss << "   Ayanamsa: " << getAyanamsaName() << "\n";
+    oss << "📊 CALCULATION SETTINGS:\n";
+    oss << "   Ayanamsa: " << getAyanamsaName() << " (" << std::fixed << std::setprecision(4)
+        << panchanga.ayanamsaValue << "°)\n";
     oss << "   Method: " << getCalculationMethodName() << "\n";
     oss << "   System: " << (calendarSystem == CalendarSystem::LUNAR_BASED ? "Lunar-based" :
                               calendarSystem == CalendarSystem::SOLAR_BASED ? "Solar-based" :
-                              "Luni-Solar") << "\n\n";
+                              "Luni-Solar") << "\n";
+    oss << "   Julian Day: " << std::fixed << std::setprecision(1) << panchanga.julianDay << "\n\n";
 
-    oss << "�📅 DATE INFORMATION:\n";
-    oss << "   Hindu Year (Vikram Samvat): " << panchanga.year << "\n";
+    oss << "📅 DATE INFORMATION:\n";
+    oss << "   Vikram Samvat: " << panchanga.vikramYear << "\n";
+    oss << "   Shaka Samvat: " << panchanga.shakaYear << "\n";
+    oss << "   Kali Yuga: " << panchanga.kaliyugaYear << "\n";
     oss << "   Hindu Month: " << getHinduMonthName(panchanga.month) << "\n";
     oss << "   Paksha: " << (panchanga.isShukla ? "Shukla (Bright)" : "Krishna (Dark)") << "\n\n";
 
     oss << "🌟 PANCHANGAM (FIVE LIMBS):\n";
     oss << "   1. Tithi:     " << getTithiName(panchanga.tithi)
-        << " (ends in " << std::fixed << std::setprecision(1) << panchanga.tithiEndTime << " hours)\n";
+        << " (ends at " << panchanga.getTimeString(panchanga.tithiEndTime) << ")\n";
     oss << "   2. Vara:      " << getVaraName(panchanga.vara) << "\n";
     oss << "   3. Nakshatra: " << getNakshatraName(panchanga.nakshatra)
-        << " (ends in " << std::fixed << std::setprecision(1) << panchanga.nakshatraEndTime << " hours)\n";
+        << " (Pada " << panchanga.nakshatraPada << ", ends at "
+        << panchanga.getTimeString(panchanga.nakshatraEndTime) << ")\n";
     oss << "   4. Yoga:      " << getYogaName(panchanga.yoga)
-        << " (ends in " << std::fixed << std::setprecision(1) << panchanga.yogaEndTime << " hours)\n";
+        << " (ends at " << panchanga.getTimeString(panchanga.yogaEndTime) << ")\n";
     oss << "   5. Karana:    " << getKaranaName(panchanga.karana)
-        << " (ends in " << std::fixed << std::setprecision(1) << panchanga.karanaEndTime << " hours)\n\n";
+        << " (ends at " << panchanga.getTimeString(panchanga.karanaEndTime) << ")\n\n";
+
+    oss << "☀️ SUN & MOON INFORMATION:\n";
+    oss << "   Sunrise:    " << panchanga.getTimeString(panchanga.sunriseTime) << "\n";
+    oss << "   Sunset:     " << panchanga.getTimeString(panchanga.sunsetTime) << "\n";
+    oss << "   Moonrise:   " << panchanga.getTimeString(panchanga.moonriseTime) << "\n";
+    oss << "   Moonset:    " << panchanga.getTimeString(panchanga.moonsetTime) << "\n";
+    oss << "   Day Length: " << std::fixed << std::setprecision(1) << panchanga.dayLength << " hours\n";
+    oss << "   Night Length: " << std::fixed << std::setprecision(1) << panchanga.nightLength << " hours\n\n";
 
     oss << "🌞 CELESTIAL POSITIONS:\n";
     oss << "   Sun in:   " << getRashiName(panchanga.sunRashi)
         << " (" << std::fixed << std::setprecision(2) << panchanga.sunLongitude << "°)\n";
     oss << "   Moon in:  " << getRashiName(panchanga.moonRashi)
         << " (" << std::fixed << std::setprecision(2) << panchanga.moonLongitude << "°)\n";
-    oss << "   Lunar Phase: " << std::fixed << std::setprecision(1) << panchanga.lunarPhase << "°\n\n";
+    oss << "   Lunar Phase: " << std::fixed << std::setprecision(1) << panchanga.lunarPhase << "°\n";
+    oss << "   Ritu: " << panchanga.ritu << "\n";
+    oss << "   Ayana: " << panchanga.ayana << "\n\n";
 
-    if (panchanga.isEkadashi || panchanga.isPurnima || panchanga.isAmavasya || panchanga.isSankranti) {
+    oss << "🕐 AUSPICIOUS TIMINGS:\n";
+    oss << "   Brahma Muhurta: " << panchanga.getTimeString(panchanga.brahmaMuhurtaStart)
+        << " to " << panchanga.getTimeString(panchanga.brahmaMuhurtaEnd) << "\n";
+    oss << "   Abhijit Muhurta: " << panchanga.getTimeString(panchanga.abhijitStart)
+        << " to " << panchanga.getTimeString(panchanga.abhijitEnd) << "\n";
+    oss << "   Godhuli Bela: " << panchanga.getTimeString(panchanga.godhuliBelStart)
+        << " to " << panchanga.getTimeString(panchanga.godhuliBelEnd) << "\n";
+    oss << "   Nishita Muhurta: " << panchanga.getTimeString(panchanga.nishitaMuhurtaStart)
+        << " to " << panchanga.getTimeString(panchanga.nishitaMuhurtaEnd) << "\n\n";
+
+    oss << "⚠️  INAUSPICIOUS TIMINGS:\n";
+    oss << "   Rahu Kaal: " << panchanga.getTimeString(panchanga.rahuKaalStart)
+        << " to " << panchanga.getTimeString(panchanga.rahuKaalEnd) << "\n";
+    oss << "   Yamaganda: " << panchanga.getTimeString(panchanga.yamagandaStart)
+        << " to " << panchanga.getTimeString(panchanga.yamagandaEnd) << "\n";
+    oss << "   Gulikai: " << panchanga.getTimeString(panchanga.gulikaiStart)
+        << " to " << panchanga.getTimeString(panchanga.gulikaiEnd) << "\n";
+    oss << "   Dur Muhurtam: " << panchanga.getTimeString(panchanga.durMuhurtamStart)
+        << " to " << panchanga.getTimeString(panchanga.durMuhurtamEnd) << "\n";
+
+    if (!panchanga.varjyamTimes.empty()) {
+        oss << "   Varjyam: ";
+        for (size_t i = 0; i < panchanga.varjyamTimes.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << panchanga.getTimeString(panchanga.varjyamTimes[i].first)
+                << " to " << panchanga.getTimeString(panchanga.varjyamTimes[i].second);
+        }
+        oss << "\n";
+    }
+    oss << "\n";
+
+    oss << "🧭 SHOOL DIRECTIONS:\n";
+    oss << "   Disha Shool: " << panchanga.dishaShool << "\n";
+    oss << "   Nakshatra Shool: " << panchanga.nakshatraShool << "\n\n";
+
+    if (panchanga.isEkadashi || panchanga.isPurnima || panchanga.isAmavasya ||
+        panchanga.isSankranti || panchanga.isNavratri || panchanga.isGandaMool ||
+        panchanga.isPanchak || panchanga.isBhadra) {
         oss << "🌙 SPECIAL OBSERVANCES:\n";
         if (panchanga.isEkadashi) oss << "   • Ekadashi - Fasting day\n";
         if (panchanga.isPurnima) oss << "   • Purnima - Full Moon\n";
         if (panchanga.isAmavasya) oss << "   • Amavasya - New Moon\n";
         if (panchanga.isSankranti) oss << "   • Sankranti - Solar transition\n";
+        if (panchanga.isNavratri) oss << "   • Navratri period\n";
+        if (panchanga.isGandaMool) oss << "   • Ganda Mool Nakshatra\n";
+        if (panchanga.isPanchak) oss << "   • Panchak period\n";
+        if (panchanga.isBhadra) oss << "   • Bhadra (Vishti Karana)\n";
+        oss << "\n";
+    }
+
+    if (panchanga.isSarvarthaSiddhi || panchanga.isAmritaSiddhi || panchanga.isDwipushkar ||
+        panchanga.isTripushkar || panchanga.isRaviPushya || panchanga.isGuruPushya) {
+        oss << "✨ SPECIAL YOGAS:\n";
+        if (panchanga.isSarvarthaSiddhi) oss << "   • Sarvartha Siddhi Yoga\n";
+        if (panchanga.isAmritaSiddhi) oss << "   • Amrita Siddhi Yoga\n";
+        if (panchanga.isDwipushkar) oss << "   • Dwipushkar Yoga\n";
+        if (panchanga.isTripushkar) oss << "   • Tripushkar Yoga\n";
+        if (panchanga.isRaviPushya) oss << "   • Ravi Pushya Yoga\n";
+        if (panchanga.isGuruPushya) oss << "   • Guru Pushya Yoga\n";
         oss << "\n";
     }
 
@@ -687,11 +1300,45 @@ std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga
         oss << "\n";
     }
 
+    if (!panchanga.vrataList.empty()) {
+        oss << "🙏 VRATA & UPAVAS:\n";
+        for (const auto& vrata : panchanga.vrataList) {
+            oss << "   • " << vrata << "\n";
+        }
+        if (panchanga.isFastingDay) {
+            oss << "   ⚠️  Fasting Day - Observe dietary restrictions\n";
+        }
+        oss << "\n";
+    }
+
+    if (!panchanga.goodChandraBalam.empty()) {
+        oss << "🌛 GOOD CHANDRA BALAM FOR:\n   ";
+        for (size_t i = 0; i < panchanga.goodChandraBalam.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << getRashiName(panchanga.goodChandraBalam[i]);
+        }
+        oss << "\n\n";
+    }
+
+    if (!panchanga.goodTaraBalam.empty()) {
+        oss << "⭐ GOOD TARA BALAM FOR:\n   ";
+        for (size_t i = 0; i < panchanga.goodTaraBalam.size() && i < 5; ++i) {
+            if (i > 0) oss << ", ";
+            oss << getNakshatraName(panchanga.goodTaraBalam[i]);
+        }
+        if (panchanga.goodTaraBalam.size() > 5) {
+            oss << " and " << (panchanga.goodTaraBalam.size() - 5) << " more";
+        }
+        oss << "\n\n";
+    }
+
     oss << "🕐 MUHURTA ASSESSMENT:\n";
     oss << "   Status: " << (panchanga.isShubhaMuhurta ? "✅ Shubha (Auspicious)" : "⚠️  Exercise Caution") << "\n";
     oss << "   Note: " << panchanga.muhurtaDescription << "\n\n";
 
-    oss << "═══════════════════════════════════════════════════════════════════\n";
+    oss << "══════════════════════════════════════════════════════════════════════════════════\n";
+    oss << "                         Generated with Enhanced Hindu Calendar\n";
+    oss << "══════════════════════════════════════════════════════════════════════════════════\n";
 
     return oss.str();
 }
@@ -988,54 +1635,171 @@ std::string HinduCalendar::generateJSON(const PanchangaData& panchanga) const {
     std::ostringstream oss;
 
     oss << "{\n";
-    oss << "  \"tithi\": {\n";
-    oss << "    \"number\": " << static_cast<int>(panchanga.tithi) << ",\n";
-    oss << "    \"name\": \"" << getTithiName(panchanga.tithi) << "\",\n";
-    oss << "    \"endTime\": " << panchanga.tithiEndTime << "\n";
+    oss << "  \"panchangaBasics\": {\n";
+    oss << "    \"tithi\": {\n";
+    oss << "      \"number\": " << static_cast<int>(panchanga.tithi) << ",\n";
+    oss << "      \"name\": \"" << getTithiName(panchanga.tithi) << "\",\n";
+    oss << "      \"endTime\": \"" << panchanga.getTimeString(panchanga.tithiEndTime) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"vara\": {\n";
+    oss << "      \"number\": " << static_cast<int>(panchanga.vara) << ",\n";
+    oss << "      \"name\": \"" << getVaraName(panchanga.vara) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"nakshatra\": {\n";
+    oss << "      \"number\": " << static_cast<int>(panchanga.nakshatra) << ",\n";
+    oss << "      \"name\": \"" << getNakshatraName(panchanga.nakshatra) << "\",\n";
+    oss << "      \"pada\": " << panchanga.nakshatraPada << ",\n";
+    oss << "      \"endTime\": \"" << panchanga.getTimeString(panchanga.nakshatraEndTime) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"yoga\": {\n";
+    oss << "      \"number\": " << static_cast<int>(panchanga.yoga) << ",\n";
+    oss << "      \"name\": \"" << getYogaName(panchanga.yoga) << "\",\n";
+    oss << "      \"endTime\": \"" << panchanga.getTimeString(panchanga.yogaEndTime) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"karana\": {\n";
+    oss << "      \"number\": " << static_cast<int>(panchanga.karana) << ",\n";
+    oss << "      \"name\": \"" << getKaranaName(panchanga.karana) << "\",\n";
+    oss << "      \"endTime\": \"" << panchanga.getTimeString(panchanga.karanaEndTime) << "\"\n";
+    oss << "    }\n";
     oss << "  },\n";
-    oss << "  \"vara\": {\n";
-    oss << "    \"number\": " << static_cast<int>(panchanga.vara) << ",\n";
-    oss << "    \"name\": \"" << getVaraName(panchanga.vara) << "\"\n";
-    oss << "  },\n";
-    oss << "  \"nakshatra\": {\n";
-    oss << "    \"number\": " << static_cast<int>(panchanga.nakshatra) << ",\n";
-    oss << "    \"name\": \"" << getNakshatraName(panchanga.nakshatra) << "\",\n";
-    oss << "    \"endTime\": " << panchanga.nakshatraEndTime << "\n";
-    oss << "  },\n";
-    oss << "  \"yoga\": {\n";
-    oss << "    \"number\": " << static_cast<int>(panchanga.yoga) << ",\n";
-    oss << "    \"name\": \"" << getYogaName(panchanga.yoga) << "\",\n";
-    oss << "    \"endTime\": " << panchanga.yogaEndTime << "\n";
-    oss << "  },\n";
-    oss << "  \"karana\": {\n";
-    oss << "    \"number\": " << static_cast<int>(panchanga.karana) << ",\n";
-    oss << "    \"name\": \"" << getKaranaName(panchanga.karana) << "\",\n";
-    oss << "    \"endTime\": " << panchanga.karanaEndTime << "\n";
-    oss << "  },\n";
-    oss << "  \"hinduCalendar\": {\n";
-    oss << "    \"year\": " << panchanga.year << ",\n";
+
+    oss << "  \"dateInformation\": {\n";
+    oss << "    \"vikramYear\": " << panchanga.vikramYear << ",\n";
+    oss << "    \"shakaYear\": " << panchanga.shakaYear << ",\n";
+    oss << "    \"kaliyugaYear\": " << panchanga.kaliyugaYear << ",\n";
     oss << "    \"month\": \"" << getHinduMonthName(panchanga.month) << "\",\n";
-    oss << "    \"paksha\": \"" << (panchanga.isShukla ? "Shukla" : "Krishna") << "\"\n";
+    oss << "    \"paksha\": \"" << (panchanga.isShukla ? "Shukla" : "Krishna") << "\",\n";
+    oss << "    \"julianDay\": " << std::fixed << std::setprecision(1) << panchanga.julianDay << "\n";
     oss << "  },\n";
+
+    oss << "  \"sunMoonInformation\": {\n";
+    oss << "    \"sunrise\": \"" << panchanga.getTimeString(panchanga.sunriseTime) << "\",\n";
+    oss << "    \"sunset\": \"" << panchanga.getTimeString(panchanga.sunsetTime) << "\",\n";
+    oss << "    \"moonrise\": \"" << panchanga.getTimeString(panchanga.moonriseTime) << "\",\n";
+    oss << "    \"moonset\": \"" << panchanga.getTimeString(panchanga.moonsetTime) << "\",\n";
+    oss << "    \"dayLength\": " << std::fixed << std::setprecision(2) << panchanga.dayLength << ",\n";
+    oss << "    \"nightLength\": " << std::fixed << std::setprecision(2) << panchanga.nightLength << "\n";
+    oss << "  },\n";
+
     oss << "  \"celestial\": {\n";
-    oss << "    \"sunLongitude\": " << panchanga.sunLongitude << ",\n";
-    oss << "    \"moonLongitude\": " << panchanga.moonLongitude << ",\n";
-    oss << "    \"lunarPhase\": " << panchanga.lunarPhase << ",\n";
+    oss << "    \"sunLongitude\": " << std::fixed << std::setprecision(4) << panchanga.sunLongitude << ",\n";
+    oss << "    \"moonLongitude\": " << std::fixed << std::setprecision(4) << panchanga.moonLongitude << ",\n";
+    oss << "    \"lunarPhase\": " << std::fixed << std::setprecision(4) << panchanga.lunarPhase << ",\n";
     oss << "    \"sunRashi\": \"" << getRashiName(panchanga.sunRashi) << "\",\n";
-    oss << "    \"moonRashi\": \"" << getRashiName(panchanga.moonRashi) << "\"\n";
+    oss << "    \"moonRashi\": \"" << getRashiName(panchanga.moonRashi) << "\",\n";
+    oss << "    \"ayanamsaValue\": " << std::fixed << std::setprecision(6) << panchanga.ayanamsaValue << ",\n";
+    oss << "    \"ritu\": \"" << panchanga.ritu << "\",\n";
+    oss << "    \"ayana\": \"" << panchanga.ayana << "\"\n";
     oss << "  },\n";
+
+    oss << "  \"auspiciousTimings\": {\n";
+    oss << "    \"brahmaMuhurta\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.brahmaMuhurtaStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.brahmaMuhurtaEnd) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"abhijitMuhurta\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.abhijitStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.abhijitEnd) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"godhuliBela\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.godhuliBelStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.godhuliBelEnd) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"nishitaMuhurta\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.nishitaMuhurtaStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.nishitaMuhurtaEnd) << "\"\n";
+    oss << "    }\n";
+    oss << "  },\n";
+
+    oss << "  \"inauspiciousTimings\": {\n";
+    oss << "    \"rahuKaal\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.rahuKaalStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.rahuKaalEnd) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"yamaganda\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.yamagandaStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.yamagandaEnd) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"gulikai\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.gulikaiStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.gulikaiEnd) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"durMuhurtam\": {\n";
+    oss << "      \"start\": \"" << panchanga.getTimeString(panchanga.durMuhurtamStart) << "\",\n";
+    oss << "      \"end\": \"" << panchanga.getTimeString(panchanga.durMuhurtamEnd) << "\"\n";
+    oss << "    },\n";
+    oss << "    \"varjyam\": [";
+    for (size_t i = 0; i < panchanga.varjyamTimes.size(); ++i) {
+        if (i > 0) oss << ", ";
+        oss << "{\n";
+        oss << "        \"start\": \"" << panchanga.getTimeString(panchanga.varjyamTimes[i].first) << "\",\n";
+        oss << "        \"end\": \"" << panchanga.getTimeString(panchanga.varjyamTimes[i].second) << "\"\n";
+        oss << "      }";
+    }
+    oss << "]\n";
+    oss << "  },\n";
+
     oss << "  \"specialDays\": {\n";
     oss << "    \"isEkadashi\": " << (panchanga.isEkadashi ? "true" : "false") << ",\n";
     oss << "    \"isPurnima\": " << (panchanga.isPurnima ? "true" : "false") << ",\n";
     oss << "    \"isAmavasya\": " << (panchanga.isAmavasya ? "true" : "false") << ",\n";
-    oss << "    \"isSankranti\": " << (panchanga.isSankranti ? "true" : "false") << "\n";
+    oss << "    \"isSankranti\": " << (panchanga.isSankranti ? "true" : "false") << ",\n";
+    oss << "    \"isNavratri\": " << (panchanga.isNavratri ? "true" : "false") << ",\n";
+    oss << "    \"isGandaMool\": " << (panchanga.isGandaMool ? "true" : "false") << ",\n";
+    oss << "    \"isPanchak\": " << (panchanga.isPanchak ? "true" : "false") << ",\n";
+    oss << "    \"isBhadra\": " << (panchanga.isBhadra ? "true" : "false") << ",\n";
+    oss << "    \"isFastingDay\": " << (panchanga.isFastingDay ? "true" : "false") << "\n";
     oss << "  },\n";
+
+    oss << "  \"specialYogas\": {\n";
+    oss << "    \"isSarvarthaSiddhi\": " << (panchanga.isSarvarthaSiddhi ? "true" : "false") << ",\n";
+    oss << "    \"isAmritaSiddhi\": " << (panchanga.isAmritaSiddhi ? "true" : "false") << ",\n";
+    oss << "    \"isDwipushkar\": " << (panchanga.isDwipushkar ? "true" : "false") << ",\n";
+    oss << "    \"isTripushkar\": " << (panchanga.isTripushkar ? "true" : "false") << ",\n";
+    oss << "    \"isRaviPushya\": " << (panchanga.isRaviPushya ? "true" : "false") << ",\n";
+    oss << "    \"isGuruPushya\": " << (panchanga.isGuruPushya ? "true" : "false") << "\n";
+    oss << "  },\n";
+
+    oss << "  \"directions\": {\n";
+    oss << "    \"dishaShool\": \"" << panchanga.dishaShool << "\",\n";
+    oss << "    \"nakshatraShool\": \"" << panchanga.nakshatraShool << "\"\n";
+    oss << "  },\n";
+
     oss << "  \"festivals\": [";
     for (size_t i = 0; i < panchanga.festivals.size(); ++i) {
         oss << "\"" << panchanga.festivals[i] << "\"";
         if (i < panchanga.festivals.size() - 1) oss << ", ";
     }
     oss << "],\n";
+
+    oss << "  \"ekadashiNames\": [";
+    for (size_t i = 0; i < panchanga.ekadashiNames.size(); ++i) {
+        oss << "\"" << panchanga.ekadashiNames[i] << "\"";
+        if (i < panchanga.ekadashiNames.size() - 1) oss << ", ";
+    }
+    oss << "],\n";
+
+    oss << "  \"vrataUpavas\": [";
+    for (size_t i = 0; i < panchanga.vrataList.size(); ++i) {
+        oss << "\"" << panchanga.vrataList[i] << "\"";
+        if (i < panchanga.vrataList.size() - 1) oss << ", ";
+    }
+    oss << "],\n";
+
+    oss << "  \"chandraBalam\": [";
+    for (size_t i = 0; i < panchanga.goodChandraBalam.size(); ++i) {
+        oss << "\"" << getRashiName(panchanga.goodChandraBalam[i]) << "\"";
+        if (i < panchanga.goodChandraBalam.size() - 1) oss << ", ";
+    }
+    oss << "],\n";
+
+    oss << "  \"taraBalam\": [";
+    for (size_t i = 0; i < panchanga.goodTaraBalam.size(); ++i) {
+        oss << "\"" << getNakshatraName(panchanga.goodTaraBalam[i]) << "\"";
+        if (i < panchanga.goodTaraBalam.size() - 1) oss << ", ";
+    }
+    oss << "],\n";
+
     oss << "  \"muhurta\": {\n";
     oss << "    \"isShubha\": " << (panchanga.isShubhaMuhurta ? "true" : "false") << ",\n";
     oss << "    \"description\": \"" << panchanga.muhurtaDescription << "\"\n";

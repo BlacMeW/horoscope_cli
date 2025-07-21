@@ -10,6 +10,10 @@
 #include <ctime>
 #include <algorithm>
 
+extern "C" {
+#include "swephexp.h"
+}
+
 namespace Astro {
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,23 +85,10 @@ MyanmarMonthlyData MyanmarMonthlyCalendar::calculateMonthlyData(int year, int mo
         MyanmarMonthlyData::DayData dayData;
         dayData.gregorianDay = day;
 
-        // Convert to Julian Day using the standard astronomical formula
-        // This formula handles the Gregorian calendar correctly
-        int a, b, y, m;
-        if (month <= 2) {
-            y = year - 1;
-            m = month + 12;
-        } else {
-            y = year;
-            m = month;
-        }
-
-        a = y / 100;
-        b = 2 - a + a / 4;
-
-        double jd = static_cast<int>(365.25 * (y + 4716)) +
-                   static_cast<int>(30.6001 * (m + 1)) +
-                   day + b - 1524.5;
+        // Convert to Julian Day using Swiss Ephemeris for consistency
+        // This ensures the same calculation as used in individual Myanmar calendar calculations
+        // Use noon (12.0) as the time to be consistent with other calendar calculations
+        double jd = swe_julday(year, month, day, 12.0, SE_GREG_CAL);
         dayData.julianDay = jd;
 
         // Calculate Myanmar calendar data
@@ -152,6 +143,22 @@ MyanmarMonthlyData MyanmarMonthlyCalendar::calculateMonthlyData(int year, int mo
             dayData.weekday = MyanmarWeekday::SATURDAY;
             dayData.moonPhase = MyanmarMoonPhase::NEW_MOON;
             dayData.qualityIndicator = "⚪";
+
+            // Initialize Hindu data with default values to prevent segfault
+            if (includeHindu) {
+                dayData.hindu.hinduDay = 1;
+                dayData.hindu.hinduYear = 2024;
+                dayData.hindu.hinduMonthName = "Unknown";
+                dayData.hindu.paksha = "Unknown";
+                dayData.hindu.nakshatraName = "Unknown";
+                dayData.hindu.vikramSamvat = 2081;
+                dayData.hindu.ritu = "Unknown";
+                dayData.hindu.isEkadashi = false;
+                dayData.hindu.isPurnima = false;
+                dayData.hindu.isAmavasya = false;
+                dayData.hindu.isAuspiciousDay = false;
+                dayData.hindu.isInauspiciousDay = false;
+            }
         }
 
         monthData.days.push_back(dayData);
@@ -243,16 +250,31 @@ std::string MyanmarMonthlyCalendar::generateTraditionalLayout(const MyanmarMonth
 
     ss << "╠══════════════════════════════════════════════════════════════════════════════════╣\n";
 
-    // Weekday headers (both English and Myanmar)
-    ss << "║   Sun   │   Mon   │   Tue   │   Wed   │   Thu   │   Fri   │   Sat   ║\n";
-    ss << "║ တနင်္ဂနွေ │ တနင်္လာ │ အင်္ဂါ  │ ဗုဒ္ဓဟူး │ ကြာသပတေး │ သောကြာ │ စနေ    ║\n";
-    ss << "╠═════════╪═════════╪═════════╪═════════╪═════════╪═════════╪═════════╣\n";
+    // Weekday headers (both English and Myanmar) - 12 chars per column with proper Unicode alignment
+    ss << "║    Sun     │    Mon     │    Tue     │    Wed     │    Thu     │    Fri     │    Sat     ║\n";
 
-    // Find first day of month using Julian Day calculation
-    int a = (14 - monthData.gregorianMonth) / 12;
-    int y = monthData.gregorianYear - a;
-    int m = monthData.gregorianMonth + 12 * a - 3;
-    double firstJD = 1 + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 + 1721119.5;
+    // Myanmar weekday headers with proper Unicode-aware padding
+    ss << "║";
+    std::vector<std::string> myanmarDays = {
+        "တနင်္ဂနွေ",    // Sunday
+        "တနင်္လာ",     // Monday
+        "အင်္ဂါ",       // Tuesday
+        "ဗုဒ္ဓဟူး",     // Wednesday
+        "ကြာသပတေး",   // Thursday
+        "သောကြာ",      // Friday
+        "စနေ"          // Saturday
+    };
+
+    for (size_t i = 0; i < myanmarDays.size(); i++) {
+        ss << padToDisplayWidth(myanmarDays[i], 12, false);
+        if (i < myanmarDays.size() - 1) ss << "│";
+    }
+    ss << "║\n";
+
+    ss << "╠════════════╪════════════╪════════════╪════════════╪════════════╪════════════╪════════════╣\n";
+
+    // Find first day of month using Swiss Ephemeris for consistency
+    double firstJD = swe_julday(monthData.gregorianYear, monthData.gregorianMonth, 1, 12.0, SE_GREG_CAL);
     int firstDayOfWeek = static_cast<int>(firstJD + 1.5) % 7; // 0=Sunday
 
     // Generate calendar grid
@@ -265,27 +287,27 @@ std::string MyanmarMonthlyCalendar::generateTraditionalLayout(const MyanmarMonth
         for (int weekDay = 0; weekDay < 7; weekDay++) {
             if (currentWeek == 0 && weekDay < firstDayOfWeek) {
                 // Empty cells before first day
-                ss << "         │";
+                ss << "            │";
             } else if (dayIndex < monthData.days.size()) {
                 const auto& day = monthData.days[dayIndex];
                 ss << formatTraditionalCell(day) << "│";
                 dayIndex++;
             } else {
                 // Empty cells after last day
-                ss << "         │";
+                ss << "            │";
             }
         }
 
         ss << "\n";
 
         if (dayIndex < monthData.days.size()) {
-            ss << "╠═════════╪═════════╪═════════╪═════════╪═════════╪═════════╪═════════╣\n";
+            ss << "╠════════════╪════════════╪════════════╪════════════╪════════════╪════════════╪════════════╣\n";
         }
 
         currentWeek++;
     }
 
-    ss << "╚═════════╧═════════╧═════════╧═════════╧═════════╧═════════╧═════════╝\n";
+    ss << "╚════════════╧════════════╧════════════╧════════════╧════════════╧════════════╧════════════╝\n";
 
     // Add monthly summary
     ss << generateMonthlySummary(monthData);
@@ -307,11 +329,8 @@ std::string MyanmarMonthlyCalendar::generateModernLayout(const MyanmarMonthlyDat
     ss << "│  SUN  │  MON  │  TUE  │  WED  │  THU  │  FRI  │  SAT  │\n";
     ss << "├───────┼───────┼───────┼───────┼───────┼───────┼───────┤\n";
 
-    // Find first day of month using Julian Day calculation
-    int a = (14 - monthData.gregorianMonth) / 12;
-    int y = monthData.gregorianYear - a;
-    int m = monthData.gregorianMonth + 12 * a - 3;
-    double firstJD = 1 + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 + 1721119.5;
+    // Find first day of month using Swiss Ephemeris for consistency
+    double firstJD = swe_julday(monthData.gregorianYear, monthData.gregorianMonth, 1, 12.0, SE_GREG_CAL);
     int firstDayOfWeek = static_cast<int>(firstJD + 1.5) % 7; // 0=Sunday
 
     // Generate modern calendar grid
@@ -367,11 +386,8 @@ std::string MyanmarMonthlyCalendar::generateCompactLayout(const MyanmarMonthlyDa
     ss << " S   M   T   W   T   F   S\n";
     ss << std::string(27, '-') << "\n";
 
-    // Find first day of month using Julian Day calculation
-    int a = (14 - monthData.gregorianMonth) / 12;
-    int y = monthData.gregorianYear - a;
-    int m = monthData.gregorianMonth + 12 * a - 3;
-    double firstJD = 1 + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 + 1721119.5;
+    // Find first day of month using Swiss Ephemeris for consistency
+    double firstJD = swe_julday(monthData.gregorianYear, monthData.gregorianMonth, 1, 12.0, SE_GREG_CAL);
     int firstDayOfWeek = static_cast<int>(firstJD + 1.5) % 7; // 0=Sunday
 
     // Generate compact grid
@@ -414,11 +430,8 @@ std::string MyanmarMonthlyCalendar::generateBlogStyleLayout(const MyanmarMonthly
     ss << "│ SUNDAY  │ MONDAY  │ TUESDAY │ WEDNESD │ THURSDY │ FRIDAY  │ SATRDYY │\n";
     ss << "├─────────┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┤\n";
 
-    // Find first day of month using Julian Day calculation
-    int a = (14 - monthData.gregorianMonth) / 12;
-    int y = monthData.gregorianYear - a;
-    int m = monthData.gregorianMonth + 12 * a - 3;
-    double firstJD = 1 + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 + 1721119.5;
+    // Find first day of month using Swiss Ephemeris for consistency
+    double firstJD = swe_julday(monthData.gregorianYear, monthData.gregorianMonth, 1, 12.0, SE_GREG_CAL);
     int firstDayOfWeek = static_cast<int>(firstJD + 1.5) % 7; // 0=Sunday
 
     // Generate blog-style grid
@@ -472,31 +485,95 @@ std::string MyanmarMonthlyCalendar::generateBlogStyleLayout(const MyanmarMonthly
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Unicode-aware string formatting utilities
+/////////////////////////////////////////////////////////////////////////////
+
+// Calculate display width of a string considering Unicode characters
+int MyanmarMonthlyCalendar::getDisplayWidth(const std::string& str) const {
+    int width = 0;
+    size_t i = 0;
+    while (i < str.length()) {
+        unsigned char c = str[i];
+        if (c < 0x80) {
+            // ASCII character
+            width += 1;
+            i += 1;
+        } else if (c < 0xC0) {
+            // Invalid UTF-8 continuation byte, skip
+            i += 1;
+        } else if (c < 0xE0) {
+            // 2-byte UTF-8 character
+            width += 1; // Most 2-byte chars are single width
+            i += 2;
+        } else if (c < 0xF0) {
+            // 3-byte UTF-8 character (includes Myanmar script and some emojis)
+            if (c >= 0xE1 && i + 2 < str.length() &&
+                (unsigned char)str[i+1] >= 0x80 && (unsigned char)str[i+1] <= 0xAF) {
+                // Myanmar Unicode range U+1000-U+109F
+                width += 2; // Myanmar characters are wide
+            } else {
+                width += 1; // Other 3-byte chars (some emojis, symbols)
+            }
+            i += 3;
+        } else {
+            // 4-byte UTF-8 character (most emojis)
+            width += 2; // Emojis are typically double-width
+            i += 4;
+        }
+    }
+    return width;
+}
+
+// Pad string to exact display width considering Unicode characters
+std::string MyanmarMonthlyCalendar::padToDisplayWidth(const std::string& str, int targetWidth, bool rightAlign) const {
+    int currentWidth = getDisplayWidth(str);
+    int padding = targetWidth - currentWidth;
+
+    if (padding <= 0) {
+        return str; // String is already at or exceeds target width
+    }
+
+    std::string paddingStr(padding, ' ');
+    if (rightAlign) {
+        return paddingStr + str;
+    } else {
+        return str + paddingStr;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Cell Formatting Methods
 /////////////////////////////////////////////////////////////////////////////
 
 std::string MyanmarMonthlyCalendar::formatTraditionalCell(const MyanmarMonthlyData::DayData& day) const {
     std::stringstream ss;
 
-    // Format: " DD/mm ⭐"  (9 chars)
+    // Format: " DD/mm ⭐SP" with exact 12 display characters
+    ss << " ";
     ss << std::setw(2) << std::right << day.gregorianDay;
     ss << "/";
     ss << std::setw(2) << std::setfill('0') << day.myanmarDay << std::setfill(' ');
     ss << " ";
 
-    // Add quality indicator
-    if (day.qualityIndicator == "⭐") ss << "⭐";
-    else if (day.qualityIndicator == "⚠️") ss << "⚠";
-    else if (day.qualityIndicator == "🎉") ss << "🎉";
-    else ss << " ";
+    // Add quality indicator (these are Unicode and need special handling)
+    std::string indicator;
+    if (day.qualityIndicator == "⭐") indicator = "⭐"; // 2 display width
+    else if (day.qualityIndicator == "⚠️") indicator = "⚠"; // Use just ⚠ (1 display width)
+    else if (day.qualityIndicator == "🎉") indicator = "🎉"; // 2 display width
+    else indicator = " "; // 1 display width
 
-    // Add Myanmar astrological indicators
+    ss << indicator;
+
+    // Add Myanmar astrological indicators (ASCII, 1 char each)
     if (day.isSabbath) ss << "S";
     else if (day.isPyathada) ss << "P";
     else if (day.isYatyaza) ss << "Y";
+    else if (day.isThamanyo) ss << "T";
     else ss << " ";
 
-    return ss.str();
+    // Pad to exactly 12 display characters
+    std::string result = ss.str();
+    return padToDisplayWidth(result, 12, false);
 }
 
 std::string MyanmarMonthlyCalendar::formatModernCell(const MyanmarMonthlyData::DayData& day) const {
@@ -1105,11 +1182,8 @@ std::string MyanmarMonthlyCalendar::generateHTML(const MyanmarMonthlyData& month
     ss << "<table>\n";
     ss << "<tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>\n";
 
-    // Find first day of month using Julian Day calculation
-    int a = (14 - monthData.gregorianMonth) / 12;
-    int y = monthData.gregorianYear - a;
-    int m = monthData.gregorianMonth + 12 * a - 3;
-    double firstJD = 1 + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 + 1721119.5;
+    // Find first day of month using Swiss Ephemeris for consistency
+    double firstJD = swe_julday(monthData.gregorianYear, monthData.gregorianMonth, 1, 12.0, SE_GREG_CAL);
     int firstDayOfWeek = static_cast<int>(firstJD + 1.5) % 7; // 0=Sunday
 
     // Generate HTML table rows
@@ -1233,142 +1307,93 @@ void MyanmarMonthlyCalendar::calculateGregorianData(MyanmarMonthlyData::DayData&
 
 void MyanmarMonthlyCalendar::calculateHinduCalendarData(MyanmarMonthlyData::DayData& dayData, double julianDay) const {
     try {
-        PanchangaData panchanga = hinduCalendar.calculatePanchanga(julianDay, 0.0, 0.0);
-
-        // Core Panchanga Elements (as per DrikPanchang structure)
-        dayData.hindu.tithi = panchanga.tithi;
-        dayData.hindu.tithiName = hinduCalendar.getTithiName(panchanga.tithi);
-        dayData.hindu.nakshatra = panchanga.nakshatra;
-        dayData.hindu.nakshatraName = hinduCalendar.getNakshatraName(panchanga.nakshatra);
-        dayData.hindu.yoga = panchanga.yoga;
-        dayData.hindu.yogaName = hinduCalendar.getYogaName(panchanga.yoga);
-        dayData.hindu.karana = panchanga.karana;
-        dayData.hindu.karanaName = hinduCalendar.getKaranaName(panchanga.karana);
-
-        // Enhanced Hindu calendar date calculation based on Tithi and Paksha system
-        // Following DrikPanchang's comprehensive approach
-        int tithiValue = static_cast<int>(panchanga.tithi);
-
-        // Calculate Paksha and day within paksha (as per DrikPanchang structure)
-        std::string pakshaName;
-        int dayInPaksha;
-
-        if (tithiValue <= 14) {
-            // Shukla Paksha (Waxing Moon): Tithi 0-14 maps to days 1-15
-            pakshaName = "Shukla Paksha";
-            dayInPaksha = tithiValue + 1;
-            dayData.hindu.hinduDay = dayInPaksha;
-        } else {
-            // Krishna Paksha (Waning Moon): Tithi 15-29 maps to days 1-15
-            pakshaName = "Krishna Paksha";
-            dayInPaksha = tithiValue - 14;
-            dayData.hindu.hinduDay = dayInPaksha;
-        }
-
-        // Store Paksha information
-        dayData.hindu.paksha = pakshaName;
-
-        // Hindu month and year from panchanga
-        dayData.hindu.hinduMonth = panchanga.month;
-        dayData.hindu.hinduYear = panchanga.year;
-        dayData.hindu.hinduMonthName = hinduCalendar.getHinduMonthName(panchanga.month);
-
-        // Enhanced special day detection (following DrikPanchang's comprehensive approach)
-        dayData.hindu.isEkadashi = (tithiValue == 10 || tithiValue == 25); // 11th day of each Paksha
-        dayData.hindu.isPurnima = (tithiValue == 14); // 15th day of Shukla Paksha (Full Moon)
-        dayData.hindu.isAmavasya = (tithiValue == 29); // 15th day of Krishna Paksha (New Moon)
-
-        // Additional special days as per DrikPanchang
-        bool isDwadashi = (tithiValue == 11 || tithiValue == 26); // 12th day of each Paksha
-        bool isTrayodashi = (tithiValue == 12 || tithiValue == 27); // 13th day of each Paksha
-        bool isChaturdashi = (tithiValue == 13 || tithiValue == 28); // 14th day of each Paksha
-        bool isPratipada = (tithiValue == 0 || tithiValue == 15); // 1st day of each Paksha
-        bool isDwitiya = (tithiValue == 1 || tithiValue == 16); // 2nd day of each Paksha
-        bool isTritiya = (tithiValue == 2 || tithiValue == 17); // 3rd day of each Paksha
-        bool isChaturthi = (tithiValue == 3 || tithiValue == 18); // 4th day of each Paksha (Ganesh Chaturthi)
-        bool isPanchami = (tithiValue == 4 || tithiValue == 19); // 5th day of each Paksha
-        bool isShashti = (tithiValue == 5 || tithiValue == 20); // 6th day of each Paksha
-        bool isSaptami = (tithiValue == 6 || tithiValue == 21); // 7th day of each Paksha
-        bool isAshtami = (tithiValue == 7 || tithiValue == 22); // 8th day of each Paksha (Krishna Janmashtami)
-        bool isNavami = (tithiValue == 8 || tithiValue == 23); // 9th day of each Paksha
-        bool isDashami = (tithiValue == 9 || tithiValue == 24); // 10th day of each Paksha
-
-        // Moon sign and rashi calculations (simplified version of DrikPanchang's approach)
-        int moonRashi = static_cast<int>(panchanga.nakshatra) / 2; // Approximate moon sign (simplified)
-        std::vector<std::string> rashiNames = {
-            "Mesha", "Vrishabha", "Mithuna", "Karka", "Simha", "Kanya",
-            "Tula", "Vrishchika", "Dhanu", "Makara", "Kumbha", "Meena"
-        };
-        if (moonRashi >= 0 && moonRashi < 12) {
-            dayData.hindu.moonSign = rashiNames[moonRashi];
-        } else {
-            dayData.hindu.moonSign = "Unknown";
-        }
-
-        // Vikram Samvat calculation (approximate)
-        dayData.hindu.vikramSamvat = dayData.hindu.hinduYear + 57; // Approximate conversion
-
-        // Store additional Panchanga elements for comprehensive display
-        dayData.hindu.nakshatraPada = (static_cast<int>(panchanga.nakshatra) * 4 / 27) + 1; // Simplified calculation
-
-        // Auspicious and inauspicious time calculations (simplified)
+        // Initialize all values with defaults first
+        dayData.hindu.hinduDay = 0;
+        dayData.hindu.hinduYear = 0;
+        dayData.hindu.hinduMonthName = "Unknown";
+        dayData.hindu.paksha = "Unknown";
+        dayData.hindu.nakshatraName = "Unknown";
+        dayData.hindu.vikramSamvat = 0;
+        dayData.hindu.ritu = "Unknown";
+        dayData.hindu.isEkadashi = false;
+        dayData.hindu.isPurnima = false;
+        dayData.hindu.isAmavasya = false;
         dayData.hindu.isAuspiciousDay = false;
         dayData.hindu.isInauspiciousDay = false;
+        dayData.hindu.tithiName = "Unknown";
+        dayData.hindu.yogaName = "Unknown";
+        dayData.hindu.karanaName = "Unknown";
+        dayData.hindu.moonSign = "Unknown";
+        dayData.hindu.nakshatraPada = 0;
 
-        // Mark auspicious days
-        if (dayData.hindu.isPurnima || dayData.hindu.isEkadashi || isChaturthi || isAshtami || isNavami) {
-            dayData.hindu.isAuspiciousDay = true;
-        }
+        // Clear collections safely
+        dayData.hindu.festivals.clear();
+        dayData.hindu.comprehensiveInfo.clear();
 
-        // Mark inauspicious days (basic implementation)
-        if (dayData.hindu.isAmavasya || isChaturdashi) {
-            dayData.hindu.isInauspiciousDay = true;
-        }
+        // Now calculate the Panchanga data carefully
+        try {
+            // Calculate panchanga with default location (Delhi)
+            double latitude = 28.6139;   // Delhi latitude
+            double longitude = 77.2090;  // Delhi longitude
 
-        // Season calculation (Ritu) - simplified
-        int currentMonth = static_cast<int>(dayData.hindu.hinduMonth);
-        std::vector<std::string> ritus = {
-            "Vasanta", "Grishma", "Varsha", "Sharad", "Shishira", "Hemanta"
-        };
-        dayData.hindu.ritu = ritus[currentMonth % 6];
+            // Call calculatePanchanga and manage memory carefully
+            PanchangaData panchanga = hinduCalendar.calculatePanchanga(julianDay, latitude, longitude);
 
-        // Store comprehensive Hindu calendar information for display
-        dayData.hindu.comprehensiveInfo = {
-            {"Paksha", pakshaName},
-            {"Day in Paksha", std::to_string(dayInPaksha)},
-            {"Moon Sign", dayData.hindu.moonSign},
-            {"Nakshatra Pada", std::to_string(dayData.hindu.nakshatraPada)},
-            {"Vikram Samvat", std::to_string(dayData.hindu.vikramSamvat)},
-            {"Ritu", dayData.hindu.ritu}
-        };
+            // Copy data safely from panchanga to dayData
+            dayData.hindu.tithiName = hinduCalendar.getTithiName(panchanga.tithi);
+            dayData.hindu.nakshatraName = hinduCalendar.getNakshatraName(panchanga.nakshatra);
+            dayData.hindu.yogaName = hinduCalendar.getYogaName(panchanga.yoga);
+            dayData.hindu.karanaName = hinduCalendar.getKaranaName(panchanga.karana);
+            dayData.hindu.hinduMonthName = hinduCalendar.getHinduMonthName(panchanga.month);
+            dayData.hindu.paksha = panchanga.isShukla ? "Shukla Paksha" : "Krishna Paksha";
+            dayData.hindu.moonSign = hinduCalendar.getRashiName(panchanga.moonRashi);
+            dayData.hindu.ritu = panchanga.ritu;
+            dayData.hindu.hinduDay = panchanga.day;
+            dayData.hindu.hinduYear = panchanga.year;
+            dayData.hindu.vikramSamvat = panchanga.vikramYear;
+            dayData.hindu.nakshatraPada = panchanga.nakshatraPada;
 
-        // Festival detection based on Tithi and special combinations
-        if (dayData.hindu.isEkadashi) {
-            if (tithiValue == 10) {
-                dayData.hindu.festivals.push_back("Shukla Ekadashi");
-            } else {
-                dayData.hindu.festivals.push_back("Krishna Ekadashi");
+            // Copy boolean flags
+            dayData.hindu.isEkadashi = panchanga.isEkadashi;
+            dayData.hindu.isPurnima = panchanga.isPurnima;
+            dayData.hindu.isAmavasya = panchanga.isAmavasya;
+            dayData.hindu.isAuspiciousDay = panchanga.isSarvarthaSiddhi || panchanga.isAmritaSiddhi;
+            dayData.hindu.isInauspiciousDay = false; // Can be set based on other criteria
+
+            // Copy festivals safely
+            try {
+                if (!panchanga.festivals.empty()) {
+                    dayData.hindu.festivals.reserve(panchanga.festivals.size());
+                    for (const auto& festival : panchanga.festivals) {
+                        dayData.hindu.festivals.push_back(festival);
+                    }
+                }
+            } catch (const std::exception& e) {
+                // If festival copying fails, just continue without festivals
+                dayData.hindu.festivals.clear();
             }
+
+            // Create comprehensive info map
+            try {
+                dayData.hindu.comprehensiveInfo.clear();
+                dayData.hindu.comprehensiveInfo["Tithi"] = dayData.hindu.tithiName;
+                dayData.hindu.comprehensiveInfo["Nakshatra"] = dayData.hindu.nakshatraName;
+                dayData.hindu.comprehensiveInfo["Yoga"] = dayData.hindu.yogaName;
+                dayData.hindu.comprehensiveInfo["Karana"] = dayData.hindu.karanaName;
+                dayData.hindu.comprehensiveInfo["Paksha"] = dayData.hindu.paksha;
+                dayData.hindu.comprehensiveInfo["Ritu"] = dayData.hindu.ritu;
+            } catch (const std::exception& e) {
+                dayData.hindu.comprehensiveInfo.clear();
+                dayData.hindu.comprehensiveInfo["Status"] = "Hindu calendar data available";
+            }
+
+        } catch (const std::exception& e) {
+            // If panchanga calculation fails, keep default values
+            // Already set above, so nothing more to do
         }
 
-        if (dayData.hindu.isPurnima) {
-            dayData.hindu.festivals.push_back("Purnima");
-        }
-
-        if (dayData.hindu.isAmavasya) {
-            dayData.hindu.festivals.push_back("Amavasya");
-        }
-
-        if (isChaturthi && tithiValue == 3) {
-            dayData.hindu.festivals.push_back("Ganesh Chaturthi");
-        }
-
-        if (isAshtami && tithiValue == 7) {
-            dayData.hindu.festivals.push_back("Krishna Janmashtami");
-        }
-
-    } catch (...) {
-        // Set default values if calculation fails
+    } catch (const std::exception& e) {
+        // Set safe default values if anything fails
         dayData.hindu.tithiName = "Unknown";
         dayData.hindu.nakshatraName = "Unknown";
         dayData.hindu.yogaName = "Unknown";
@@ -1494,14 +1519,16 @@ std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonth
     ss << "║  " << monthData.gregorianMonthName << " " << monthData.gregorianYear << " CE";
     ss << " | " << monthData.myanmarMonthName << " " << monthData.myanmarYear << " ME";
 
-    if (includeHindu && !monthData.days.empty()) {
+    if (monthData.includeHindu && !monthData.days.empty() &&
+        !monthData.days[0].hindu.hinduMonthName.empty()) {
         ss << " | " << monthData.days[0].hindu.hinduMonthName << " " << monthData.days[0].hindu.hinduYear;
     }
 
     // Pad to consistent width
     std::string headerContent = monthData.gregorianMonthName + " " + std::to_string(monthData.gregorianYear) + " CE | " +
                                monthData.myanmarMonthName + " " + std::to_string(monthData.myanmarYear) + " ME";
-    if (includeHindu && !monthData.days.empty()) {
+    if (monthData.includeHindu && !monthData.days.empty() &&
+        !monthData.days[0].hindu.hinduMonthName.empty()) {
         headerContent += " | " + monthData.days[0].hindu.hinduMonthName + " " + std::to_string(monthData.days[0].hindu.hinduYear);
     }
 
@@ -1599,13 +1626,13 @@ std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonth
     ss << "           P = Paksha (S=Shukla/Waxing, K=Krishna/Waning)\n";
     ss << "           M## = Myanmar day (1-30)\n\n";
 
-    if (includeHindu) {
+    if (monthData.includeHindu) {
         ss << "🕉️  HINDU CALENDAR INDICATORS:\n";
         ss << "   Special Days: Ek=Ekadashi, Pu=Purnima, Am=Amavasya, Fe=Festival\n";
         ss << "   Nakshatra: First 3 letters of current Nakshatra\n";
         ss << "   Quality: * = Auspicious, ! = Caution, # = Festival, . = Normal\n\n";
     }
-    if (includePlanetary) {
+    if (monthData.includePlanetary) {
         ss << "Planetary: R=Retrograde C=Conjunction X=Eclipse T=Transit\n";
     }
     ss << "🌙 MOON PHASES: F=Full, W=Waxing, N=New, w=Waning\n";
@@ -1618,12 +1645,12 @@ std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonth
     ss << "Myanmar Calendar: " << monthData.sabbathDays << " Sabbaths, "
        << monthData.auspiciousDays << " Auspicious, " << monthData.inauspiciousDays << " Inauspicious\n";
 
-    if (includeGregorian) {
+    if (monthData.includeGregorian) {
         ss << "Gregorian Calendar: " << monthData.stats.weekendDays << " Weekend days, "
            << monthData.stats.holidayDays << " Holidays\n";
     }
 
-    if (includeHindu) {
+    if (monthData.includeHindu) {
         ss << "🕉️  Hindu Calendar: " << monthData.stats.ekadashiDays << " Ekadashis, "
            << monthData.stats.purnimaCount << " Full Moons, "
            << monthData.stats.amavasyaCount << " New Moons\n";
@@ -1634,7 +1661,6 @@ std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonth
 
         if (!monthData.days.empty()) {
             const auto& firstDay = monthData.days[0];
-            const auto& lastDay = monthData.days[monthData.days.size() - 1];
 
             ss << "📅 Month: " << firstDay.hindu.hinduMonthName << " " << firstDay.hindu.hinduYear << "\n";
             ss << "📅 Vikram Samvat: " << firstDay.hindu.vikramSamvat << "\n";
