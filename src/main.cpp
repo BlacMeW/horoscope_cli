@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 using namespace Astro;
 
@@ -175,6 +176,10 @@ struct CommandLineArgs {
     // Simplified JD-only search
     double searchJdOnly = -1.0;           // Search by JD only, no date range needed
     std::string searchVarnaOnly = "";     // Search by Varna only, no date range needed
+
+    // Extended JD search options
+    double searchJdMyanmarOnly = -1.0;    // Search Myanmar calendar by JD only
+    double searchJdBirthChartOnly = -1.0; // Search birth chart by JD only
 
     // Myanmar Calendar options
     bool showMyanmarCalendar = false;
@@ -669,6 +674,15 @@ void printHelp() {
     std::cout << "                            • Example: horoscope_cli --search-jd 1555550\n";
     std::cout << "                            • Shows complete Hindu Panchanga for that exact day\n";
     std::cout << "                            • No date range required - JD defines exactly one day\n\n";
+
+    std::cout << "    --search-jd-myanmar JD  🎯 SIMPLE: Search Myanmar calendar by Julian Day\n";
+    std::cout << "                            • Example: horoscope_cli --search-jd-myanmar 1555550\n";
+    std::cout << "                            • Shows complete Myanmar calendar for that exact day\n\n";
+
+    std::cout << "    --search-jd-chart JD    🎯 SIMPLE: Search birth chart by Julian Day\n";
+    std::cout << "                            • Example: horoscope_cli --search-jd-chart 1555550\n";
+    std::cout << "                            • Shows complete birth chart for that exact day\n";
+    std::cout << "                            • Requires coordinates: --lat and --lon\n\n";
 
     std::cout << "    --search-julian-day JD  Search for specific Julian Day number\n";
     std::cout << "                            • Example: --search-julian-day 1555550\n";
@@ -1234,6 +1248,12 @@ void printHelp() {
 
     std::cout << "  # 🎯 SIMPLE Julian Day search with coordinates for accurate timings\n";
     std::cout << "  horoscope_cli --search-jd 1555550 --lat 27.7172 --lon 85.3240\n\n";
+
+    std::cout << "  # 🎯 SIMPLE Myanmar calendar search by Julian Day\n";
+    std::cout << "  horoscope_cli --search-jd-myanmar 1555550\n\n";
+
+    std::cout << "  # 🎯 SIMPLE Birth chart search by Julian Day with location\n";
+    std::cout << "  horoscope_cli --search-jd-chart 1555550 --lat 12.97 --lon 77.59\n\n";
 
     std::cout << "  # Julian Day search - find dates by specific JD number\n";
     std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
@@ -1894,6 +1914,10 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         // Simplified JD search options
         } else if (arg == "--search-jd" && i + 1 < argc) {
             args.searchJdOnly = std::stod(argv[++i]);
+        } else if (arg == "--search-jd-myanmar" && i + 1 < argc) {
+            args.searchJdMyanmarOnly = std::stod(argv[++i]);
+        } else if (arg == "--search-jd-chart" && i + 1 < argc) {
+            args.searchJdBirthChartOnly = std::stod(argv[++i]);
 
         // Varna search options
         } else if (arg == "--search-varna-day" && i + 1 < argc) {
@@ -2159,13 +2183,15 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    // Skip date/time requirements for --search-jd command
-    if (args.date.empty() && !args.showAstroCalendarMonthly && !args.searchJdOnly) {
+    // Skip date/time requirements for JD search commands
+    if (args.date.empty() && !args.showAstroCalendarMonthly &&
+        args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0) {
         std::cerr << "Error: --date is required\n";
         return false;
     }
 
-    if (args.time.empty() && !args.showAstroCalendarMonthly && !args.searchJdOnly) {
+    if (args.time.empty() && !args.showAstroCalendarMonthly &&
+        args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0) {
         std::cerr << "Error: --time is required\n";
         return false;
     }
@@ -3007,6 +3033,104 @@ int main(int argc, char* argv[]) {
 
             } catch (const std::exception& e) {
                 std::cerr << "Error searching Julian Day " << args.searchJdOnly << ": " << e.what() << std::endl;
+                return 1;
+            }
+        }
+
+        // Handle Simplified Myanmar Calendar JD Search
+        if (args.searchJdMyanmarOnly > 0) {
+            MyanmarCalendar myanmarCalendar;
+            if (!myanmarCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Myanmar Calendar system" << std::endl;
+                return 1;
+            }
+
+            try {
+                // Calculate Myanmar calendar data for the specific Julian Day
+                MyanmarCalendarData result = myanmarCalendar.calculateMyanmarCalendar(args.searchJdMyanmarOnly);
+
+                std::cout << "🔢 JULIAN DAY MYANMAR CALENDAR RESULT 🇲🇲\n";
+                std::cout << "==========================================\n\n";
+                std::cout << "Julian Day: " << std::fixed << std::setprecision(1) << args.searchJdMyanmarOnly << "\n";
+
+                // Convert JD to Gregorian date for reference
+                int year, month, day;
+                double gTime;
+                swe_revjul(args.searchJdMyanmarOnly, SE_GREG_CAL, &year, &month, &day, &gTime);
+                std::cout << "Gregorian Date: " << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setw(2) << day << "\n";
+
+                // Display complete Myanmar calendar information
+                std::cout << myanmarCalendar.generateMyanmarCalendarTable(result) << std::endl;
+
+                // Exit after successful Myanmar JD search
+                return 0;
+
+            } catch (const std::exception& e) {
+                std::cerr << "Error searching Myanmar calendar for Julian Day " << args.searchJdMyanmarOnly << ": " << e.what() << std::endl;
+                return 1;
+            }
+        }
+
+        // Handle Simplified Birth Chart JD Search
+        if (args.searchJdBirthChartOnly > 0) {
+            // Birth chart requires coordinates
+            if (args.latitude < -90.0 || args.latitude > 90.0 ||
+                args.longitude < -180.0 || args.longitude > 180.0) {
+                std::cerr << "Error: Valid coordinates (--lat and --lon) required for birth chart JD search\n";
+                return 1;
+            }
+
+            try {
+                // Convert JD to Gregorian date and time
+                int year, month, day;
+                double gTime;
+                swe_revjul(args.searchJdBirthChartOnly, SE_GREG_CAL, &year, &month, &day, &gTime);
+
+                // Convert fractional day to hours:minutes (gTime is fractional part of day)
+                double fractionalDay = gTime - floor(gTime);
+                int hours = static_cast<int>(fractionalDay * 24);
+                int minutes = static_cast<int>((fractionalDay * 24 - hours) * 60);
+
+                // Create BirthData from JD
+                BirthData birthData;
+                birthData.year = year;
+                birthData.month = month;
+                birthData.day = day;
+                birthData.hour = hours;
+                birthData.minute = minutes;
+                birthData.second = 0;
+                birthData.latitude = args.latitude;
+                birthData.longitude = args.longitude;
+                birthData.timezone = 0.0; // UTC
+
+                // Use HoroscopeCalculator to properly calculate the birth chart
+                HoroscopeCalculator calculator;
+                if (!calculator.initialize(args.ephemerisPath)) {
+                    std::cerr << "Error: Failed to initialize horoscope calculator: " << calculator.getLastError() << "\n";
+                    return 1;
+                }
+
+                BirthChart chart;
+                if (!calculator.calculateBirthChart(birthData, args.houseSystem, args.zodiacMode, args.ayanamsa, chart)) {
+                    std::cerr << "Error: Failed to calculate birth chart: " << calculator.getLastError() << "\n";
+                    return 1;
+                }
+
+                std::cout << "🔢 JULIAN DAY BIRTH CHART RESULT ⭐\n";
+                std::cout << "====================================\n\n";
+                std::cout << "Julian Day: " << std::fixed << std::setprecision(1) << args.searchJdBirthChartOnly << "\n";
+                std::cout << "Gregorian Date: " << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setw(2) << day << "\n";
+                std::cout << "Time: " << std::setfill('0') << std::setw(2) << hours << ":" << std::setw(2) << minutes << " UTC\n";
+                std::cout << "Location: " << std::fixed << std::setprecision(4) << args.latitude << "°N, " << args.longitude << "°E\n\n";
+
+                // Display birth chart
+                std::cout << chart.getFormattedChart() << std::endl;
+
+                // Exit after successful birth chart JD search
+                return 0;
+
+            } catch (const std::exception& e) {
+                std::cerr << "Error generating birth chart for Julian Day " << args.searchJdBirthChartOnly << ": " << e.what() << std::endl;
                 return 1;
             }
         }
