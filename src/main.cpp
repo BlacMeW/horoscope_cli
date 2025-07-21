@@ -11,6 +11,7 @@
 #include "hindu_calendar.h"
 #include "myanmar_calendar.h"
 #include "myanmar_monthly_calendar.h"
+#include "hindu_monthly_calendar.h"
 #include "astro_calendar.h"
 #include "professional_table.h"
 #include "swephexp.h"
@@ -352,6 +353,12 @@ struct CommandLineArgs {
     bool showMyanmarMonthlyCalendar = false;
     std::string myanmarMonthlyCalendarDate; // Format: YYYY-MM for monthly view
     std::string myanmarMonthlyCalendarFormat = "traditional";
+
+    // Hindu Monthly Calendar options
+    bool showHinduMonthlyCalendar = false;
+    std::string hinduMonthlyCalendarDate; // Format: YYYY-MM for monthly view, supports BC dates
+    std::string hinduMonthlyCalendarFormat = "traditional";
+    bool hinduMonthlyShowMuhurta = false;
     bool includeGregorian = false;
     bool includeHindu = false;
     bool includePlanetary = false;
@@ -779,6 +786,36 @@ void printHelp() {
     std::cout << "                       csv             = Comma-separated values\n";
     std::cout << "                       html            = HTML format for web display\n\n";
 
+    std::cout << "HINDU MONTHLY CALENDAR 🕉️📅 (NEW)\n";
+    std::cout << "    --hindu-monthly YYYY-MM, -hm YYYY-MM\n";
+    std::cout << "                       Generate Hindu monthly calendar with BC era support\n";
+    std::cout << "                       • Format: 2024-01 for January 2024 (Gregorian)\n";
+    std::cout << "                       • Format: 500BC-03 for March 500 BC\n";
+    std::cout << "                       • Format: -0499-03 for 500 BC (astronomical year)\n";
+    std::cout << "                       • Complete Panchanga calculations for each day\n";
+    std::cout << "                       • BC era support (unlike Myanmar calendar)\n";
+    std::cout << "                       • Tithi, Nakshatra, Yoga, Karana for each day\n";
+    std::cout << "                       • Supports multiple Hindu calendar systems\n";
+    std::cout << "                       • Short option: -hm 2025-07 (equivalent to --hindu-monthly 2025-07)\n";
+
+    std::cout << "    --hindu-monthly-format FORMAT\n";
+    std::cout << "                       Hindu monthly calendar output format\n";
+    std::cout << "                       traditional     = Traditional Panchanga layout (default)\n";
+    std::cout << "                       detailed        = Detailed view with muhurta timings\n";
+    std::cout << "                       panchanga       = Focus on five Panchanga elements\n";
+    std::cout << "                       compact         = Compact view for quick reference\n";
+    std::cout << "                       festivals       = Highlight festivals and special events\n";
+    std::cout << "                       astronomical    = Include astronomical data\n";
+    std::cout << "                       csv             = Comma-separated values\n";
+    std::cout << "                       json            = JSON structure for integration\n";
+    std::cout << "                       html            = HTML format for web display\n";
+
+    std::cout << "    --hindu-monthly-muhurta\n";
+    std::cout << "                       Include muhurta timings in Hindu monthly calendar\n";
+    std::cout << "                       • Brahma Muhurta, Abhijit Muhurta timings\n";
+    std::cout << "                       • Rahu Kaal, Yamaganda, Gulikai periods\n";
+    std::cout << "                       • Auspicious and inauspicious timings\n\n";
+
     std::cout << "CALENDAR SYSTEM OPTIONS 📅🌍\n";
     std::cout << "    --include-gregorian\n";
     std::cout << "                       Include Gregorian calendar data (enabled by default)\n";
@@ -1160,6 +1197,31 @@ void printHelp() {
 
     std::cout << "  horoscope_cli --myanmar-monthly 2025-07 \\\n";
     std::cout << "                --myanmar-monthly-format blog-style\n\n";
+
+    std::cout << "HINDU MONTHLY CALENDAR 🕉️📅\n";
+    std::cout << "  # Hindu monthly calendar with complete Panchanga for each day\n";
+    std::cout << "  horoscope_cli --hindu-monthly 2025-07 \\\n";
+    std::cout << "                --hindu-monthly-format detailed \\\n";
+    std::cout << "                --hindu-monthly-muhurta\n\n";
+
+    std::cout << "  # Short form (equivalent to above without muhurta)\n";
+    std::cout << "  horoscope_cli -hm 2025-07\n\n";
+
+    std::cout << "  # Hindu calendar for BC era (500 BC example)\n";
+    std::cout << "  horoscope_cli --hindu-monthly 500BC-03 \\\n";
+    std::cout << "                --hindu-monthly-format panchanga\n\n";
+
+    std::cout << "  # Hindu calendar using astronomical year format for BC\n";
+    std::cout << "  horoscope_cli --hindu-monthly -0499-03 \\\n";
+    std::cout << "                --hindu-monthly-format traditional\n\n";
+
+    std::cout << "  # Hindu calendar with festivals highlighted\n";
+    std::cout << "  horoscope_cli --hindu-monthly 2025-12 \\\n";
+    std::cout << "                --hindu-monthly-format festivals\n\n";
+
+    std::cout << "  # Export Hindu calendar to CSV\n";
+    std::cout << "  horoscope_cli --hindu-monthly 2025-07 \\\n";
+    std::cout << "                --hindu-monthly-format csv > hindu_calendar_2025_07.csv\n\n";
 
     std::cout << "NEW ENHANCED FEATURES EXAMPLES 🚀✨\n\n";
 
@@ -1882,6 +1944,31 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 std::cerr << "Error: Myanmar monthly format must be 'traditional', 'modern', 'compact', 'blog-style', 'tabulate', 'tabulate-modern', 'tabulate-classic', 'tabulate-minimal', 'multi-calendar', 'planetary', 'hindu-myanmar', 'full-astronomical', 'json', 'csv', or 'html'\n";
                 return false;
             }
+        } else if (arg == "--hindu-monthly" || arg == "-hm") {
+            args.showHinduMonthlyCalendar = true;
+            if (i + 1 < argc) {
+                args.hinduMonthlyCalendarDate = argv[++i];
+            } else {
+                std::cerr << "Error: --hindu-monthly requires a month argument (YYYY-MM or YYYYBC-MM)\n";
+                return false;
+            }
+        } else if (arg == "--hindu-monthly-format") {
+            if (i + 1 < argc) {
+                args.hinduMonthlyCalendarFormat = argv[++i];
+            } else {
+                std::cerr << "Error: --hindu-monthly-format requires a format argument\n";
+                return false;
+            }
+            if (args.hinduMonthlyCalendarFormat != "traditional" && args.hinduMonthlyCalendarFormat != "detailed" &&
+                args.hinduMonthlyCalendarFormat != "panchanga" && args.hinduMonthlyCalendarFormat != "compact" &&
+                args.hinduMonthlyCalendarFormat != "festivals" && args.hinduMonthlyCalendarFormat != "astronomical" &&
+                args.hinduMonthlyCalendarFormat != "json" && args.hinduMonthlyCalendarFormat != "csv" &&
+                args.hinduMonthlyCalendarFormat != "html") {
+                std::cerr << "Error: Hindu monthly format must be 'traditional', 'detailed', 'panchanga', 'compact', 'festivals', 'astronomical', 'json', 'csv', or 'html'\n";
+                return false;
+            }
+        } else if (arg == "--hindu-monthly-muhurta") {
+            args.hinduMonthlyShowMuhurta = true;
         } else if (arg == "--include-gregorian") {
             args.includeGregorian = true;
         } else if (arg == "--include-hindu") {
@@ -1912,6 +1999,11 @@ bool validateArgs(const CommandLineArgs& args) {
 
     // Myanmar monthly calendar can work without location data
     if (args.showMyanmarMonthlyCalendar) {
+        return true;
+    }
+
+    // Hindu monthly calendar can work without location data (uses default coordinates)
+    if (args.showHinduMonthlyCalendar) {
         return true;
     }
 
@@ -3441,6 +3533,69 @@ int main(int argc, char* argv[]) {
         }
 
         return 0; // Exit after Myanmar monthly calendar
+    }
+
+    // Handle Hindu Monthly Calendar (doesn't need birth data, supports BC dates)
+    if (args.showHinduMonthlyCalendar) {
+        HinduMonthlyCalendar hinduMonthlyCalendar;
+
+        // Use provided coordinates or default to New Delhi if not provided
+        double latitude = args.latitude != 0.0 ? args.latitude : 28.6139;  // New Delhi
+        double longitude = args.longitude != 0.0 ? args.longitude : 77.2090; // New Delhi
+
+        // Set up display options
+        HinduMonthlyCalendar::DisplayOptions displayOptions = HinduMonthlyCalendar::getDefaultDisplayOptions();
+        displayOptions.ayanamsa = args.ayanamsa;
+        displayOptions.showMuhurta = args.hinduMonthlyShowMuhurta;
+
+        // Configure display based on format
+        if (args.hinduMonthlyCalendarFormat == "detailed") {
+            displayOptions.showMuhurta = true;
+            displayOptions.showRashiInfo = true;
+            displayOptions.showLunarPhase = true;
+        } else if (args.hinduMonthlyCalendarFormat == "panchanga") {
+            displayOptions.showTithi = true;
+            displayOptions.showNakshatra = true;
+            displayOptions.showYoga = true;
+            displayOptions.showKarana = true;
+        } else if (args.hinduMonthlyCalendarFormat == "compact") {
+            displayOptions.showPackedLayout = true;
+            displayOptions.cellWidth = 8;
+        } else if (args.hinduMonthlyCalendarFormat == "festivals") {
+            displayOptions.showFestivals = true;
+            displayOptions.showSpecialDays = true;
+            displayOptions.showVrataInfo = true;
+        } else if (args.hinduMonthlyCalendarFormat == "astronomical") {
+            displayOptions.showRashiInfo = true;
+            displayOptions.showLunarPhase = true;
+            displayOptions.showMuhurta = true;
+        } else if (args.hinduMonthlyCalendarFormat == "html") {
+            displayOptions.htmlOutput = true;
+        }
+
+        if (!hinduMonthlyCalendar.initialize(latitude, longitude, displayOptions)) {
+            std::cerr << "Error: Failed to initialize Hindu Monthly Calendar: " << hinduMonthlyCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        try {
+            if (args.hinduMonthlyCalendarFormat == "csv") {
+                HinduMonthlyCalendar::MonthlyData monthData = hinduMonthlyCalendar.generateMonthlyData(args.hinduMonthlyCalendarDate);
+                std::cout << hinduMonthlyCalendar.exportToCSV(monthData) << std::endl;
+            } else if (args.hinduMonthlyCalendarFormat == "json") {
+                HinduMonthlyCalendar::MonthlyData monthData = hinduMonthlyCalendar.generateMonthlyData(args.hinduMonthlyCalendarDate);
+                std::cout << hinduMonthlyCalendar.exportToJSON(monthData) << std::endl;
+            } else if (args.hinduMonthlyCalendarFormat == "html") {
+                std::cout << hinduMonthlyCalendar.generateHTMLCalendar(args.hinduMonthlyCalendarDate) << std::endl;
+            } else {
+                std::cout << hinduMonthlyCalendar.generateCalendar(args.hinduMonthlyCalendarDate) << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error generating Hindu monthly calendar: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after Hindu monthly calendar
     }
 
     // Parse date and time (required for all other functions)
