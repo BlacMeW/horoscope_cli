@@ -483,10 +483,12 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
     // Enhanced legend with comprehensive Hindu calendar information
     ss << "🕉️ ENHANCED HINDU CALENDAR LEGEND:\n";
     ss << "═══════════════════════════════════════════════════════════════════════════════\n";
-    ss << "Day Format: [GG][T##][P] = Gregorian / Hindu Tithi+Paksha\n";
+    ss << "Day Format: [GG][T##][P][JD][V] = Gregorian / Hindu Tithi+Paksha / Julian+Varna\n";
     ss << "           GG = Gregorian day (1-31)\n";
     ss << "           T## = Tithi number (1-15 in each Paksha)\n";
-    ss << "           P = Paksha (S=Shukla/Waxing, K=Krishna/Waning)\n\n";
+    ss << "           P = Paksha (S=Shukla/Waxing, K=Krishna/Waning)\n";
+    ss << "           JD = Julian Day (last 3 digits for astronomical reference)\n";
+    ss << "           V = Varna Day (B=Brahmin, K=Kshatriya, V=Vaishya, S=Shudra)\n\n";
 
     ss << "🌟 PANCHANGA INDICATORS:\n";
     ss << "   Special Days: Ek=Ekadashi, Pu=Purnima, Am=Amavasya, Sa=Sankranti\n";
@@ -494,6 +496,14 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
     ss << "   Quality: ✨ = Highly Auspicious, * = Auspicious, ! = Caution, # = Festival, . = Normal\n";
     ss << "   Yoga: Combination of Sun and Moon positions\n";
     ss << "   Karana: Half-Tithi periods\n\n";
+
+    ss << "🎯 VARNA (SAVARNA) CLASSIFICATION:\n";
+    ss << "   Traditional Hindu social-spiritual classification based on planetary weekday:\n";
+    ss << "   B = Brahmin (Sun/Sunday, Jupiter/Thursday) - Spiritual/Intellectual\n";
+    ss << "   K = Kshatriya (Mars/Tuesday) - Warrior/Administrative\n";
+    ss << "   V = Vaishya (Mercury/Wednesday, Venus/Friday) - Merchant/Agricultural\n";
+    ss << "   S = Shudra (Saturn/Saturday, Moon/Monday) - Service/Labor\n";
+    ss << "   Note: Based on day ruler as per traditional Jyotisha texts\n\n";
 
     ss << "🌙 LUNAR PHASES: 🌕=Full, 🌗=Waxing, 🌑=New, 🌘=Waning\n";
     ss << "🎯 SPECIAL EVENTS: Festival days, Vratams, and significant observances\n";
@@ -555,17 +565,19 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
 std::string HinduMonthlyCalendar::formatEnhancedDateCell(const PanchangaData& panchanga, int day, const MonthlyData& monthData) const {
     std::stringstream ss;
 
-    // Enhanced fixed format: [GG][T##][P] - exactly 15 characters including spaces
+    // Enhanced format: [GG][T##][P][JD][V] - 15 characters
     // GG = Gregorian day (2 chars, right-aligned)
     // T## = Tithi number (3 chars)
     // P = Paksha indicator (1 char: S=Shukla, K=Krishna)
+    // JD = Julian Day (last 3 digits)
+    // V = Varna indicator (1 char: B=Brahmin, K=Kshatriya, V=Vaishya, S=Shudra)
 
     ss << std::setw(2) << std::setfill(' ') << day;
 
     // Add Tithi number (1-15, but show actual tithi)
     int tithiNumber = static_cast<int>(panchanga.tithi);
     if (tithiNumber > 15) tithiNumber -= 15; // Krishna paksha tithis
-    ss << " T" << std::setw(2) << std::setfill('0') << tithiNumber;
+    ss << "T" << std::setw(2) << std::setfill('0') << tithiNumber;
 
     // Add Paksha indicator (S for Shukla, K for Krishna)
     if (static_cast<int>(panchanga.tithi) <= 15) {
@@ -574,8 +586,30 @@ std::string HinduMonthlyCalendar::formatEnhancedDateCell(const PanchangaData& pa
         ss << "K";
     }
 
-    // Ensure exactly 15 characters
+    // Add Julian Day (last 3 digits for compactness)
+    long jdInt = static_cast<long>(panchanga.julianDay);
+    int jdLast3 = jdInt % 1000;
+    ss << std::setw(3) << std::setfill('0') << jdLast3;
+
+    // Add Varna indicator from day-based Varna
+    char varnaChar = '.';
+    if (!panchanga.varnaDay.empty()) {
+        switch (panchanga.varnaDay[0]) {
+            case 'B': varnaChar = 'B'; break; // Brahmin
+            case 'K': varnaChar = 'K'; break; // Kshatriya
+            case 'V': varnaChar = 'V'; break; // Vaishya
+            case 'S': varnaChar = 'S'; break; // Shudra
+            default: varnaChar = '.'; break;
+        }
+    }
+    ss << varnaChar;
+
+    // Add final space to reach 15 characters
+    ss << " ";
+
     std::string result = ss.str();
+
+    // Ensure exactly 15 characters
     if (result.length() > 15) {
         result = result.substr(0, 15);
     } else if (result.length() < 15) {

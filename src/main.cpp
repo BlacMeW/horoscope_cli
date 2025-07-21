@@ -157,6 +157,21 @@ struct CommandLineArgs {
     bool searchAmavasya = false;
     bool searchSankranti = false;
 
+    // Julian Day search criteria
+    double searchJulianDay = -1.0;
+    double searchJulianDayStart = -1.0;
+    double searchJulianDayEnd = -1.0;
+    double searchJulianDayTolerance = 0.5;
+
+    // Varna (Savarna) search criteria
+    std::string searchVarnaDay = "";
+    std::string searchVarnaTithi = "";
+    std::string searchVarnaNakshatra = "";
+    bool searchBrahminDays = false;
+    bool searchKshatriyaDays = false;
+    bool searchVaishyaDays = false;
+    bool searchShudradays = false;
+
     // Myanmar Calendar options
     bool showMyanmarCalendar = false;
     bool showMyanmarCalendarRange = false;
@@ -644,6 +659,23 @@ void printHelp() {
     std::cout << "    --hindu-search-sankranti Search for Sankranti days\n";
     std::cout << "    --hindu-search-nakshatra N Search for specific Nakshatra (1-27)\n";
     std::cout << "    --hindu-search-yoga N   Search for specific Yoga (1-27)\n\n";
+
+    std::cout << "    --search-julian-day JD  Search for specific Julian Day number\n";
+    std::cout << "                            • Example: --search-julian-day 1948438.5\n";
+    std::cout << "    --search-julian-day-range START END  Search for Julian Day range\n";
+    std::cout << "                                          • Example: --search-julian-day-range 1948438.5 1948468.5\n\n";
+
+    std::cout << "    --search-varna-day TYPE Search for specific Varna day type\n";
+    std::cout << "                            • brahmin = Brahmin Varna days\n";
+    std::cout << "                            • kshatriya = Kshatriya Varna days\n";
+    std::cout << "                            • vaishya = Vaishya Varna days\n";
+    std::cout << "                            • shudra = Shudra Varna days\n";
+    std::cout << "                            • Example: --search-varna-day brahmin\n\n";
+
+    std::cout << "    --search-brahmin-days   Search for all Brahmin Varna days\n";
+    std::cout << "    --search-kshatriya-days Search for all Kshatriya Varna days\n";
+    std::cout << "    --search-vaishya-days   Search for all Vaishya Varna days\n";
+    std::cout << "    --search-shudra-days    Search for all Shudra Varna days\n\n";
 
     std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
     std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
@@ -1793,6 +1825,37 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--hindu-search-yoga" && i + 1 < argc) {
             args.searchYoga = std::stoi(argv[++i]);
 
+        // Julian Day search options
+        } else if (arg == "--search-julian-day" && i + 1 < argc) {
+            args.searchJulianDay = std::stod(argv[++i]);
+        } else if (arg == "--search-julian-day-range" && i + 2 < argc) {
+            args.searchJulianDayStart = std::stod(argv[++i]);
+            args.searchJulianDayEnd = std::stod(argv[++i]);
+
+        // Varna search options
+        } else if (arg == "--search-varna-day" && i + 1 < argc) {
+            std::string varnaType = argv[++i];
+            if (varnaType == "brahmin") {
+                args.searchBrahminDays = true;
+            } else if (varnaType == "kshatriya") {
+                args.searchKshatriyaDays = true;
+            } else if (varnaType == "vaishya") {
+                args.searchVaishyaDays = true;
+            } else if (varnaType == "shudra") {
+                args.searchShudradays = true;
+            } else {
+                std::cerr << "Error: Invalid Varna type. Must be 'brahmin', 'kshatriya', 'vaishya', or 'shudra'\n";
+                return false;
+            }
+        } else if (arg == "--search-brahmin-days") {
+            args.searchBrahminDays = true;
+        } else if (arg == "--search-kshatriya-days") {
+            args.searchKshatriyaDays = true;
+        } else if (arg == "--search-vaishya-days") {
+            args.searchVaishyaDays = true;
+        } else if (arg == "--search-shudra-days") {
+            args.searchShudradays = true;
+
         // Myanmar Calendar options
         } else if (arg == "--myanmar-calendar") {
             args.showMyanmarCalendar = true;
@@ -2926,6 +2989,20 @@ int main(int argc, char* argv[]) {
             criteria.searchPurnima = args.searchPurnima;
             criteria.searchAmavasya = args.searchAmavasya;
             criteria.searchSankranti = args.searchSankranti;
+
+            // Julian Day criteria
+            if (args.searchJulianDay > 0) {
+                criteria.exactJulianDay = args.searchJulianDay;
+            } else if (args.searchJulianDayStart > 0) {
+                criteria.julianDayRangeStart = args.searchJulianDayStart;
+                criteria.julianDayRangeEnd = args.searchJulianDayEnd;
+            }
+
+            // Varna day criteria
+            criteria.searchBrahminDays = args.searchBrahminDays;
+            criteria.searchKshatriyaDays = args.searchKshatriyaDays;
+            criteria.searchVaishyaDays = args.searchVaishyaDays;
+            criteria.searchShudradays = args.searchShudradays;
 
             // Perform search
             std::vector<HinduCalendar::SearchResult> searchResults = hinduCalendar.searchHinduCalendar(criteria, args.latitude, args.longitude);

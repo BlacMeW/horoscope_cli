@@ -153,6 +153,11 @@ struct PanchangaData {
     std::string dishaShool;    // Direction of Shool
     std::string nakshatraShool;// Nakshatra Shool direction
 
+    // Varna (Savarna) information
+    std::string varnaDay;      // Varna of the day (Brahmin, Kshatriya, Vaishya, Shudra)
+    std::string varnaTithi;    // Varna based on Tithi
+    std::string varnaNakshatra;// Varna based on Nakshatra
+
     // Nakshatra Pada information
     int nakshatraPada;         // Current Nakshatra Pada (1-4)
     double nakshatraPadaEndTime; // When current pada ends
@@ -324,6 +329,7 @@ private:
     void calculateChandraTaraBalam(PanchangaData& panchanga) const;
     void calculateRituAyana(PanchangaData& panchanga) const;
     void calculateShoolDirections(PanchangaData& panchanga) const;
+    void calculateVarnaInformation(PanchangaData& panchanga) const;  // New method for Savarna calculation
     void identifyVrataUpavas(PanchangaData& panchanga) const;
 
     // Helper methods for time calculations
@@ -445,6 +451,21 @@ public:
         bool searchAmavasya = false;  // Search for Amavasya (new moon) days
         bool searchSankranti = false; // Search for Sankranti days
 
+        // Julian Day criteria
+        double exactJulianDay = -1.0;      // Search for specific Julian Day (-1 = ignore)
+        double julianDayRangeStart = -1.0; // Julian Day range start (-1 = ignore)
+        double julianDayRangeEnd = -1.0;   // Julian Day range end (-1 = ignore)
+        double julianDayTolerance = 0.5;   // Tolerance for Julian Day matching (default 0.5 days)
+
+        // Varna (Savarna) criteria
+        std::string exactVarnaDay = "";        // Search for specific day Varna ("Brahmin", "Kshatriya", "Vaishya", "Shudra", "" = ignore)
+        std::string exactVarnaTithi = "";      // Search for specific tithi Varna ("" = ignore)
+        std::string exactVarnaNakshatra = "";  // Search for specific nakshatra Varna ("" = ignore)
+        bool searchBrahminDays = false;        // Search for Brahmin Varna days
+        bool searchKshatriyaDays = false;      // Search for Kshatriya Varna days
+        bool searchVaishyaDays = false;        // Search for Vaishya Varna days
+        bool searchShudradays = false;         // Search for Shudra Varna days
+
         // Logical combination mode
         LogicMode logicMode = LogicMode::AND; // How to combine multiple criteria
 
@@ -478,6 +499,19 @@ public:
     std::vector<SearchResult> searchPurnimaOrAmavasya(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchByNakshatra(int nakshatra, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchMultiCriteria(const SearchCriteria& criteria, LogicMode logicMode, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+    // Julian Day search methods
+    std::vector<SearchResult> searchByJulianDay(double julianDay, const std::string& startDate, const std::string& endDate, double latitude, double longitude, double tolerance = 0.5) const;
+    std::vector<SearchResult> searchByJulianDayRange(double jdStart, double jdEnd, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+    // Varna (Savarna) search methods
+    std::vector<SearchResult> searchByVarnaDay(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByVarnaTithi(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByVarnaNakshatra(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchBrahminDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchKshatriyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchVaishyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchShudradays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
 
 private:
     // Utility method for parsing dates

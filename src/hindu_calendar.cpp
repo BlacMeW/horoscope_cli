@@ -353,6 +353,7 @@ PanchangaData HinduCalendar::calculatePanchanga(double julianDay, double latitud
         calculateChandraTaraBalam(panchanga);
         calculateRituAyana(panchanga);
         calculateShoolDirections(panchanga);
+        calculateVarnaInformation(panchanga);  // Calculate Savarna days
         identifyVrataUpavas(panchanga);
 
         // Set additional astronomical data
@@ -1030,6 +1031,83 @@ void HinduCalendar::calculateShoolDirections(PanchangaData& panchanga) const {
     }
 }
 
+void HinduCalendar::calculateVarnaInformation(PanchangaData& panchanga) const {
+    // Calculate Varna based on weekday (traditional classification)
+    int weekday = static_cast<int>(panchanga.vara);
+    std::vector<std::string> dayVarnas = {
+        "Kshatriya",  // Sunday - ruled by Sun (royal/warrior)
+        "Vaishya",    // Monday - ruled by Moon (merchant/agricultural)
+        "Kshatriya",  // Tuesday - ruled by Mars (warrior)
+        "Brahmin",    // Wednesday - ruled by Mercury (intellectual/priestly)
+        "Brahmin",    // Thursday - ruled by Jupiter (spiritual/learned)
+        "Vaishya",    // Friday - ruled by Venus (artistic/commercial)
+        "Shudra"      // Saturday - ruled by Saturn (service/labor)
+    };
+
+    if (weekday >= 0 && weekday <= 6) {
+        panchanga.varnaDay = dayVarnas[weekday];
+    }
+
+    // Calculate Varna based on Tithi (traditional lunar day classification)
+    int tithiNum = static_cast<int>(panchanga.tithi);
+    std::string tithiVarna;
+
+    if (tithiNum >= 1 && tithiNum <= 30) {
+        // Simplify tithi to 1-15 range for both pakshas
+        int simpleTithi = ((tithiNum - 1) % 15) + 1;
+
+        if (simpleTithi >= 1 && simpleTithi <= 3) {
+            tithiVarna = "Brahmin";     // Beginning tithis - spiritual
+        } else if (simpleTithi >= 4 && simpleTithi <= 7) {
+            tithiVarna = "Kshatriya";   // Middle tithis - active/royal
+        } else if (simpleTithi >= 8 && simpleTithi <= 11) {
+            tithiVarna = "Vaishya";     // Later tithis - commercial
+        } else if (simpleTithi >= 12 && simpleTithi <= 15) {
+            tithiVarna = "Shudra";      // Final tithis - service/completion
+        }
+    }
+    panchanga.varnaTithi = tithiVarna;
+
+    // Calculate Varna based on Nakshatra (based on traditional gana classification)
+    int nakNum = static_cast<int>(panchanga.nakshatra);
+    std::string nakshatraVarna;
+
+    // Classification based on traditional nakshatra gana and nature
+    std::vector<std::string> nakVarnas = {
+        "Kshatriya", // Ashwini - Swift, royal
+        "Shudra",    // Bharani - Service, death deity
+        "Kshatriya", // Krittika - Fire, sharp
+        "Vaishya",   // Rohini - Beauty, commerce
+        "Vaishya",   // Mrigashira - Soft, seeking
+        "Shudra",    // Ardra - Sharp, destructive
+        "Brahmin",   // Punarvasu - Divine, renewal
+        "Brahmin",   // Pushya - Divine, nourishing
+        "Shudra",    // Ashlesha - Sharp, serpent
+        "Kshatriya", // Magha - Royal, fierce
+        "Kshatriya", // Purva Phalguni - Royal, fierce
+        "Kshatriya", // Uttara Phalguni - Royal, fixed
+        "Brahmin",   // Hasta - Divine, skillful
+        "Shudra",    // Chitra - Mixed, artistic
+        "Brahmin",   // Swati - Divine, independent
+        "Shudra",    // Vishakha - Mixed, forked
+        "Brahmin",   // Anuradha - Divine, soft
+        "Shudra",    // Jyeshtha - Sharp, competitive
+        "Shudra",    // Mula - Sharp, destructive
+        "Kshatriya", // Purva Ashadha - Fierce, invincible
+        "Kshatriya", // Uttara Ashadha - Fixed, victory
+        "Brahmin",   // Shravana - Divine, learning
+        "Kshatriya", // Dhanishta - Royal, wealthy
+        "Shudra",    // Shatabhisha - Independent, healing
+        "Kshatriya", // Purva Bhadrapada - Fierce, transformative
+        "Kshatriya", // Uttara Bhadrapada - Fixed, depth
+        "Brahmin"    // Revati - Divine, nourishing
+    };
+
+    if (nakNum >= 1 && nakNum <= 27) {
+        panchanga.varnaNakshatra = nakVarnas[nakNum - 1];
+    }
+}
+
 void HinduCalendar::identifyVrataUpavas(PanchangaData& panchanga) const {
     panchanga.vrataList.clear();
     panchanga.isFastingDay = false;
@@ -1264,6 +1342,12 @@ std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga
     oss << "🧭 SHOOL DIRECTIONS:\n";
     oss << "   Disha Shool: " << panchanga.dishaShool << "\n";
     oss << "   Nakshatra Shool: " << panchanga.nakshatraShool << "\n\n";
+
+    oss << "🎯 VARNA (SAVARNA) CLASSIFICATION:\n";
+    oss << "   Day Varna (Weekday): " << panchanga.varnaDay << "\n";
+    oss << "   Tithi Varna (Lunar Day): " << panchanga.varnaTithi << "\n";
+    oss << "   Nakshatra Varna (Star): " << panchanga.varnaNakshatra << "\n";
+    oss << "   Julian Day: " << std::fixed << std::setprecision(1) << panchanga.julianDay << "\n\n";
 
     if (panchanga.isEkadashi || panchanga.isPurnima || panchanga.isAmavasya ||
         panchanga.isSankranti || panchanga.isNavratri || panchanga.isGandaMool ||
@@ -2102,6 +2186,106 @@ std::vector<HinduCalendar::SearchResult> HinduCalendar::searchHinduCalendar(cons
                 isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
             }
 
+            // Julian Day criteria
+            if (criteria.exactJulianDay > 0.0) {
+                totalCriteria++;
+                bool match = (abs(jd - criteria.exactJulianDay) <= criteria.julianDayTolerance);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "JD=" + std::to_string(static_cast<long>(jd));
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            } else if (criteria.julianDayRangeStart > 0.0 && criteria.julianDayRangeEnd > 0.0) {
+                totalCriteria++;
+                bool match = (jd >= criteria.julianDayRangeStart && jd <= criteria.julianDayRangeEnd);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "JD=" + std::to_string(static_cast<long>(criteria.julianDayRangeStart)) + "-" + std::to_string(static_cast<long>(criteria.julianDayRangeEnd));
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            // Varna (Savarna) criteria
+            if (!criteria.exactVarnaDay.empty()) {
+                totalCriteria++;
+                bool match = (panchanga.varnaDay == criteria.exactVarnaDay);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "VarnaDay=" + panchanga.varnaDay;
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (!criteria.exactVarnaTithi.empty()) {
+                totalCriteria++;
+                bool match = (panchanga.varnaTithi == criteria.exactVarnaTithi);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "VarnaTithi=" + panchanga.varnaTithi;
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (!criteria.exactVarnaNakshatra.empty()) {
+                totalCriteria++;
+                bool match = (panchanga.varnaNakshatra == criteria.exactVarnaNakshatra);
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "VarnaNakshatra=" + panchanga.varnaNakshatra;
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            // Boolean Varna searches
+            if (criteria.searchBrahminDays) {
+                totalCriteria++;
+                bool match = (panchanga.varnaDay == "Brahmin");
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "BrahminDay";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (criteria.searchKshatriyaDays) {
+                totalCriteria++;
+                bool match = (panchanga.varnaDay == "Kshatriya");
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "KshatriyaDay";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (criteria.searchVaishyaDays) {
+                totalCriteria++;
+                bool match = (panchanga.varnaDay == "Vaishya");
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "VaishyaDay";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
+            if (criteria.searchShudradays) {
+                totalCriteria++;
+                bool match = (panchanga.varnaDay == "Shudra");
+                if (match) {
+                    matchCount++;
+                    if (!matchDescription.empty()) matchDescription += ", ";
+                    matchDescription += "ShudraDay";
+                }
+                isMatch = (criteria.logicMode == LogicMode::AND) ? (isMatch && match) : (isMatch || match);
+            }
+
             // Calculate match score
             if (totalCriteria > 0) {
                 matchScore = static_cast<double>(matchCount) / static_cast<double>(totalCriteria);
@@ -2225,6 +2409,91 @@ std::vector<HinduCalendar::SearchResult> HinduCalendar::searchMultiCriteria(cons
     modifiedCriteria.searchEndDate = endDate;
 
     return searchHinduCalendar(modifiedCriteria, latitude, longitude);
+}
+
+// Julian Day search methods
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByJulianDay(double julianDay, const std::string& startDate, const std::string& endDate, double latitude, double longitude, double tolerance) const {
+    SearchCriteria criteria;
+    criteria.exactJulianDay = julianDay;
+    criteria.julianDayTolerance = tolerance;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByJulianDayRange(double jdStart, double jdEnd, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.julianDayRangeStart = jdStart;
+    criteria.julianDayRangeEnd = jdEnd;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+// Varna (Savarna) search methods
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByVarnaDay(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactVarnaDay = varnaType;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByVarnaTithi(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactVarnaTithi = varnaType;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchByVarnaNakshatra(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.exactVarnaNakshatra = varnaType;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchBrahminDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchBrahminDays = true;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchKshatriyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchKshatriyaDays = true;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchVaishyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchVaishyaDays = true;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchShudradays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchShudradays = true;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
 }
 
 } // namespace Astro
