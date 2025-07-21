@@ -318,6 +318,14 @@ PanchangaData HinduCalendar::calculatePanchanga(double julianDay, double latitud
         panchanga.isShukla = (static_cast<int>(panchanga.tithi) <= 15);
         panchanga.isKrishna = !panchanga.isShukla;
 
+        // Calculate Hindu day based on tithi
+        int tithiNum = static_cast<int>(panchanga.tithi);
+        if (panchanga.isShukla) {
+            panchanga.day = tithiNum; // Shukla paksha: 1-15
+        } else {
+            panchanga.day = tithiNum - 15; // Krishna paksha: 1-15 (tithi 16-30 becomes day 1-15)
+        }
+
         // Calculate end times
         panchanga.tithiEndTime = calculateTithiEndTime(lunarPhase, sunSpeed, moonSpeed);
         panchanga.nakshatraEndTime = calculateNakshatraEndTime(moonLongitude, moonSpeed);
