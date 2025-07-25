@@ -15,7 +15,8 @@ EphemerisConfig::EphemerisConfig()
     : intervalDays(1), showDegreeMinutes(true), showSign(true), showRetrograde(true),
       showSpeed(false), showDistance(false), showLatitude(false),
       showDeclination(false), showRightAscension(false), showSiderealTime(false),
-      compactFormat(false), format("table") {
+      compactFormat(false), format("table"), zodiacMode(ZodiacMode::TROPICAL),
+      ayanamsa(AyanamsaType::LAHIRI) {
 
     // Default planets
     planets = {Planet::SUN, Planet::MOON, Planet::MERCURY, Planet::VENUS, Planet::MARS,
@@ -198,8 +199,17 @@ std::vector<EphemerisEntry> EphemerisTable::generateEntries(const EphemerisConfi
         while (mean_sidereal_time >= 24.0) mean_sidereal_time -= 24.0;
         while (mean_sidereal_time < 0.0) mean_sidereal_time += 24.0;
 
-        entry.siderealTime = mean_sidereal_time;        // Calculate planet positions for this date
+        entry.siderealTime = mean_sidereal_time;
+
+        // Calculate planet positions for this date with zodiac mode and ayanamsa
         BirthData entryDate = {year, month, day, hour, minute, static_cast<int>(second), 0.0, 0.0, 0.0};
+
+        // Configure the calculator with zodiac mode and ayanamsa
+        calc.setZodiacMode(config.zodiacMode);
+        if (config.zodiacMode == ZodiacMode::SIDEREAL) {
+            calc.setAyanamsa(config.ayanamsa);
+        }
+
         calc.calculateAllPlanets(entryDate, entry.positions);
 
         entries.push_back(entry);
@@ -220,7 +230,14 @@ std::string EphemerisTable::formatAsTable(const std::vector<EphemerisEntry>& ent
     std::stringstream ss;
     ss << "\n=== EPHEMERIS TABLE ===\n";
     ss << "Period: " << config.startDate.getDateTimeString() << " to " << config.endDate.getDateTimeString() << "\n";
-    ss << "Interval: " << config.intervalDays << " day(s)\n\n";
+    ss << "Interval: " << config.intervalDays << " day(s)\n";
+
+    // Show zodiac mode and ayanamsa info
+    ss << "Zodiac: " << zodiacModeToString(config.zodiacMode);
+    if (config.zodiacMode == ZodiacMode::SIDEREAL) {
+        ss << " (" << ayanamsaTypeToString(config.ayanamsa) << " ayanamsa)";
+    }
+    ss << "\n\n";
 
     // Calculate column widths
     std::vector<int> widths = calculateColumnWidths(entries, config);
@@ -668,7 +685,13 @@ std::string EphemerisTable::formatAsCompactTable(const std::vector<EphemerisEntr
     // Get year and determine title
     int year = entries[0].year;
     ss << "ASTRODIENST EPHEMERIS for the year " << year << "\n";
-    ss << "geocentric\n\n";
+
+    // Show zodiac mode and ayanamsa info
+    if (config.zodiacMode == ZodiacMode::SIDEREAL) {
+        ss << "sidereal (" << ayanamsaTypeToString(config.ayanamsa) << " ayanamsa)\n\n";
+    } else {
+        ss << "geocentric\n\n";
+    }
 
     // Group entries by month
     std::map<int, std::vector<EphemerisEntry>> monthlyEntries;
@@ -768,6 +791,21 @@ char EphemerisTable::getSignCharacter(ZodiacSign sign) const {
         case ZodiacSign::PISCES: return 'l';
         default: return '?';
     }
+}
+
+// Static helper methods for configuration
+EphemerisConfig EphemerisTable::createSiderealConfig(AyanamsaType ayanamsa) {
+    EphemerisConfig config;
+    config.zodiacMode = ZodiacMode::SIDEREAL;
+    config.ayanamsa = ayanamsa;
+    return config;
+}
+
+EphemerisConfig EphemerisTable::createTropicalConfig() {
+    EphemerisConfig config;
+    config.zodiacMode = ZodiacMode::TROPICAL;
+    // ayanamsa is not used for tropical calculations
+    return config;
 }
 
 } // namespace Astro

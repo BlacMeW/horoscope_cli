@@ -35,6 +35,10 @@ struct EphemerisConfig {
     bool compactFormat;         // Use compact Astrodienst-style format
     std::string format;         // Output format: "table", "csv", "json"
 
+    // Zodiac system configuration
+    ZodiacMode zodiacMode;      // Tropical or Sidereal zodiac
+    AyanamsaType ayanamsa;      // Ayanamsa type for sidereal calculations
+
     EphemerisConfig();
 };
 
@@ -84,6 +88,10 @@ public:
 
     // Generate planet position for single date
     EphemerisEntry generateSingleEntry(const BirthData& date, const std::vector<Planet>& planets) const;
+
+    // Configuration methods for zodiac mode and ayanamsa
+    static EphemerisConfig createSiderealConfig(AyanamsaType ayanamsa = AyanamsaType::LAHIRI);
+    static EphemerisConfig createTropicalConfig();
 
     // Get error message
     std::string getLastError() const { return lastError; }

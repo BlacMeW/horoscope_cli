@@ -581,7 +581,9 @@ void printHelp() {
     std::cout << "                       Use compact Astrodienst-style format\n";
     std::cout << "                       • Month headers with grouped entries\n";
     std::cout << "                       • Planet abbreviations (Sun, Moon, Merc, etc.)\n";
-    std::cout << "                       • Compact position notation (DDMMx)\n\n";
+    std::cout << "                       • Compact position notation (DDMMx)\n";
+    std::cout << "                       • Supports tropical and sidereal zodiac modes\n";
+    std::cout << "                       • Use --zodiac-mode and --ayanamsa options\n\n";
 
     std::cout << "KP SYSTEM OPTIONS (Krishnamurti Paddhati) 🇮🇳🔢\n";
     std::cout << "    --kp-table         Show complete KP Sub Lord 5 Levels analysis\n";
@@ -1199,6 +1201,18 @@ void printHelp() {
     std::cout << "                --ephemeris-range 2025-01-01 2025-12-31 \\\n";
     std::cout << "                --ephemeris-interval 7 \\\n";
     std::cout << "                --ephemeris-format csv\n\n";
+
+    std::cout << "  # Sidereal ephemeris with Lahiri ayanamsa\n";
+    std::cout << "  horoscope_cli --ephemeris \\\n";
+    std::cout << "                --ephemeris-range 2025-01-01 2025-01-31 \\\n";
+    std::cout << "                --zodiac-mode sidereal --ayanamsa lahiri \\\n";
+    std::cout << "                --ephemeris-compact --ephemeris-sidereal-time\n\n";
+
+    std::cout << "  # Vedic ephemeris with Krishnamurti ayanamsa\n";
+    std::cout << "  horoscope_cli --ephemeris \\\n";
+    std::cout << "                --ephemeris-range 2025-01-01 2025-01-31 \\\n";
+    std::cout << "                --zodiac-mode sidereal --ayanamsa krishnamurti \\\n";
+    std::cout << "                --ephemeris-compact\n\n";
 
     std::cout << "SOLAR SYSTEM VIEWS 🌌\n";
     std::cout << "  # Standalone solar system orbital display\n";
@@ -2789,6 +2803,10 @@ int main(int argc, char* argv[]) {
 
             config.intervalDays = args.ephemerisIntervalDays;
             config.format = args.ephemerisFormat;
+
+            // Set zodiac mode and ayanamsa
+            config.zodiacMode = args.zodiacMode;
+            config.ayanamsa = args.ayanamsa;
 
             // Set coordinate type options
             if (args.ephemerisCoordinateType == "declination") {
