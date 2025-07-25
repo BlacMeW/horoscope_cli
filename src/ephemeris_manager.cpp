@@ -268,7 +268,7 @@ char EphemerisManager::houseSystemToSwissEph(HouseSystem system) const {
 }
 
 int EphemerisManager::buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags) const {
-    int32 iflag = SEFLG_SWIEPH; // Use Swiss Ephemeris by default
+    int32 iflag = SEFLG_SWIEPH | SEFLG_SPEED; // Use Swiss Ephemeris by default and always include speed
 
     // Set zodiac mode
     if (zodiacMode == ZodiacMode::SIDEREAL) {

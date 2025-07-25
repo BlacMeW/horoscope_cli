@@ -5,9 +5,20 @@
 #include <swephexp.h>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <cmath>
 #include <algorithm>
 #include <map>
+
+// ANSI color codes for terminal output
+namespace AnsiColors {
+    const std::string RESET = "\033[0m";
+    const std::string RED = "\033[31m";
+    const std::string GREEN = "\033[32m";
+    const std::string YELLOW = "\033[33m";
+    const std::string BLUE = "\033[34m";
+    const std::string WHITE = "\033[37m";
+}
 
 namespace Astro {
 
@@ -16,14 +27,12 @@ EphemerisConfig::EphemerisConfig()
       showSpeed(false), showDistance(false), showLatitude(false),
       showDeclination(false), showRightAscension(false), showSiderealTime(false),
       compactFormat(false), format("table"), zodiacMode(ZodiacMode::TROPICAL),
-      ayanamsa(AyanamsaType::LAHIRI) {
+      ayanamsa(AyanamsaType::LAHIRI), useColors(true) {
 
     // Default planets
     planets = {Planet::SUN, Planet::MOON, Planet::MERCURY, Planet::VENUS, Planet::MARS,
                Planet::JUPITER, Planet::SATURN, Planet::URANUS, Planet::NEPTUNE, Planet::PLUTO};
-}
-
-EphemerisTable::EphemerisTable() : isInitialized(false) {
+}EphemerisTable::EphemerisTable() : isInitialized(false) {
 }
 
 EphemerisTable::~EphemerisTable() {
@@ -338,9 +347,9 @@ std::string EphemerisTable::formatTableHeader(const std::vector<std::string>& he
                                             const std::vector<int>& widths) const {
     std::stringstream ss;
     for (size_t i = 0; i < headers.size() && i < widths.size(); i++) {
-        // All columns - left aligned
-        ss << std::left << std::setw(widths[i]) << headers[i];
-        if (i < headers.size() - 1) ss << " ";
+        // All columns - left aligned using consistent padding
+        if (i > 0) ss << " ";
+        ss << padStringToWidth(headers[i], widths[i], true);
     }
     ss << "\n";
     return ss.str();
@@ -361,13 +370,13 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
     std::stringstream ss;
 
     // Date column - left aligned
-    ss << std::left << std::setw(widths[0]) << entry.getDateString();
+    ss << padStringToWidth(entry.getDateString(), widths[0], true);
 
     size_t columnIndex = 1;
 
     // Sidereal time column if enabled
     if (config.showSiderealTime) {
-        ss << " " << std::left << std::setw(widths[columnIndex]) << formatSiderealTime(entry.siderealTime);
+        ss << " " << padStringToWidth(formatSiderealTime(entry.siderealTime), widths[columnIndex], true);
         columnIndex++;
     }
 
@@ -381,13 +390,13 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
 
         std::string planetStr;
         if (it != entry.positions.end()) {
-            planetStr = formatPlanetPosition(*it, config);
+            planetStr = formatColoredPosition(*it, config);
         } else {
             planetStr = "---";
         }
 
-        // Left-align the planet position data
-        ss << " " << std::left << std::setw(widths[columnIndex]) << planetStr;
+        // Left-align the planet position data using proper padding for colored text
+        ss << " " << padStringToWidth(planetStr, widths[columnIndex], true);
         columnIndex++;
     }
     ss << "\n";
@@ -528,6 +537,113 @@ std::string EphemerisEntry::getDateString() const {
 
 bool EphemerisTable::isRetrograde(const PlanetPosition& position) const {
     return position.speed < 0.0;
+}
+
+MotionType EphemerisTable::getMotionType(const PlanetPosition& position) const {
+    double speed = std::abs(position.speed);
+
+    // Retrograde motion
+    if (position.speed < 0.0) {
+        return MotionType::RETROGRADE;
+    }
+
+    // Define speed thresholds based on planet type
+    double fastThreshold, normalThreshold, slowThreshold;
+
+    switch (position.planet) {
+        case Planet::SUN:
+            fastThreshold = 1.1;   // Faster than normal solar motion
+            normalThreshold = 0.9; // Normal solar motion (~1°/day)
+            slowThreshold = 0.5;   // Slow solar motion
+            break;
+        case Planet::MOON:
+            fastThreshold = 14.0;  // Fast lunar motion
+            normalThreshold = 12.0; // Normal lunar motion (~13°/day)
+            slowThreshold = 10.0;  // Slow lunar motion
+            break;
+        case Planet::MERCURY:
+            fastThreshold = 2.5;
+            normalThreshold = 1.0;
+            slowThreshold = 0.3;
+            break;
+        case Planet::VENUS:
+            fastThreshold = 1.5;
+            normalThreshold = 0.8;
+            slowThreshold = 0.2;
+            break;
+        case Planet::MARS:
+            fastThreshold = 0.8;
+            normalThreshold = 0.4;
+            slowThreshold = 0.1;
+            break;
+        case Planet::JUPITER:
+            fastThreshold = 0.3;
+            normalThreshold = 0.1;
+            slowThreshold = 0.03;
+            break;
+        case Planet::SATURN:
+            fastThreshold = 0.15;
+            normalThreshold = 0.08;
+            slowThreshold = 0.02;
+            break;
+        default: // Outer planets
+            fastThreshold = 0.1;
+            normalThreshold = 0.05;
+            slowThreshold = 0.01;
+            break;
+    }
+
+    // Determine motion type based on speed
+    if (speed < slowThreshold) {
+        return MotionType::STATIONARY;
+    } else if (speed > fastThreshold) {
+        return MotionType::DIRECT_FAST;
+    } else if (speed > normalThreshold) {
+        return MotionType::DIRECT_NORMAL;
+    } else {
+        return MotionType::DIRECT_SLOW;
+    }
+}
+
+std::string EphemerisTable::applyMotionColor(const std::string& text, MotionType motionType, bool useColors) const {
+    if (!useColors) {
+        return text;
+    }
+
+    std::stringstream ss;
+
+    switch (motionType) {
+        case MotionType::RETROGRADE:
+            ss << AnsiColors::RED << text << AnsiColors::RESET;
+            break;
+        case MotionType::DIRECT_FAST:
+            ss << AnsiColors::GREEN << text << AnsiColors::RESET;
+            break;
+        case MotionType::DIRECT_SLOW:
+            ss << AnsiColors::YELLOW << text << AnsiColors::RESET;
+            break;
+        case MotionType::STATIONARY:
+            ss << AnsiColors::BLUE << text << AnsiColors::RESET;
+            break;
+        case MotionType::DIRECT_NORMAL:
+        default:
+            return text; // No color for normal motion
+    }
+
+    return ss.str();
+}
+
+std::string EphemerisTable::formatColoredPosition(const PlanetPosition& position, const EphemerisConfig& config) const {
+    // Get the basic formatted position
+    std::string positionStr = formatPlanetPosition(position, config);
+
+    // Apply motion-based coloring if enabled
+    if (config.useColors) {
+        MotionType motionType = getMotionType(position);
+        positionStr = applyMotionColor(positionStr, motionType, true);
+    }
+
+    return positionStr;
 }
 
 std::string EphemerisTable::formatDegreeWithSign(double longitude) const {
@@ -727,7 +843,7 @@ std::string EphemerisTable::formatAsCompactTable(const std::vector<EphemerisEntr
                 auto it = std::find_if(entry.positions.begin(), entry.positions.end(),
                                      [planet](const PlanetPosition& pos) { return pos.planet == planet; });
                 if (it != entry.positions.end()) {
-                    ss << formatCompactPosition(*it) << " ";
+                    ss << formatColoredCompactPosition(*it, config) << " ";
                 } else {
                     ss << "-----  ";
                 }
@@ -775,6 +891,19 @@ std::string EphemerisTable::formatCompactPosition(const PlanetPosition& position
     return oss.str();
 }
 
+std::string EphemerisTable::formatColoredCompactPosition(const PlanetPosition& position, const EphemerisConfig& config) const {
+    // Get the basic compact position
+    std::string positionStr = formatCompactPosition(position);
+
+    // Apply motion-based coloring if enabled
+    if (config.useColors) {
+        MotionType motionType = getMotionType(position);
+        positionStr = applyMotionColor(positionStr, motionType, true);
+    }
+
+    return positionStr;
+}
+
 char EphemerisTable::getSignCharacter(ZodiacSign sign) const {
     switch (sign) {
         case ZodiacSign::ARIES: return 'a';
@@ -806,6 +935,42 @@ EphemerisConfig EphemerisTable::createTropicalConfig() {
     config.zodiacMode = ZodiacMode::TROPICAL;
     // ayanamsa is not used for tropical calculations
     return config;
+}
+
+// Helper function to calculate visual width excluding ANSI codes
+size_t EphemerisTable::getVisualWidth(const std::string& text) const {
+    size_t visualWidth = 0;
+    bool inEscapeSequence = false;
+
+    for (size_t i = 0; i < text.length(); i++) {
+        if (text[i] == '\033') {
+            inEscapeSequence = true;
+        } else if (inEscapeSequence && text[i] == 'm') {
+            inEscapeSequence = false;
+        } else if (!inEscapeSequence) {
+            visualWidth++;
+        }
+    }
+
+    return visualWidth;
+}
+
+// Helper function to pad string to specific width accounting for ANSI codes
+std::string EphemerisTable::padStringToWidth(const std::string& text, int width, bool leftAlign) const {
+    size_t visualWidth = getVisualWidth(text);
+
+    if (static_cast<int>(visualWidth) >= width) {
+        return text; // Already wide enough or too wide
+    }
+
+    int paddingNeeded = width - static_cast<int>(visualWidth);
+    std::string padding(paddingNeeded, ' ');
+
+    if (leftAlign) {
+        return text + padding;
+    } else {
+        return padding + text;
+    }
 }
 
 } // namespace Astro

@@ -6,6 +6,15 @@
 
 namespace Astro {
 
+// Planetary motion types for color coding
+enum class MotionType {
+    DIRECT_FAST,        // Fast direct motion (green)
+    DIRECT_NORMAL,      // Normal direct motion (white/default)
+    DIRECT_SLOW,        // Slow direct motion (yellow)
+    STATIONARY,         // Nearly stationary (blue)
+    RETROGRADE          // Retrograde motion (red)
+};
+
 // Ephemeris table entry structure
 struct EphemerisEntry {
     double julianDay;
@@ -38,6 +47,9 @@ struct EphemerisConfig {
     // Zodiac system configuration
     ZodiacMode zodiacMode;      // Tropical or Sidereal zodiac
     AyanamsaType ayanamsa;      // Ayanamsa type for sidereal calculations
+
+    // Display options
+    bool useColors;             // Enable color coding for planetary motion
 
     EphemerisConfig();
 };
@@ -133,6 +145,15 @@ private:
     double calculateRightAscension(const PlanetPosition& position) const;
     bool isRetrograde(const PlanetPosition& position) const;
 
+    // Motion analysis and color formatting
+    MotionType getMotionType(const PlanetPosition& position) const;
+    std::string applyMotionColor(const std::string& text, MotionType motionType, bool useColors) const;
+    std::string formatColoredPosition(const PlanetPosition& position, const EphemerisConfig& config) const;
+
+    // Helper functions for ANSI color alignment
+    size_t getVisualWidth(const std::string& text) const;
+    std::string padStringToWidth(const std::string& text, int width, bool leftAlign = true) const;
+
     // Format degree values
     std::string formatDegrees(double degrees, bool showMinutes = true) const;
     std::string formatDegreeWithSign(double longitude) const;
@@ -143,6 +164,7 @@ private:
     // Compact format helpers
     std::string getPlanetAbbreviation(Planet planet) const;
     std::string formatCompactPosition(const PlanetPosition& position) const;
+    std::string formatColoredCompactPosition(const PlanetPosition& position, const EphemerisConfig& config) const;
     char getSignCharacter(ZodiacSign sign) const;
 
     // Default planet lists

@@ -113,6 +113,7 @@ struct CommandLineArgs {
     std::string ephemerisCoordinateType = "longitude"; // "longitude", "declination", or "both"
     bool ephemerisShowSiderealTime = false;
     bool ephemerisCompactFormat = false;
+    bool ephemerisUseColors = true; // Enable colors by default
 
     // KP System options
     bool showKPTable = false;
@@ -584,6 +585,16 @@ void printHelp() {
     std::cout << "                       • Compact position notation (DDMMx)\n";
     std::cout << "                       • Supports tropical and sidereal zodiac modes\n";
     std::cout << "                       • Use --zodiac-mode and --ayanamsa options\n\n";
+
+    std::cout << "    --ephemeris-colors Color-coded planetary motion (default: enabled)\n";
+    std::cout << "                       • Red = Retrograde motion\n";
+    std::cout << "                       • Green = Fast direct motion\n";
+    std::cout << "                       • Yellow = Slow direct motion\n";
+    std::cout << "                       • Blue = Nearly stationary\n";
+    std::cout << "                       • White = Normal motion\n\n";
+
+    std::cout << "    --ephemeris-no-colors\n";
+    std::cout << "                       Disable color coding for planetary motion\n\n";
 
     std::cout << "KP SYSTEM OPTIONS (Krishnamurti Paddhati) 🇮🇳🔢\n";
     std::cout << "    --kp-table         Show complete KP Sub Lord 5 Levels analysis\n";
@@ -1850,6 +1861,10 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.ephemerisShowSiderealTime = true;
         } else if (arg == "--ephemeris-compact") {
             args.ephemerisCompactFormat = true;
+        } else if (arg == "--ephemeris-colors") {
+            args.ephemerisUseColors = true;
+        } else if (arg == "--ephemeris-no-colors") {
+            args.ephemerisUseColors = false;
         } else if (arg == "--eclipse-format" && i + 1 < argc) {
             args.eclipseFormat = argv[++i];
             if (args.eclipseFormat != "table" && args.eclipseFormat != "text" && args.eclipseFormat != "csv" && args.eclipseFormat != "json") {
@@ -2827,6 +2842,7 @@ int main(int argc, char* argv[]) {
             // Set sidereal time and compact format options
             config.showSiderealTime = args.ephemerisShowSiderealTime;
             config.compactFormat = args.ephemerisCompactFormat;
+            config.useColors = args.ephemerisUseColors;
 
             std::string result = ephemTable.generateTable(config);
 
