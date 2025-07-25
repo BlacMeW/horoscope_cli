@@ -167,6 +167,7 @@ struct HouseCusps {
 std::string zodiacSignToString(ZodiacSign sign);
 std::string planetToString(Planet planet);
 std::string planetToShortString(Planet planet);
+std::string planetToSymbol(Planet planet);
 std::string aspectTypeToString(AspectType aspect);
 std::string zodiacModeToString(ZodiacMode mode);
 std::string ayanamsaTypeToString(AyanamsaType ayanamsa);

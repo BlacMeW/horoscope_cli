@@ -354,6 +354,26 @@ std::string planetToShortString(Planet planet) {
     }
 }
 
+std::string planetToSymbol(Planet planet) {
+    switch (planet) {
+        case Planet::SUN: return "☉";
+        case Planet::MOON: return "☽";
+        case Planet::MERCURY: return "☿";
+        case Planet::VENUS: return "♀";
+        case Planet::MARS: return "♂";
+        case Planet::JUPITER: return "♃";
+        case Planet::SATURN: return "♄";
+        case Planet::URANUS: return "♅";
+        case Planet::NEPTUNE: return "♆";
+        case Planet::PLUTO: return "♇";
+        case Planet::NORTH_NODE: return "☊";
+        case Planet::SOUTH_NODE: return "☋";
+        case Planet::CHIRON: return "⚷";
+        case Planet::LILITH: return "⚸";
+        default: return "?";
+    }
+}
+
 std::string formatBCDate(int year, int month, int day) {
     std::ostringstream oss;
     oss << std::setfill('0');

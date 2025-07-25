@@ -7,13 +7,15 @@
 #include <iomanip>
 #include <cmath>
 #include <algorithm>
+#include <map>
 
 namespace Astro {
 
 EphemerisConfig::EphemerisConfig()
     : intervalDays(1), showDegreeMinutes(true), showSign(true), showRetrograde(true),
       showSpeed(false), showDistance(false), showLatitude(false),
-      showDeclination(false), showRightAscension(false), format("table") {
+      showDeclination(false), showRightAscension(false), showSiderealTime(false),
+      compactFormat(false), format("table") {
 
     // Default planets
     planets = {Planet::SUN, Planet::MOON, Planet::MERCURY, Planet::VENUS, Planet::MARS,
@@ -184,7 +186,19 @@ std::vector<EphemerisEntry> EphemerisTable::generateEntries(const EphemerisConfi
         entry.month = month;
         entry.day = day;
 
-        // Calculate planet positions for this date
+        // Calculate sidereal time for ephemeris table
+        // Testing different sidereal time calculation methods to match reference
+        double jd_0h_ut = floor(currentJD) + 0.5; // JD for 0h UT of the date
+
+        // Try using swe_sidtime0() which calculates mean sidereal time at Greenwich for 0h UT
+        // This might be what the reference ephemeris is using
+        double mean_sidereal_time = swe_sidtime0(jd_0h_ut, 0.0, 0.0); // mean sidereal time, no nutation, no longitude
+
+        // Ensure it's in the 0-24 hour range
+        while (mean_sidereal_time >= 24.0) mean_sidereal_time -= 24.0;
+        while (mean_sidereal_time < 0.0) mean_sidereal_time += 24.0;
+
+        entry.siderealTime = mean_sidereal_time;        // Calculate planet positions for this date
         BirthData entryDate = {year, month, day, hour, minute, static_cast<int>(second), 0.0, 0.0, 0.0};
         calc.calculateAllPlanets(entryDate, entry.positions);
 
@@ -197,6 +211,10 @@ std::vector<EphemerisEntry> EphemerisTable::generateEntries(const EphemerisConfi
 std::string EphemerisTable::formatAsTable(const std::vector<EphemerisEntry>& entries, const EphemerisConfig& config) const {
     if (entries.empty()) {
         return "No entries to display.\n";
+    }
+
+    if (config.compactFormat) {
+        return formatAsCompactTable(entries, config);
     }
 
     std::stringstream ss;
@@ -239,8 +257,13 @@ std::vector<std::string> EphemerisTable::getColumnHeaders(const EphemerisConfig&
     std::vector<std::string> headers;
     headers.push_back("Date");
 
+    // Add sidereal time column if enabled
+    if (config.showSiderealTime) {
+        headers.push_back("Sidereal Time");
+    }
+
     for (Planet planet : config.planets) {
-        std::string header = planetToString(planet);
+        std::string header = planetToSymbol(planet);
 
         // Add coordinate type suffix to clarify what's being shown
         if (config.showDeclination && !config.showSign) {
@@ -263,6 +286,11 @@ std::vector<int> EphemerisTable::calculateColumnWidths(const std::vector<Ephemer
     // Date column width
     widths.push_back(12);
 
+    // Sidereal time column width if enabled
+    if (config.showSiderealTime) {
+        widths.push_back(13); // Width for "Sidereal Time" header and "HH:MM:SS" format
+    }
+
     // Planet column widths - adjusted for different coordinate types
     for (size_t i = 0; i < config.planets.size(); i++) {
         int width = 10; // Minimum width for centering
@@ -274,7 +302,7 @@ std::vector<int> EphemerisTable::calculateColumnWidths(const std::vector<Ephemer
             // Both longitude and declination: "12°34'♊/+23°45'" format (16 chars)
             width = 18;
         } else {
-            // Default longitude mode
+            // Default longitude mode - adjust for shorter symbol headers
             if (config.showSign && config.showDegreeMinutes) width = 13;
             else if (config.showSign) width = 11;
             else if (config.showDegreeMinutes) width = 10;
@@ -317,10 +345,17 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
 
     // Date column - left aligned
     ss << std::left << std::setw(widths[0]) << entry.getDateString();
-    if (widths.size() > 1) ss << " ";
+
+    size_t columnIndex = 1;
+
+    // Sidereal time column if enabled
+    if (config.showSiderealTime) {
+        ss << " " << std::left << std::setw(widths[columnIndex]) << formatSiderealTime(entry.siderealTime);
+        columnIndex++;
+    }
 
     // Planet columns - left aligned
-    for (size_t i = 0; i < config.planets.size() && i + 1 < widths.size(); i++) {
+    for (size_t i = 0; i < config.planets.size() && columnIndex < widths.size(); i++) {
         Planet planet = config.planets[i];
 
         // Find position for this planet
@@ -335,8 +370,8 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
         }
 
         // Left-align the planet position data
-        ss << std::left << std::setw(widths[i + 1]) << planetStr;
-        if (i < config.planets.size() - 1) ss << " ";
+        ss << " " << std::left << std::setw(widths[columnIndex]) << planetStr;
+        columnIndex++;
     }
     ss << "\n";
     return ss.str();
@@ -519,6 +554,24 @@ std::string EphemerisTable::formatDeclination(double declination) const {
     return oss.str();
 }
 
+std::string EphemerisTable::formatSiderealTime(double siderealHours) const {
+    int hours = static_cast<int>(siderealHours);
+    double minutesFloat = (siderealHours - hours) * 60;
+    int minutes = static_cast<int>(minutesFloat);
+    int seconds = static_cast<int>((minutesFloat - minutes) * 60);
+
+    // Keep within 24 hour range
+    hours = hours % 24;
+    if (hours < 0) hours += 24;
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << hours
+        << ":" << std::setw(2) << minutes
+        << ":" << std::setw(2) << seconds;
+
+    return oss.str();
+}
+
 std::vector<Planet> EphemerisTable::getDefaultPlanets() const {
     return {Planet::SUN, Planet::MOON, Planet::MERCURY, Planet::VENUS, Planet::MARS,
             Planet::JUPITER, Planet::SATURN, Planet::URANUS, Planet::NEPTUNE, Planet::PLUTO};
@@ -603,6 +656,118 @@ std::string EphemerisTable::exportToHTML(const std::vector<EphemerisEntry>& entr
 
     html << "</table>\n</body></html>";
     return html.str();
+}
+
+std::string EphemerisTable::formatAsCompactTable(const std::vector<EphemerisEntry>& entries, const EphemerisConfig& config) const {
+    if (entries.empty()) {
+        return "No entries to display.\n";
+    }
+
+    std::stringstream ss;
+
+    // Get year and determine title
+    int year = entries[0].year;
+    ss << "ASTRODIENST EPHEMERIS for the year " << year << "\n";
+    ss << "geocentric\n\n";
+
+    // Group entries by month
+    std::map<int, std::vector<EphemerisEntry>> monthlyEntries;
+    for (const auto& entry : entries) {
+        monthlyEntries[entry.month].push_back(entry);
+    }
+
+    for (const auto& monthPair : monthlyEntries) {
+        int month = monthPair.first;
+        const auto& monthEntries = monthPair.second;
+
+        // Month header
+        const char* monthNames[] = {"", "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+                                   "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"};
+        ss << monthNames[month] << " " << year << std::string(50, ' ') << "00:00 UT\n";
+
+        // Planet abbreviations header
+        ss << "Day  ";
+        for (Planet planet : config.planets) {
+            ss << getPlanetAbbreviation(planet) << "     ";
+        }
+        if (config.showSiderealTime) {
+            ss << "ST";
+        }
+        ss << "\n";
+
+        // Days
+        for (const auto& entry : monthEntries) {
+            ss << std::setw(2) << std::setfill(' ') << entry.day << "   ";
+
+            // Planet positions
+            for (Planet planet : config.planets) {
+                auto it = std::find_if(entry.positions.begin(), entry.positions.end(),
+                                     [planet](const PlanetPosition& pos) { return pos.planet == planet; });
+                if (it != entry.positions.end()) {
+                    ss << formatCompactPosition(*it) << " ";
+                } else {
+                    ss << "-----  ";
+                }
+            }
+
+            // Sidereal time
+            if (config.showSiderealTime) {
+                ss << formatSiderealTime(entry.siderealTime);
+            }
+            ss << "\n";
+        }
+        ss << "\n";
+    }
+
+    return ss.str();
+}
+
+std::string EphemerisTable::getPlanetAbbreviation(Planet planet) const {
+    switch (planet) {
+        case Planet::SUN: return "Sun";
+        case Planet::MOON: return "Moon";
+        case Planet::MERCURY: return "Merc";
+        case Planet::VENUS: return "Ven";
+        case Planet::MARS: return "Mars";
+        case Planet::JUPITER: return "Jup";
+        case Planet::SATURN: return "Sat";
+        case Planet::URANUS: return "Ura";
+        case Planet::NEPTUNE: return "Nep";
+        case Planet::PLUTO: return "Plu";
+        default: return "???";
+    }
+}
+
+std::string EphemerisTable::formatCompactPosition(const PlanetPosition& position) const {
+    int degrees = static_cast<int>(position.longitude) % 30;
+    int minutes = static_cast<int>((position.longitude - static_cast<int>(position.longitude)) * 60) % 60;
+
+    // Get sign symbol
+    char signChar = getSignCharacter(position.sign);
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << degrees
+        << std::setw(2) << minutes << signChar;
+
+    return oss.str();
+}
+
+char EphemerisTable::getSignCharacter(ZodiacSign sign) const {
+    switch (sign) {
+        case ZodiacSign::ARIES: return 'a';
+        case ZodiacSign::TAURUS: return 'b';
+        case ZodiacSign::GEMINI: return 'c';
+        case ZodiacSign::CANCER: return 'd';
+        case ZodiacSign::LEO: return 'e';
+        case ZodiacSign::VIRGO: return 'f';
+        case ZodiacSign::LIBRA: return 'g';
+        case ZodiacSign::SCORPIO: return 'h';
+        case ZodiacSign::SAGITTARIUS: return 'i';
+        case ZodiacSign::CAPRICORN: return 'j';
+        case ZodiacSign::AQUARIUS: return 'k';
+        case ZodiacSign::PISCES: return 'l';
+        default: return '?';
+    }
 }
 
 } // namespace Astro

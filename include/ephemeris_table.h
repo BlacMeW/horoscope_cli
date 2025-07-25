@@ -10,6 +10,7 @@ namespace Astro {
 struct EphemerisEntry {
     double julianDay;
     int year, month, day;
+    double siderealTime;        // Greenwich Sidereal Time in hours
     std::vector<PlanetPosition> positions;
 
     std::string getDateString() const;
@@ -30,6 +31,8 @@ struct EphemerisConfig {
     bool showLatitude;          // Show ecliptic latitude
     bool showDeclination;       // Show declination
     bool showRightAscension;    // Show right ascension
+    bool showSiderealTime;      // Show sidereal time
+    bool compactFormat;         // Use compact Astrodienst-style format
     std::string format;         // Output format: "table", "csv", "json"
 
     EphemerisConfig();
@@ -94,6 +97,7 @@ private:
 
     // Format table as ASCII
     std::string formatAsTable(const std::vector<EphemerisEntry>& entries, const EphemerisConfig& config) const;
+    std::string formatAsCompactTable(const std::vector<EphemerisEntry>& entries, const EphemerisConfig& config) const;
 
     // Get column headers
     std::vector<std::string> getColumnHeaders(const EphemerisConfig& config) const;
@@ -125,7 +129,13 @@ private:
     std::string formatDegrees(double degrees, bool showMinutes = true) const;
     std::string formatDegreeWithSign(double longitude) const;
     std::string formatDeclination(double declination) const;
+    std::string formatSiderealTime(double siderealHours) const;
     std::string formatTime(double hours) const;
+
+    // Compact format helpers
+    std::string getPlanetAbbreviation(Planet planet) const;
+    std::string formatCompactPosition(const PlanetPosition& position) const;
+    char getSignCharacter(ZodiacSign sign) const;
 
     // Default planet lists
     std::vector<Planet> getDefaultPlanets() const;
