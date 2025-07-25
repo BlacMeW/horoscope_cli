@@ -41,7 +41,7 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
 
     double xx[6];
     char serr[256];
-    int32 iflag = SEFLG_SWIEPH | SEFLG_SPEED;
+    int32 iflag = buildSwissEphFlags(julianDay, ZodiacMode::TROPICAL, {});
     int ipl = planetToSwissEph(planet);
 
     if (ipl < 0) {
@@ -105,7 +105,7 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
 
     double xx[6];
     char serr[256];
-    int32 iflag = buildSwissEphFlags(zodiacMode, flags);
+    int32 iflag = buildSwissEphFlags(julianDay, zodiacMode, flags);
     int ipl = planetToSwissEph(planet);
 
     if (ipl < 0) {
@@ -237,10 +237,9 @@ std::string EphemerisManager::getLastError() const {
 }
 
 bool EphemerisManager::isDateAvailable(double julianDay) const {
-    // Swiss Ephemeris typically covers -3000 to +3000 CE
-    // Julian Day 0 corresponds to January 1, 4713 BCE
-    // Approximate range: JD 625000 to JD 2816787
-    return julianDay >= 625000.0 && julianDay <= 2816787.0;
+    // Extended range for ancient astronomical calculations
+    // Allow wide range but let Swiss Ephemeris handle actual data availability
+    return julianDay >= -500000.0 && julianDay <= 5000000.0;
 }
 
 int EphemerisManager::planetToSwissEph(Planet planet) const {
@@ -269,6 +268,72 @@ char EphemerisManager::houseSystemToSwissEph(HouseSystem system) const {
 
 int EphemerisManager::buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags) const {
     int32 iflag = SEFLG_SWIEPH | SEFLG_SPEED; // Use Swiss Ephemeris by default and always include speed
+
+    // Set zodiac mode
+    if (zodiacMode == ZodiacMode::SIDEREAL) {
+        iflag |= SEFLG_SIDEREAL;
+    }
+    // TROPICAL is the default (no additional flag needed)
+
+    // Process calculation flags
+    for (const auto& flag : flags) {
+        switch (flag) {
+            case CalculationFlag::GEOCENTRIC:
+                // Geocentric is default, no flag needed
+                break;
+            case CalculationFlag::HELIOCENTRIC:
+                iflag |= SEFLG_HELCTR;
+                break;
+            case CalculationFlag::BARYCENTRIC:
+                iflag |= SEFLG_BARYCTR;
+                break;
+            case CalculationFlag::TOPOCENTRIC:
+                iflag |= SEFLG_TOPOCTR;
+                break;
+            case CalculationFlag::APPARENT:
+                // Apparent position is default, no additional flag needed
+                break;
+            case CalculationFlag::TRUE_GEOMETRIC:
+                iflag |= SEFLG_TRUEPOS;
+                break;
+            case CalculationFlag::ASTROMETRIC:
+                iflag |= SEFLG_ASTROMETRIC;
+                break;
+            case CalculationFlag::STANDARD_EQUINOX:
+                // Standard equinox of date is default, no flag needed
+                break;
+            case CalculationFlag::J2000_EQUINOX:
+                iflag |= SEFLG_J2000;
+                break;
+            case CalculationFlag::MEAN_EQUINOX:
+                iflag |= SEFLG_NONUT;
+                break;
+            case CalculationFlag::HIGH_PRECISION_SPEED:
+                iflag |= SEFLG_SPEED;
+                break;
+            case CalculationFlag::EQUATORIAL:
+                iflag |= SEFLG_EQUATORIAL;
+                break;
+            default:
+                // Ignore unknown flags
+                break;
+        }
+    }
+
+    return iflag;
+}
+
+int EphemerisManager::buildSwissEphFlags(double julianDay, ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags) const {
+    // For very ancient dates (before approximately 4700 BCE), use Moshier ephemeris
+    // which has a wider date range than Swiss Ephemeris data files
+    const double ANCIENT_DATE_THRESHOLD = 260000.0; // approximately 4700 BCE
+
+    int32 iflag;
+    if (julianDay < ANCIENT_DATE_THRESHOLD) {
+        iflag = SEFLG_MOSEPH | SEFLG_SPEED; // Use Moshier ephemeris for very ancient dates
+    } else {
+        iflag = SEFLG_SWIEPH | SEFLG_SPEED; // Use Swiss Ephemeris for normal dates
+    }
 
     // Set zodiac mode
     if (zodiacMode == ZodiacMode::SIDEREAL) {

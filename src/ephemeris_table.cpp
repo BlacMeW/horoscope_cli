@@ -27,7 +27,8 @@ EphemerisConfig::EphemerisConfig()
       showSpeed(false), showDistance(false), showLatitude(false),
       showDeclination(false), showRightAscension(false), showSiderealTime(false),
       compactFormat(false), format("table"), zodiacMode(ZodiacMode::TROPICAL),
-      ayanamsa(AyanamsaType::LAHIRI), useColors(true) {
+      ayanamsa(AyanamsaType::LAHIRI), useColors(true), showDayNames(true),
+      calendarMode("auto") {
 
     // Default planets
     planets = {Planet::SUN, Planet::MOON, Planet::MERCURY, Planet::VENUS, Planet::MARS,
@@ -56,6 +57,11 @@ std::string EphemerisTable::generateTable(const EphemerisConfig& config) const {
     }
 
     std::vector<EphemerisEntry> entries = generateEntries(config);
+
+    // Check if entries generation failed due to error
+    if (entries.empty() && !lastError.empty()) {
+        return "";
+    }
 
     if (config.format == "csv") {
         return exportToCSV(entries, config);
@@ -276,14 +282,37 @@ std::string EphemerisTable::formatAsTable(const std::vector<EphemerisEntry>& ent
         ss << "Signs: ♈Ari ♉Tau ♊Gem ♋Can ♌Leo ♍Vir ♎Lib ♏Sco ♐Sag ♑Cap ♒Aqu ♓Pis\n";
     }
 
+    // Add ayanamsa information for sidereal zodiac mode
+    if (config.zodiacMode == ZodiacMode::SIDEREAL && !entries.empty()) {
+        double ayanamsaValue = entries[0].getAyanamsaValue(config.ayanamsa);
+        ss << "Ayanamsa: " << ayanamsaTypeToString(config.ayanamsa)
+           << " = " << std::fixed << std::setprecision(4) << ayanamsaValue << "°"
+           << " (at " << entries[0].getDateString() << ")\n";
+    }
+
     return ss.str();
 }
 
 std::vector<std::string> EphemerisTable::getColumnHeaders(const EphemerisConfig& config) const {
     std::vector<std::string> headers;
-    headers.push_back("Date");
 
-    // Add sidereal time column if enabled
+    // Date header - construct based on calendar mode configuration
+    std::string dateHeader = "Date";
+    if (config.showDayNames) {
+        dateHeader = "Day Date";
+    }
+
+    if (config.calendarMode == "jul") {
+        dateHeader = config.showDayNames ? "Day Julian Date" : "Julian Date";
+    } else if (config.calendarMode == "gregorian") {
+        dateHeader = config.showDayNames ? "Day Date" : "Date";
+    } else if (config.calendarMode == "auto") {
+        dateHeader = config.showDayNames ? "Day Date" : "Date";
+    } else if (config.calendarMode == "both") {
+        dateHeader = config.showDayNames ? "Day Date (Julian)" : "Date (Julian)";
+    }
+
+    headers.push_back(dateHeader);    // Add sidereal time column if enabled
     if (config.showSiderealTime) {
         headers.push_back("Sidereal Time");
     }
@@ -307,10 +336,37 @@ std::vector<std::string> EphemerisTable::getColumnHeaders(const EphemerisConfig&
 
 std::vector<int> EphemerisTable::calculateColumnWidths(const std::vector<EphemerisEntry>& entries,
                                                       const EphemerisConfig& config) const {
+    std::vector<std::string> headers = getColumnHeaders(config);
     std::vector<int> widths;
 
-    // Date column width
-    widths.push_back(12);
+    // Date column width - calculate based on configuration
+    int dateWidth = headers[0].length(); // Start with header width
+
+    // Calculate maximum date string width from actual entries
+    for (const auto& entry : entries) {
+        std::string dateStr;
+        if (config.showDayNames) {
+            dateStr = entry.getDayName() + " ";
+        }
+
+        if (config.calendarMode == "jul") {
+            dateStr += entry.getJulianDateString();
+        } else if (config.calendarMode == "gregorian") {
+            dateStr += entry.getDateString();
+        } else if (config.calendarMode == "auto") {
+            if (entry.shouldUseJulianCalendar()) {
+                dateStr += entry.getJulianDateString() + " (Jul)";
+            } else {
+                dateStr += entry.getDateString();
+            }
+        } else if (config.calendarMode == "both") {
+            dateStr += entry.getDateString() + " (" + entry.getJulianDateString() + ")";
+        } else {
+            dateStr += entry.getDateString(); // Default fallback
+        }
+
+        dateWidth = std::max(dateWidth, static_cast<int>(dateStr.length()));
+    }    widths.push_back(dateWidth);
 
     // Sidereal time column width if enabled
     if (config.showSiderealTime) {
@@ -369,10 +425,34 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
                                          const std::vector<int>& widths) const {
     std::stringstream ss;
 
-    // Date column - left aligned
-    ss << padStringToWidth(entry.getDateString(), widths[0], true);
+    // Date column - construct based on calendar mode configuration
+    std::string dateStr;
+    if (config.showDayNames) {
+        dateStr = entry.getDayName() + " ";
+    }
 
-    size_t columnIndex = 1;
+    if (config.calendarMode == "jul") {
+        // Julian calendar only
+        dateStr += entry.getJulianDateString();
+    } else if (config.calendarMode == "gregorian") {
+        // Gregorian calendar only
+        dateStr += entry.getDateString();
+    } else if (config.calendarMode == "auto") {
+        // Automatic: use Julian before Oct 15, 1582, Gregorian after
+        if (entry.shouldUseJulianCalendar()) {
+            dateStr += entry.getJulianDateString() + " (Jul)";
+        } else {
+            dateStr += entry.getDateString();
+        }
+    } else if (config.calendarMode == "both") {
+        // Show both calendars
+        dateStr += entry.getDateString() + " (" + entry.getJulianDateString() + ")";
+    } else {
+        // Default fallback to Gregorian
+        dateStr += entry.getDateString();
+    }
+
+    ss << padStringToWidth(dateStr, widths[0], true);    size_t columnIndex = 1;
 
     // Sidereal time column if enabled
     if (config.showSiderealTime) {
@@ -442,6 +522,15 @@ std::string EphemerisTable::formatPlanetPosition(const PlanetPosition& position,
 std::string EphemerisTable::exportToCSV(const std::vector<EphemerisEntry>& entries, const EphemerisConfig& config) const {
     std::stringstream ss;
 
+    // CSV Header with metadata comments
+    ss << "# Ephemeris Table - Zodiac: " << (config.zodiacMode == ZodiacMode::TROPICAL ? "Tropical" : "Sidereal");
+    if (config.zodiacMode == ZodiacMode::SIDEREAL && !entries.empty()) {
+        double ayanamsaValue = entries[0].getAyanamsaValue(config.ayanamsa);
+        ss << " (" << ayanamsaTypeToString(config.ayanamsa) << " ayanamsa = "
+           << std::fixed << std::setprecision(4) << ayanamsaValue << "°)";
+    }
+    ss << "\n";
+
     // CSV Header
     ss << "Date";
     for (Planet planet : config.planets) {
@@ -487,6 +576,15 @@ std::string EphemerisTable::exportToJSON(const std::vector<EphemerisEntry>& entr
     ss << "      \"end\": \"" << config.endDate.getDateTimeString() << "\",\n";
     ss << "      \"interval_days\": " << config.intervalDays << "\n";
     ss << "    },\n";
+    ss << "    \"zodiac_mode\": \"" << (config.zodiacMode == ZodiacMode::TROPICAL ? "tropical" : "sidereal") << "\",\n";
+    if (config.zodiacMode == ZodiacMode::SIDEREAL && !entries.empty()) {
+        double ayanamsaValue = entries[0].getAyanamsaValue(config.ayanamsa);
+        ss << "    \"ayanamsa\": {\n";
+        ss << "      \"name\": \"" << ayanamsaTypeToString(config.ayanamsa) << "\",\n";
+        ss << "      \"value\": " << std::fixed << std::setprecision(4) << ayanamsaValue << ",\n";
+        ss << "      \"date\": \"" << entries[0].getDateString() << "\"\n";
+        ss << "    },\n";
+    }
     ss << "    \"entries\": [\n";
 
     for (size_t i = 0; i < entries.size(); i++) {
@@ -535,7 +633,40 @@ std::string EphemerisEntry::getDateString() const {
     return ss.str();
 }
 
-bool EphemerisTable::isRetrograde(const PlanetPosition& position) const {
+std::string EphemerisEntry::getJulianDateString() const {
+    // Convert Julian Day to Julian calendar date using Swiss Ephemeris
+    int julYear, julMonth, julDay;
+    double julHour;
+    swe_revjul(julianDay, SE_JUL_CAL, &julYear, &julMonth, &julDay, &julHour);
+
+    std::stringstream ss;
+    ss << julYear << "-" << std::setfill('0') << std::setw(2) << julMonth << "-" << std::setw(2) << julDay;
+    return ss.str();
+}
+
+std::string EphemerisEntry::getDayName() const {
+    // Calculate day of week from Julian Day
+    // Sunday = 0, Monday = 1, ..., Saturday = 6
+    int dayOfWeek = ((int)(julianDay + 1.5)) % 7;
+
+    static const std::string dayNames[] = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
+    return dayNames[dayOfWeek];
+}
+
+bool EphemerisEntry::shouldUseJulianCalendar() const {
+    // Julian Day for October 15, 1582 (Gregorian calendar adoption date)
+    // October 4, 1582 (Julian) = October 15, 1582 (Gregorian)
+    const double gregorianAdoptionJD = 2299161.0; // October 15, 1582
+    return julianDay < gregorianAdoptionJD;
+}
+
+double EphemerisEntry::getAyanamsaValue(AyanamsaType ayanamsa) const {
+    // Set the ayanamsa mode in Swiss Ephemeris
+    swe_set_sid_mode(ayanamsaTypeToSwissEphId(ayanamsa), 0, 0);
+
+    // Get the ayanamsa value for this Julian Day
+    return swe_get_ayanamsa_ut(julianDay);
+}bool EphemerisTable::isRetrograde(const PlanetPosition& position) const {
     return position.speed < 0.0;
 }
 

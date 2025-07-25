@@ -296,10 +296,10 @@ bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
     // Find the positions of the date separators
     size_t firstDash = processStr.find('-');
     size_t secondDash = processStr.find('-', firstDash + 1);
-    
+
     // Check for valid format: YYYY-MM-DD (or longer years like YYYYY-MM-DD)
     if (firstDash == std::string::npos || secondDash == std::string::npos ||
-        firstDash < 4 || secondDash != firstDash + 3 || 
+        firstDash < 4 || secondDash != firstDash + 3 ||
         processStr.length() != secondDash + 3) {
         return false;
     }

@@ -23,6 +23,10 @@ struct EphemerisEntry {
     std::vector<PlanetPosition> positions;
 
     std::string getDateString() const;
+    std::string getJulianDateString() const;
+    std::string getDayName() const;
+    bool shouldUseJulianCalendar() const; // Returns true if date is before Oct 15, 1582
+    double getAyanamsaValue(AyanamsaType ayanamsa) const;
     std::string getFormattedRow() const;
 };
 
@@ -50,6 +54,8 @@ struct EphemerisConfig {
 
     // Display options
     bool useColors;             // Enable color coding for planetary motion
+    bool showDayNames;          // Show short day names (Su, Mo, etc.)
+    std::string calendarMode;   // Calendar display mode: "jul", "gregorian", "auto", "both"
 
     EphemerisConfig();
 };

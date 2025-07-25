@@ -114,6 +114,8 @@ struct CommandLineArgs {
     bool ephemerisShowSiderealTime = false;
     bool ephemerisCompactFormat = false;
     bool ephemerisUseColors = true; // Enable colors by default
+    bool ephemerisShowDayNames = true; // Show short day names (Su, Mo, etc.) - default enabled
+    std::string ephemerisCalendarMode = "auto"; // Calendar mode: "jul", "gregorian", "auto", "both" - default auto
 
     // KP System options
     bool showKPTable = false;
@@ -595,6 +597,25 @@ void printHelp() {
 
     std::cout << "    --ephemeris-no-colors\n";
     std::cout << "                       Disable color coding for planetary motion\n\n";
+
+    std::cout << "    --ephemeris-day-names\n";
+    std::cout << "                       Show short day names (Su, Mo, Tu, We, Th, Fr, Sa) - default enabled\n\n";
+
+    std::cout << "    --ephemeris-no-day-names\n";
+    std::cout << "                       Hide short day names\n\n";
+
+    std::cout << "    --ephemeris-calendar MODE\n";
+    std::cout << "                       Calendar display mode (default: auto)\n";
+    std::cout << "                       • jul: Julian calendar only\n";
+    std::cout << "                       • gregorian: Gregorian calendar only\n";
+    std::cout << "                       • auto: Automatic (Julian before Oct 15, 1582, Gregorian after)\n";
+    std::cout << "                       • both: Show both calendars side by side\n\n";
+
+    std::cout << "    --ephemeris-julian-calendar\n";
+    std::cout << "                       Show Julian calendar dates only (shortcut for --ephemeris-calendar jul)\n\n";
+
+    std::cout << "    --ephemeris-gregorian-calendar\n";
+    std::cout << "                       Show Gregorian calendar dates only (shortcut for --ephemeris-calendar gregorian)\n\n";
 
     std::cout << "KP SYSTEM OPTIONS (Krishnamurti Paddhati) 🇮🇳🔢\n";
     std::cout << "    --kp-table         Show complete KP Sub Lord 5 Levels analysis\n";
@@ -1865,6 +1886,23 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.ephemerisUseColors = true;
         } else if (arg == "--ephemeris-no-colors") {
             args.ephemerisUseColors = false;
+        } else if (arg == "--ephemeris-day-names") {
+            args.ephemerisShowDayNames = true;
+        } else if (arg == "--ephemeris-no-day-names") {
+            args.ephemerisShowDayNames = false;
+        } else if (arg == "--ephemeris-calendar" && i + 1 < argc) {
+            args.ephemerisCalendarMode = argv[++i];
+            if (args.ephemerisCalendarMode != "jul" && args.ephemerisCalendarMode != "gregorian" &&
+                args.ephemerisCalendarMode != "auto" && args.ephemerisCalendarMode != "both") {
+                std::cerr << "Error: Calendar mode must be 'jul', 'gregorian', 'auto', or 'both'\n";
+                return false;
+            }
+        } else if (arg == "--ephemeris-julian-calendar") {
+            args.ephemerisCalendarMode = "jul";
+        } else if (arg == "--ephemeris-gregorian-calendar") {
+            args.ephemerisCalendarMode = "gregorian";
+        } else if (arg == "--ephemeris-no-gregorian") {
+            args.ephemerisCalendarMode = "jul";
         } else if (arg == "--eclipse-format" && i + 1 < argc) {
             args.eclipseFormat = argv[++i];
             if (args.eclipseFormat != "table" && args.eclipseFormat != "text" && args.eclipseFormat != "csv" && args.eclipseFormat != "json") {
@@ -2844,12 +2882,21 @@ int main(int argc, char* argv[]) {
             config.compactFormat = args.ephemerisCompactFormat;
             config.useColors = args.ephemerisUseColors;
 
+            // Set new date display options
+            config.showDayNames = args.ephemerisShowDayNames;
+            config.calendarMode = args.ephemerisCalendarMode;
+
             std::string result = ephemTable.generateTable(config);
 
             if (!result.empty()) {
                 std::cout << result << std::endl;
             } else {
-                std::cout << "Failed to generate ephemeris table" << std::endl;
+                std::string error = ephemTable.getLastError();
+                if (!error.empty()) {
+                    std::cout << "Error: " << error << std::endl;
+                } else {
+                    std::cout << "Failed to generate ephemeris table" << std::endl;
+                }
             }
         }
 
