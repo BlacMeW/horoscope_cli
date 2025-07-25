@@ -51,6 +51,9 @@ private:
 
     // Build Swiss Ephemeris calculation flags
     int buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags) const;
+
+    // Build Swiss Ephemeris calculation flags with automatic ephemeris selection based on date
+    int buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags, double julianDay) const;
 };
 
 } // namespace Astro

@@ -82,7 +82,12 @@ enum class CalculationFlag {
 
     // Coordinate format flags
     ECLIPTIC = 40,           // Ecliptic coordinates (default)
-    EQUATORIAL = 41          // Equatorial coordinates
+    EQUATORIAL = 41,         // Equatorial coordinates
+
+    // Ephemeris type flags
+    SWISS_EPHEMERIS = 50,    // Swiss Ephemeris (default)
+    JPL_EPHEMERIS = 51,      // JPL ephemeris
+    MOSHIER_EPHEMERIS = 52   // Moshier ephemeris
 };
 
 // Aspect types

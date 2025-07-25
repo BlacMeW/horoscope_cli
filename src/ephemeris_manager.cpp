@@ -268,7 +268,33 @@ char EphemerisManager::houseSystemToSwissEph(HouseSystem system) const {
 }
 
 int EphemerisManager::buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags) const {
-    int32 iflag = SEFLG_SWIEPH | SEFLG_SPEED; // Use Swiss Ephemeris by default and always include speed
+    int32 iflag = SEFLG_SPEED; // Always include speed, ephemeris type will be set below
+
+    // Check for ephemeris type flags first
+    bool ephemerisTypeSet = false;
+    for (const auto& flag : flags) {
+        switch (flag) {
+            case CalculationFlag::JPL_EPHEMERIS:
+                iflag |= SEFLG_JPLEPH;
+                ephemerisTypeSet = true;
+                break;
+            case CalculationFlag::MOSHIER_EPHEMERIS:
+                iflag |= SEFLG_MOSEPH;
+                ephemerisTypeSet = true;
+                break;
+            case CalculationFlag::SWISS_EPHEMERIS:
+                iflag |= SEFLG_SWIEPH;
+                ephemerisTypeSet = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+    // If no ephemeris type specified, use Swiss Ephemeris as default
+    if (!ephemerisTypeSet) {
+        iflag |= SEFLG_SWIEPH;
+    }
 
     // Set zodiac mode
     if (zodiacMode == ZodiacMode::SIDEREAL) {
@@ -276,7 +302,80 @@ int EphemerisManager::buildSwissEphFlags(ZodiacMode zodiacMode, const std::vecto
     }
     // TROPICAL is the default (no additional flag needed)
 
-    // Process calculation flags
+    // Process other calculation flags
+    for (const auto& flag : flags) {
+        switch (flag) {
+            case CalculationFlag::GEOCENTRIC:
+                // Geocentric is default, no flag needed
+                break;
+            case CalculationFlag::HELIOCENTRIC:
+                iflag |= SEFLG_HELCTR;
+                break;
+            case CalculationFlag::BARYCENTRIC:
+                iflag |= SEFLG_BARYCTR;
+                break;
+            case CalculationFlag::TOPOCENTRIC:
+                iflag |= SEFLG_TOPOCTR;
+                break;
+            case CalculationFlag::APPARENT:
+                // Apparent position is default, no additional flag needed
+                break;
+            case CalculationFlag::TRUE_GEOMETRIC:
+                iflag |= SEFLG_TRUEPOS;
+                break;
+            case CalculationFlag::ASTROMETRIC:
+                iflag |= SEFLG_ASTROMETRIC;
+                break;
+            case CalculationFlag::STANDARD_EQUINOX:
+                // Standard equinox of date is default, no flag needed
+                break;
+            case CalculationFlag::J2000_EQUINOX:
+                iflag |= SEFLG_J2000;
+                break;
+            case CalculationFlag::MEAN_EQUINOX:
+                iflag |= SEFLG_NONUT;
+                break;
+            case CalculationFlag::HIGH_PRECISION_SPEED:
+                iflag |= SEFLG_SPEED;
+                break;
+            case CalculationFlag::EQUATORIAL:
+                iflag |= SEFLG_EQUATORIAL;
+                break;
+            case CalculationFlag::SWISS_EPHEMERIS:
+            case CalculationFlag::JPL_EPHEMERIS:
+            case CalculationFlag::MOSHIER_EPHEMERIS:
+                // These are already handled above
+                break;
+            default:
+                // Ignore unknown flags
+                break;
+        }
+    }
+
+    return iflag;
+}
+
+int EphemerisManager::buildSwissEphFlags(ZodiacMode zodiacMode, const std::vector<CalculationFlag>& flags, double julianDay) const {
+    int32 iflag = SEFLG_SPEED; // Always include speed
+
+    // Calculate the BC year threshold (4700 BC)
+    // JD for January 1, 4700 BC is approximately 606545
+    double bc4700_jd = 606545.0; // Approximate JD for 4700 BC
+
+    // For very ancient dates (before 4700 BC), use JPL ephemeris which is more stable
+    if (julianDay < bc4700_jd) {
+        iflag |= SEFLG_JPLEPH; // Use JPL ephemeris for ancient dates
+    } else {
+        iflag |= SEFLG_SWIEPH; // Use Swiss Ephemeris for normal dates
+    }
+
+    // Set zodiac mode
+    if (zodiacMode == ZodiacMode::SIDEREAL) {
+        iflag |= SEFLG_SIDEREAL;
+    }
+    // TROPICAL is the default (no additional flag needed)
+
+    // Process calculation flags (same as original function)
     for (const auto& flag : flags) {
         switch (flag) {
             case CalculationFlag::GEOCENTRIC:

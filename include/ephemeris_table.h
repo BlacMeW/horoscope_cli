@@ -23,6 +23,7 @@ struct EphemerisEntry {
     std::vector<PlanetPosition> positions;
 
     std::string getDateString() const;
+    std::string getDayName() const;
     std::string getFormattedRow() const;
 };
 
@@ -172,6 +173,10 @@ private:
     std::vector<Planet> getMajorPlanets() const;
     std::vector<Planet> getInnerPlanets() const;
     std::vector<Planet> getOuterPlanets() const;
+
+    // Ancient date handling
+    bool shouldUseMoshierEphemeris(double julianDay) const;
+    std::vector<CalculationFlag> getCalculationFlagsForDate(double julianDay) const;
 };
 
 } // namespace Astro

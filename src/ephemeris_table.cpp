@@ -219,6 +219,10 @@ std::vector<EphemerisEntry> EphemerisTable::generateEntries(const EphemerisConfi
             calc.setAyanamsa(config.ayanamsa);
         }
 
+        // Set appropriate calculation flags based on the date
+        std::vector<CalculationFlag> calcFlags = getCalculationFlagsForDate(currentJD);
+        calc.setCalculationFlags(calcFlags);
+
         calc.calculateAllPlanets(entryDate, entry.positions);
 
         entries.push_back(entry);
@@ -281,6 +285,7 @@ std::string EphemerisTable::formatAsTable(const std::vector<EphemerisEntry>& ent
 
 std::vector<std::string> EphemerisTable::getColumnHeaders(const EphemerisConfig& config) const {
     std::vector<std::string> headers;
+    headers.push_back("Day");
     headers.push_back("Date");
 
     // Add sidereal time column if enabled
@@ -308,6 +313,9 @@ std::vector<std::string> EphemerisTable::getColumnHeaders(const EphemerisConfig&
 std::vector<int> EphemerisTable::calculateColumnWidths(const std::vector<EphemerisEntry>& entries,
                                                       const EphemerisConfig& config) const {
     std::vector<int> widths;
+
+    // Day column width (for Su, Mo, Tu, etc.)
+    widths.push_back(3);
 
     // Date column width
     widths.push_back(12);
@@ -369,10 +377,13 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
                                          const std::vector<int>& widths) const {
     std::stringstream ss;
 
-    // Date column - left aligned
-    ss << padStringToWidth(entry.getDateString(), widths[0], true);
+    // Day column - left aligned
+    ss << padStringToWidth(entry.getDayName(), widths[0], true);
 
-    size_t columnIndex = 1;
+    // Date column - left aligned
+    ss << " " << padStringToWidth(entry.getDateString(), widths[1], true);
+
+    size_t columnIndex = 2;
 
     // Sidereal time column if enabled
     if (config.showSiderealTime) {
@@ -533,6 +544,18 @@ std::string EphemerisEntry::getDateString() const {
     std::stringstream ss;
     ss << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setw(2) << day;
     return ss.str();
+}
+
+std::string EphemerisEntry::getDayName() const {
+    static const std::vector<std::string> weekdays = {
+        "Sa", "Su", "Mo", "Tu", "We", "Th", "Fr"
+    };
+
+    // Calculate weekday using standard astronomical formula: (jdn + 2) % 7
+    // where jdn is Julian Day Number, 0=Saturday, 1=Sunday, ..., 6=Friday
+    long jdn = static_cast<long>(round(julianDay));
+    int weekday = (jdn + 2) % 7;
+    return weekdays[weekday];
 }
 
 bool EphemerisTable::isRetrograde(const PlanetPosition& position) const {
@@ -971,6 +994,29 @@ std::string EphemerisTable::padStringToWidth(const std::string& text, int width,
     } else {
         return padding + text;
     }
+}
+
+bool EphemerisTable::shouldUseMoshierEphemeris(double julianDay) const {
+    // Use Moshier ephemeris for dates before 4700 BC
+    // Based on the actual Julian Day from testing: 4700 BC ≈ JD 4785
+    // So we'll use a threshold slightly higher than that
+    const double jd_4700BC = 4800.0; // Threshold for switching to Moshier ephemeris
+    return julianDay < jd_4700BC;
+}
+
+std::vector<CalculationFlag> EphemerisTable::getCalculationFlagsForDate(double julianDay) const {
+    std::vector<CalculationFlag> flags;
+
+    if (shouldUseMoshierEphemeris(julianDay)) {
+        // Use Moshier ephemeris for very ancient dates (more stable than Swiss Ephemeris)
+        // Moshier is an analytical ephemeris that doesn't rely on data files
+        flags.push_back(CalculationFlag::MOSHIER_EPHEMERIS);
+    } else {
+        // Use Swiss Ephemeris for normal dates
+        flags.push_back(CalculationFlag::SWISS_EPHEMERIS);
+    }
+
+    return flags;
 }
 
 } // namespace Astro
