@@ -287,20 +287,27 @@ bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
     }
 
     // Check for BC era with minus sign (original format)
-    // Only treat as BC if it starts with minus and has proper length
+    // Only treat as BC if it starts with minus and has proper format
     if (!isBCEra && processStr.length() >= 11 && processStr[0] == '-') {
         isBCEra = true;
         processStr = processStr.substr(1); // Remove leading minus
     }
 
-    if (processStr.length() != 10 || processStr[4] != '-' || processStr[7] != '-') {
+    // Find the positions of the date separators
+    size_t firstDash = processStr.find('-');
+    size_t secondDash = processStr.find('-', firstDash + 1);
+    
+    // Check for valid format: YYYY-MM-DD (or longer years like YYYYY-MM-DD)
+    if (firstDash == std::string::npos || secondDash == std::string::npos ||
+        firstDash < 4 || secondDash != firstDash + 3 || 
+        processStr.length() != secondDash + 3) {
         return false;
     }
 
     try {
-        year = std::stoi(processStr.substr(0, 4));
-        month = std::stoi(processStr.substr(5, 2));
-        day = std::stoi(processStr.substr(8, 2));
+        year = std::stoi(processStr.substr(0, firstDash));
+        month = std::stoi(processStr.substr(firstDash + 1, 2));
+        day = std::stoi(processStr.substr(secondDash + 1, 2));
 
         // Convert to astronomical year numbering for BC dates ONLY
         // In astronomical year numbering: 1 BC = year 0, 2 BC = year -1, etc.
