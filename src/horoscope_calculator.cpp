@@ -147,9 +147,9 @@ void HoroscopeCalculator::setCalculationFlags(const std::vector<CalculationFlag>
 }
 
 bool HoroscopeCalculator::validateBirthData(const BirthData& birthData) {
-    // Validate year range
-    if (birthData.year < -3000 || birthData.year > 3000) {
-        lastError = "Year must be between -3000 and 3000";
+    // Validate year range - extended for ancient ephemeris calculations
+    if (birthData.year < -13000 || birthData.year > 13000) {
+        lastError = "Year must be between -13000 and 13000";
         return false;
     }
 
