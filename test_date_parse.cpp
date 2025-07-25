@@ -20,7 +20,7 @@ bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
         processStr = processStr.substr(0, processStr.length() - 2);
     }
 
-    // Handle format like "45 BC-01-15" or "45-BC-01-15" 
+    // Handle format like "45 BC-01-15" or "45-BC-01-15"
     if (processStr.find("BC-") != std::string::npos) {
         isBCEra = true;
         size_t bcPos = processStr.find("BC-");
@@ -99,15 +99,15 @@ bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
 
 int main() {
     int year, month, day;
-    
+
     std::cout << "Testing parseBCDate with '2025-07-01':" << std::endl;
     bool result1 = parseBCDate("2025-07-01", year, month, day);
     std::cout << "Result: " << (result1 ? "Success" : "Failed") << std::endl;
     std::cout << std::endl;
-    
+
     std::cout << "Testing parseBCDate with '2025-07-31':" << std::endl;
     bool result2 = parseBCDate("2025-07-31", year, month, day);
     std::cout << "Result: " << (result2 ? "Success" : "Failed") << std::endl;
-    
+
     return 0;
 }

@@ -124,6 +124,7 @@ private:
     // Format degree values
     std::string formatDegrees(double degrees, bool showMinutes = true) const;
     std::string formatDegreeWithSign(double longitude) const;
+    std::string formatDeclination(double declination) const;
     std::string formatTime(double hours) const;
 
     // Default planet lists

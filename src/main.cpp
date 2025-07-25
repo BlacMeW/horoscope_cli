@@ -109,6 +109,8 @@ struct CommandLineArgs {
     std::string ephemerisToDate;
     int ephemerisIntervalDays = 1;
     std::string ephemerisFormat = "table";
+    bool ephemerisShowDeclination = false;
+    std::string ephemerisCoordinateType = "longitude"; // "longitude", "declination", or "both"
 
     // KP System options
     bool showKPTable = false;
@@ -561,6 +563,14 @@ void printHelp() {
     std::cout << "                       table = Professional table view (default)\n";
     std::cout << "                       csv   = Comma-separated values\n";
     std::cout << "                       json  = JSON structure\n\n";
+
+    std::cout << "    --ephemeris-declination\n";
+    std::cout << "                       Show declination instead of longitude\n\n";
+
+    std::cout << "    --ephemeris-coordinates TYPE\n";
+    std::cout << "                       longitude   = Show ecliptic longitude (default)\n";
+    std::cout << "                       declination = Show celestial declination\n";
+    std::cout << "                       both        = Show both longitude and declination\n\n";
 
     std::cout << "KP SYSTEM OPTIONS (Krishnamurti Paddhati) 🇮🇳🔢\n";
     std::cout << "    --kp-table         Show complete KP Sub Lord 5 Levels analysis\n";
@@ -1799,6 +1809,18 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 std::cerr << "Error: Ephemeris format must be 'table', 'csv', or 'json'\n";
                 return false;
             }
+        } else if (arg == "--ephemeris-declination") {
+            args.ephemerisShowDeclination = true;
+            args.ephemerisCoordinateType = "declination";
+        } else if (arg == "--ephemeris-coordinates" && i + 1 < argc) {
+            args.ephemerisCoordinateType = argv[++i];
+            if (args.ephemerisCoordinateType != "longitude" && args.ephemerisCoordinateType != "declination" && args.ephemerisCoordinateType != "both") {
+                std::cerr << "Error: Ephemeris coordinates must be 'longitude', 'declination', or 'both'\n";
+                return false;
+            }
+            if (args.ephemerisCoordinateType == "declination" || args.ephemerisCoordinateType == "both") {
+                args.ephemerisShowDeclination = true;
+            }
         } else if (arg == "--eclipse-format" && i + 1 < argc) {
             args.eclipseFormat = argv[++i];
             if (args.eclipseFormat != "table" && args.eclipseFormat != "text" && args.eclipseFormat != "csv" && args.eclipseFormat != "json") {
@@ -2739,15 +2761,37 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            // Generate ephemeris table
-            std::string result;
-            if (args.ephemerisFormat == "csv") {
-                result = ephemTable.generateCSVTable(fromDate, toDate, args.ephemerisIntervalDays);
-            } else if (args.ephemerisFormat == "json") {
-                result = ephemTable.generateJSONTable(fromDate, toDate, args.ephemerisIntervalDays);
+            // Generate ephemeris table with configuration
+            Astro::EphemerisConfig config;
+
+            // Initialize BirthData structures with default values
+            config.startDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+            config.endDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+
+            // Parse date strings with BC era support
+            Astro::parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
+            Astro::parseBCDate(toDate, config.endDate.year, config.endDate.month, config.endDate.day);
+
+            config.intervalDays = args.ephemerisIntervalDays;
+            config.format = args.ephemerisFormat;
+
+            // Set coordinate type options
+            if (args.ephemerisCoordinateType == "declination") {
+                config.showDeclination = true;
+                config.showDegreeMinutes = true;
+                config.showSign = false;  // Declination doesn't use zodiac signs
+            } else if (args.ephemerisCoordinateType == "both") {
+                config.showDeclination = true;
+                config.showDegreeMinutes = true;
+                config.showSign = true;   // Show both longitude with signs and declination
             } else {
-                result = ephemTable.generateTable(fromDate, toDate, args.ephemerisIntervalDays);
+                // Default longitude mode
+                config.showDeclination = false;
+                config.showDegreeMinutes = true;
+                config.showSign = true;
             }
+
+            std::string result = ephemTable.generateTable(config);
 
             if (!result.empty()) {
                 std::cout << result << std::endl;

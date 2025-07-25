@@ -223,7 +223,12 @@ std::string EphemerisTable::formatAsTable(const std::vector<EphemerisEntry>& ent
     if (config.showRetrograde) {
         ss << "\nR = Retrograde motion\n";
     }
-    if (config.showSign) {
+    if (config.showDeclination && !config.showSign) {
+        ss << "Dec = Declination (celestial latitude, -90° to +90°)\n";
+    } else if (config.showDeclination && config.showSign) {
+        ss << "Lon/Dec = Longitude (ecliptic) / Declination (celestial)\n";
+        ss << "Signs: ♈Ari ♉Tau ♊Gem ♋Can ♌Leo ♍Vir ♎Lib ♏Sco ♐Sag ♑Cap ♒Aqu ♓Pis\n";
+    } else if (config.showSign) {
         ss << "Signs: ♈Ari ♉Tau ♊Gem ♋Can ♌Leo ♍Vir ♎Lib ♏Sco ♐Sag ♑Cap ♒Aqu ♓Pis\n";
     }
 
@@ -236,13 +241,15 @@ std::vector<std::string> EphemerisTable::getColumnHeaders(const EphemerisConfig&
 
     for (Planet planet : config.planets) {
         std::string header = planetToString(planet);
-        if (config.showSign && config.showDegreeMinutes) {
-            header += " (°Sign)";
-        } else if (config.showSign) {
-            header += " Sign";
-        } else if (config.showDegreeMinutes) {
-            header += " (°)";
+
+        // Add coordinate type suffix to clarify what's being shown
+        if (config.showDeclination && !config.showSign) {
+            header += " (Dec)";
+        } else if (config.showDeclination && config.showSign) {
+            header += " (Lon/Dec)";
         }
+        // For longitude-only mode, no suffix needed (default)
+
         headers.push_back(header);
     }
 
@@ -256,12 +263,22 @@ std::vector<int> EphemerisTable::calculateColumnWidths(const std::vector<Ephemer
     // Date column width
     widths.push_back(12);
 
-    // Planet column widths
+    // Planet column widths - adjusted for different coordinate types
     for (size_t i = 0; i < config.planets.size(); i++) {
-        int width = 8; // Minimum width
-        if (config.showSign && config.showDegreeMinutes) width = 12;
-        else if (config.showSign) width = 10;
-        else if (config.showDegreeMinutes) width = 8;
+        int width = 10; // Minimum width for centering
+
+        if (config.showDeclination && !config.showSign) {
+            // Declination only mode: "+23°45'" format (7 chars)
+            width = 8;
+        } else if (config.showDeclination && config.showSign) {
+            // Both longitude and declination: "12°34'♊/+23°45'" format (16 chars)
+            width = 18;
+        } else {
+            // Default longitude mode
+            if (config.showSign && config.showDegreeMinutes) width = 13;
+            else if (config.showSign) width = 11;
+            else if (config.showDegreeMinutes) width = 10;
+        }
 
         if (config.showRetrograde) width += 1;
         if (config.showSpeed) width += 4;
@@ -276,6 +293,7 @@ std::string EphemerisTable::formatTableHeader(const std::vector<std::string>& he
                                             const std::vector<int>& widths) const {
     std::stringstream ss;
     for (size_t i = 0; i < headers.size() && i < widths.size(); i++) {
+        // All columns - left aligned
         ss << std::left << std::setw(widths[i]) << headers[i];
         if (i < headers.size() - 1) ss << " ";
     }
@@ -297,11 +315,11 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
                                          const std::vector<int>& widths) const {
     std::stringstream ss;
 
-    // Date column
+    // Date column - left aligned
     ss << std::left << std::setw(widths[0]) << entry.getDateString();
     if (widths.size() > 1) ss << " ";
 
-    // Planet columns
+    // Planet columns - left aligned
     for (size_t i = 0; i < config.planets.size() && i + 1 < widths.size(); i++) {
         Planet planet = config.planets[i];
 
@@ -316,6 +334,7 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
             planetStr = "---";
         }
 
+        // Left-align the planet position data
         ss << std::left << std::setw(widths[i + 1]) << planetStr;
         if (i < config.planets.size() - 1) ss << " ";
     }
@@ -326,12 +345,26 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
 std::string EphemerisTable::formatPlanetPosition(const PlanetPosition& position, const EphemerisConfig& config) const {
     std::stringstream ss;
 
-    if (config.showDegreeMinutes) {
-        ss << formatDegreeWithSign(position.longitude);
-    } else if (config.showSign) {
-        ss << zodiacSignToString(position.sign);
+    // Handle different coordinate types based on configuration
+    if (config.showDeclination && !config.showSign) {
+        // Declination only mode
+        ss << formatDeclination(position.declination);
+    } else if (config.showDeclination && config.showSign) {
+        // Both longitude and declination mode
+        if (config.showDegreeMinutes) {
+            ss << formatDegreeWithSign(position.longitude) << "/" << formatDeclination(position.declination);
+        } else {
+            ss << zodiacSignToString(position.sign) << "/" << formatDeclination(position.declination);
+        }
     } else {
-        ss << std::fixed << std::setprecision(2) << position.longitude;
+        // Default longitude mode
+        if (config.showDegreeMinutes) {
+            ss << formatDegreeWithSign(position.longitude);
+        } else if (config.showSign) {
+            ss << zodiacSignToString(position.sign);
+        } else {
+            ss << std::fixed << std::setprecision(2) << position.longitude;
+        }
     }
 
     if (config.showRetrograde && isRetrograde(position)) {
@@ -468,6 +501,20 @@ std::string EphemerisTable::formatDegreeWithSign(double longitude) const {
         case ZodiacSign::AQUARIUS: oss << "♒"; break;
         case ZodiacSign::PISCES: oss << "♓"; break;
     }
+
+    return oss.str();
+}
+
+std::string EphemerisTable::formatDeclination(double declination) const {
+    bool isNegative = declination < 0.0;
+    declination = std::abs(declination);
+
+    int degrees = static_cast<int>(declination);
+    int minutes = static_cast<int>((declination - degrees) * 60);
+
+    std::ostringstream oss;
+    oss << (isNegative ? "-" : "+") << std::setfill('0') << std::setw(2) << degrees
+        << "°" << std::setw(2) << minutes << "'";
 
     return oss.str();
 }
