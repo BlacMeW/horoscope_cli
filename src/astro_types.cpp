@@ -287,6 +287,7 @@ bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
     }
 
     // Check for BC era with minus sign (original format)
+    // Only treat as BC if it starts with minus and has proper length
     if (!isBCEra && processStr.length() >= 11 && processStr[0] == '-') {
         isBCEra = true;
         processStr = processStr.substr(1); // Remove leading minus
@@ -301,11 +302,13 @@ bool parseBCDate(const std::string& dateStr, int& year, int& month, int& day) {
         month = std::stoi(processStr.substr(5, 2));
         day = std::stoi(processStr.substr(8, 2));
 
-        // Convert to astronomical year numbering for BC dates
+        // Convert to astronomical year numbering for BC dates ONLY
         // In astronomical year numbering: 1 BC = year 0, 2 BC = year -1, etc.
+        // For AD dates, leave the year as-is
         if (isBCEra) {
             year = -(year - 1);
         }
+        // For standard dates like "2025-07-01", year remains 2025 (no conversion)
 
         return true;
     } catch (const std::exception&) {

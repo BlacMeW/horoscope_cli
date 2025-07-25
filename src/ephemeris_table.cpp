@@ -480,6 +480,10 @@ std::vector<Planet> EphemerisTable::getDefaultPlanets() const {
 std::string EphemerisTable::generateTable(const std::string& fromDate, const std::string& toDate, int intervalDays) const {
     EphemerisConfig config;
 
+    // Initialize BirthData structures with default values
+    config.startDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+    config.endDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+
     // Parse date strings with BC era support
     parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
     parseBCDate(toDate, config.endDate.year, config.endDate.month, config.endDate.day);
@@ -493,6 +497,10 @@ std::string EphemerisTable::generateTable(const std::string& fromDate, const std
 std::string EphemerisTable::generateCSVTable(const std::string& fromDate, const std::string& toDate, int intervalDays) const {
     EphemerisConfig config;
 
+    // Initialize BirthData structures with default values
+    config.startDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+    config.endDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+
     // Parse date strings with BC era support
     parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
     parseBCDate(toDate, config.endDate.year, config.endDate.month, config.endDate.day);
@@ -505,6 +513,10 @@ std::string EphemerisTable::generateCSVTable(const std::string& fromDate, const 
 
 std::string EphemerisTable::generateJSONTable(const std::string& fromDate, const std::string& toDate, int intervalDays) const {
     EphemerisConfig config;
+
+    // Initialize BirthData structures with default values
+    config.startDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+    config.endDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
 
     // Parse date strings with BC era support
     parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
