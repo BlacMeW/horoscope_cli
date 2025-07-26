@@ -1,63 +1,19 @@
 # 🌟 HOROSCOPE CLI - COMPLETE USER MANUAL ⭐
 
-```
-╔══════════════════════════════════════════════════════════════════════════════════╗
-║                                                                                  ║
-║    ⭐                    🌟 HOROSCOPE CLI 🌟                           ⭐        ║
-║                                                                                  ║
-║           ████████████████████████████████████████████████████████               ║
-║          ██                                                  ██              ║
-║         ██         COMPLETE USER MANUAL & GUIDE              ██             ║
-║        ██                                                      ██            ║
-║       ██      🔮 THE MOST COMPREHENSIVE COMMAND-LINE 🔮         ██           ║
-║      ██            ASTROLOGY TOOLKIT EVER CREATED                ██          ║
-║     ██                                                            ██         ║
-║    ██       🌞 Professional Astronomical Calculations 🌞           ██        ║
-║   ██        🕉️ Multi-Cultural Calendar Systems 🕉️                 ██       ║
-║  ██         🏛️ Historical BC Era Support (6000 BC+) 🏛️             ██      ║
-║ ██                                                                  ██     ║
-║██            📊 Swiss Ephemeris Integration 📊                      ██    ║
-║██            🎯 Birth Charts & Vedic Astrology 🎯                   ██    ║
-║██            📅 Hindu & Myanmar Calendars 📅                       ██    ║
-║██            🌚 Eclipse & Conjunction Analysis 🌚                   ██    ║
-║██            🔢 KP System & Ephemeris Tables 🔢                     ██    ║
-║ ██                                                                  ██     ║
-║  ██         🌟 Over 100 Practical Examples 🌟                      ██      ║
-║   ██        ⚡ Professional-Grade Accuracy ⚡                      ██       ║
-║    ██       🎨 Beautiful ASCII Chart Visualizations 🎨           ██        ║
-║     ██                                                            ██         ║
-║      ██            📖 Complete Feature Documentation 📖         ██          ║
-║       ██      🚀 From Beginner to Expert Level 🚀              ██           ║
-║        ██                                                      ██            ║
-║         ██         VERSION 2.0.0 • JULY 2025                 ██             ║
-║          ██                                                  ██              ║
-║           ████████████████████████████████████████████████████               ║
-║                                                                                  ║
-║    🌌                 Created with ❤️ by HoroscopeCLI Team                🌌     ║
-║                      Powered by Swiss Ephemeris                               ║
-║                        Licensed under MIT                                     ║
-║                                                                                  ║
-╚══════════════════════════════════════════════════════════════════════════════════╝
-```
 
-<div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/BlacMeW/horoscope_cli)
-[![Swiss Ephemeris](https://img.shields.io/badge/powered%20by-Swiss%20Ephemeris-orange.svg)](https://www.astro.com/swisseph/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#installation)
 
-**🔮 The Most Comprehensive Command-Line Astrology Toolkit 🔮**
+**The Most Comprehensive Command-Line Astrology Toolkit**
 
-*Professional astronomical calculations • Multi-cultural calendar systems • Historical BC era support*
+Professional astronomical calculations • Multi-cultural calendar systems • Historical BC era support
 
-</div>
+
 
 ---
 
 ## 📑 TABLE OF CONTENTS
 
-<div align="center">
+
 
 | 🎯 **ESSENTIALS** | 🔮 **ASTROLOGY** | 📅 **CALENDARS** | 🛠️ **ADVANCED** |
 |:--:|:--:|:--:|:--:|
@@ -66,7 +22,7 @@
 | [Basic Usage](#-basic-usage) | [House Systems](#-house-systems) | [Monthly Calendars](#-monthly-calendars) | [KP System](#%EF%B8%8F-kp-system) |
 | [Parameters](#-required-parameters) | [Planetary Data](#-planetary-positions) | [Calendar Search](#-calendar-search) | [Ephemeris Tables](#-ephemeris-tables) |
 
-</div>
+
 
 ---
 
@@ -134,7 +90,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 
 ### 🎨 Chart Styles
 
-<div align="center">
+
 
 | Style | Command | Best For |
 |:------|:--------|:---------|
@@ -144,7 +100,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 | 🌸 **East Indian** | `--chart-style east-indian` | Bengali, Oriya traditions |
 | 🌌 **Solar System** | `--chart-style solar-system` | Orbital mechanics, astronomy |
 
-</div>
+
 
 #### 📊 Western Chart Example
 
@@ -234,7 +190,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 
 ### 🏠 House Systems
 
-<div align="center">
+
 
 | System | Code | Description | Best For |
 |:-------|:-----|:------------|:---------|
@@ -245,7 +201,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 | **Campanus** | `C` | Prime vertical | Medieval traditions |
 | **Regiomontanus** | `R` | Celestial equator | Renaissance era |
 
-</div>
+
 
 ```bash
 # Compare house systems
@@ -276,7 +232,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 
 #### Ayanamsa Options
 
-<div align="center">
+
 
 | Ayanamsa | Code | Traditional Use |
 |:---------|:-----|:----------------|
@@ -286,7 +242,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 | **Fagan-Bradley** | `fagan-bradley` | Western sidereal 🌍 |
 | **Yukteshwar** | `yukteshwar` | Kriya Yoga tradition 🧘 |
 
-</div>
+
 
 ---
 
@@ -294,7 +250,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 
 ### 🕉️ Hindu Monthly Calendar
 
-<div align="center">
+
 
 **✨ FEATURES:**
 - ✅ BC Era Support (6000 BC - 7000 AD)
@@ -303,7 +259,7 @@ mkdir build && cd build && cmake .. && make    # CMake build
 - ✅ Varna Day Classification
 - ✅ Julian Day References
 
-</div>
+
 
 #### Basic Usage
 
@@ -379,7 +335,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ### 🇲🇲 Myanmar Monthly Calendar
 
-<div align="center">
+
 
 **✨ FEATURES:**
 - ✅ Traditional Myanmar Era (ME)
@@ -388,7 +344,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 - ✅ Buddhist Sabbath Detection
 - ✅ Moon Phase Tracking
 
-</div>
+
 
 #### Basic Usage
 
@@ -410,7 +366,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ### 🌟 Five Elements of Panchanga
 
-<div align="center">
+
 
 | Element | Sanskrit | Meaning | Significance |
 |:--------|:---------|:--------|:-------------|
@@ -420,7 +376,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 | **4. Yoga** | योग | Union | Combined movement of Sun & Moon |
 | **5. Karana** | करण | Half-tithi | Half of lunar day period |
 
-</div>
+
 
 ### 📅 Daily Panchanga
 
@@ -508,7 +464,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ### 🕉️ Hindu Calendar Search
 
-<div align="center">
+
 
 **🎯 SEARCH BY:**
 - 📅 Year, Month, Date Range
@@ -518,7 +474,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 - 🔢 Julian Day Numbers
 - 🕉️ Varna Days
 
-</div>
+
 
 #### Basic Search Examples
 
@@ -626,7 +582,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ## 🌚 ECLIPSE ANALYSIS
 
-<div align="center">
+
 
 **✨ FEATURES:**
 - 🌞 Solar & Lunar Eclipses
@@ -635,7 +591,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 - 🔍 Custom Date Range Search
 - 📊 Multiple Output Formats
 
-</div>
+
 
 ### Basic Eclipse Search
 
@@ -712,7 +668,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ## 🪐 PLANETARY CONJUNCTIONS
 
-<div align="center">
+
 
 **✨ FEATURES:**
 - 🎯 Multi-Planet Alignment Detection
@@ -721,7 +677,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 - ⚔️ Graha Yuddha (Planetary Wars)
 - 🔗 Aspect Relationship Mapping
 
-</div>
+
 
 ### Basic Conjunction Analysis
 
@@ -798,7 +754,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ## 🔢 KP SYSTEM
 
-<div align="center">
+
 
 **🇮🇳 Krishnamurti Paddhati System**
 
@@ -808,7 +764,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 - 📊 Planetary Transition Tracking
 - 📋 Complete KP Tables
 
-</div>
+
 
 ### KP Analysis Commands
 
@@ -876,7 +832,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ## 📊 EPHEMERIS TABLES
 
-<div align="center">
+
 
 **✨ FEATURES:**
 - 🗓️ Daily/Weekly/Monthly Positions
@@ -885,7 +841,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 - 🌈 Color-Coded Motion
 - 📅 Calendar Integration
 
-</div>
+
 
 ### Basic Ephemeris
 
@@ -1099,7 +1055,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 
 ### ❗ Common Issues
 
-<div align="center">
+
 
 | Issue | Cause | Solution |
 |:------|:------|:---------|
@@ -1109,7 +1065,7 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 | **Timezone issues** | Wrong offset | Check local timezone at birth time |
 | **Location errors** | Invalid coordinates | Lat: -90 to +90, Lon: -180 to +180 |
 
-</div>
+
 
 ### 🔧 Debugging Commands
 
@@ -1151,7 +1107,7 @@ ls -la ./data/
 
 ### 🌟 Nakshatra Reference
 
-<div align="center">
+
 
 | No. | Sanskrit Name | English | Lord | Characteristics |
 |:---:|:-------------|:--------|:-----|:----------------|
@@ -1163,11 +1119,11 @@ ls -la ./data/
 | ... | ... | ... | ... | ... |
 | 27 | रेवती Revati | Wealthy | Mercury | Completion, travel |
 
-</div>
+
 
 ### 🏠 House System Details
 
-<div align="center">
+
 
 | System | Calculation Method | Strengths | Traditional Use |
 |:-------|:------------------|:----------|:----------------|
@@ -1177,11 +1133,11 @@ ls -la ./data/
 | **Whole Sign** | Sign = House | Traditional accuracy | Hellenistic |
 | **Campanus** | Prime vertical | Spatial relationships | Medieval |
 
-</div>
+
 
 ### 📅 Calendar System Comparison
 
-<div align="center">
+
 
 | Calendar | Year Zero | New Year | Month Count | Lunar/Solar |
 |:---------|:----------|:---------|:------------|:------------|
@@ -1190,7 +1146,7 @@ ls -la ./data/
 | **Myanmar** | 639 AD | Tagu | 12-13 | Luni-Solar |
 | **Buddhist** | 544 BC | Varies | Varies | Lunar |
 
-</div>
+
 
 ---
 
@@ -1225,7 +1181,7 @@ ls -la ./data/
 
 ### 🎯 Short Options
 
-<div align="center">
+
 
 | Short | Long | Description |
 |:------|:-----|:------------|
@@ -1235,11 +1191,11 @@ ls -la ./data/
 | `-m` | `--myanmar-monthly` | Myanmar monthly calendar |
 | `-hm` | `--hindu-monthly` | Hindu monthly calendar |
 
-</div>
+
 
 ---
 
-<div align="center">
+
 
 ## 🌟 CONCLUSION
 
@@ -1266,15 +1222,15 @@ ls -la ./data/
 
 **🕉️ May the stars guide your path 🌟**
 
-</div>
+
 
 ---
 
-<div align="center">
+
 
 *Created with ❤️ by the Horoscope CLI team*
 *Powered by Swiss Ephemeris • Licensed under MIT*
 
 **Version 2.0.0** | Last Updated: July 2025
 
-</div>
+
