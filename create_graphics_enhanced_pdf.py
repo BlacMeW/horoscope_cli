@@ -149,26 +149,26 @@ def create_visual_dividers():
 
 def clean_markdown_for_pdf(content):
     """Remove problematic elements and enhance for PDF conversion"""
-    
+
     # Symbol replacements for better PDF rendering
     symbol_replacements = {
         # Astrological symbols
-        '♈': '\\textcolor{darkblue}{Aries}', '♉': '\\textcolor{darkblue}{Taurus}', 
+        '♈': '\\textcolor{darkblue}{Aries}', '♉': '\\textcolor{darkblue}{Taurus}',
         '♊': '\\textcolor{darkblue}{Gemini}', '♋': '\\textcolor{darkblue}{Cancer}',
-        '♌': '\\textcolor{darkblue}{Leo}', '♍': '\\textcolor{darkblue}{Virgo}', 
+        '♌': '\\textcolor{darkblue}{Leo}', '♍': '\\textcolor{darkblue}{Virgo}',
         '♎': '\\textcolor{darkblue}{Libra}', '♏': '\\textcolor{darkblue}{Scorpio}',
-        '♐': '\\textcolor{darkblue}{Sagittarius}', '♑': '\\textcolor{darkblue}{Capricorn}', 
+        '♐': '\\textcolor{darkblue}{Sagittarius}', '♑': '\\textcolor{darkblue}{Capricorn}',
         '♒': '\\textcolor{darkblue}{Aquarius}', '♓': '\\textcolor{darkblue}{Pisces}',
-        '☉': '\\textcolor{gold}{Sun}', '☽': '\\textcolor{darkblue}{Moon}', 
-        '☿': 'Mercury', '♀': 'Venus', '♂': 'Mars', '♃': 'Jupiter', 
+        '☉': '\\textcolor{gold}{Sun}', '☽': '\\textcolor{darkblue}{Moon}',
+        '☿': 'Mercury', '♀': 'Venus', '♂': 'Mars', '♃': 'Jupiter',
         '♄': 'Saturn', '♅': 'Uranus', '♆': 'Neptune', '♇': 'Pluto',
-        
+
         # Special symbols with colors
-        '⭐': '\\textcolor{gold}{★}', '✨': '\\textcolor{gold}{✦}', 
+        '⭐': '\\textcolor{gold}{★}', '✨': '\\textcolor{gold}{✦}',
         '🌟': '\\textcolor{gold}{★}', '🌞': '\\textcolor{gold}{☀}',
         '🌚': '\\textcolor{darkblue}{☾}', '🌙': '\\textcolor{darkblue}{☽}',
         '🔮': '\\textcolor{starblue}{◉}', '🎯': '\\textcolor{darkblue}{⊙}',
-        
+
         # Remove complex emojis but keep meaning
         '🌕': 'Full Moon', '🌑': 'New Moon', '🌗': 'Waxing Moon', '🌘': 'Waning Moon',
         '📅': 'Calendar', '📊': 'Chart', '📈': 'Analytics', '📋': 'List',
@@ -176,56 +176,56 @@ def clean_markdown_for_pdf(content):
         '💾': 'Save', '⚡': 'Fast', '🔍': 'Search', '🪐': 'Planet',
         '🎨': 'Design', '🏛️': 'Classical', '🌌': 'Cosmic', '🔢': 'Numbers',
         '🧮': 'Calculator', '🚀': 'Advanced', '❤️': 'Love',
-        
+
         # Technical symbols
         '±': '$\\pm$', '°': '°', '≥': '$\\geq$', '≤': '$\\leq$',
         '→': '$\\rightarrow$', '←': '$\\leftarrow$', '↑': '$\\uparrow$', '↓': '$\\downarrow$',
-        '✓': '\\textcolor{darkblue}{✓}', '✅': '\\textcolor{darkblue}{✓}', 
+        '✓': '\\textcolor{darkblue}{✓}', '✅': '\\textcolor{darkblue}{✓}',
         '❌': '\\textcolor{red}{✗}', '…': '\\ldots',
         '"': '"', '"': '"', ''': "'", ''': "'", '–': '--', '—': '---',
     }
-    
+
     # Apply symbol replacements
     for symbol, replacement in symbol_replacements.items():
         content = content.replace(symbol, replacement)
-    
+
     # Remove remaining problematic Unicode ranges
     # Remove emojis (U+1F600-U+1F64F, U+1F300-U+1F5FF, U+1F680-U+1F6FF, U+1F1E0-U+1F1FF)
     content = re.sub(r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U0001F900-\U0001F9FF\U0001FA70-\U0001FAFF]', '', content)
-    
+
     # Remove other problematic Unicode ranges
     content = re.sub(r'[\U00002600-\U000026FF]', '', content)  # Miscellaneous symbols
     content = re.sub(r'[\U00002700-\U000027BF]', '', content)  # Dingbats
     content = re.sub(r'[\U0001F000-\U0001F02F]', '', content)  # Mahjong tiles
     content = re.sub(r'[\U0001F0A0-\U0001F0FF]', '', content)  # Playing cards
-    
+
     # Remove HTML div tags and center alignments
     content = re.sub(r'<div[^>]*>', '', content)
     content = re.sub(r'</div>', '', content)
     content = re.sub(r'<center>', '', content)
     content = re.sub(r'</center>', '', content)
-    
+
     # Remove image badges that won't work in PDF
     content = re.sub(r'!\[.*?\]\(https://img\.shields\.io/.*?\)', '', content)
     content = re.sub(r'\[!\[.*?\]\(.*?\)\]\(.*?\)', '', content)
-    
+
     # Clean up extra whitespace
     content = re.sub(r'\n\s*\n\s*\n', '\n\n', content)
     content = re.sub(r'[ \t]+\n', '\n', content)
-    
+
     return content
 
 def enhance_markdown_structure(content):
     """Add visual enhancements to the markdown structure"""
     dividers = create_visual_dividers()
-    
+
     # Add visual dividers before major sections
-    major_sections = ['## Quick Start', '## Installation', '## Features Overview', 
+    major_sections = ['## Quick Start', '## Installation', '## Features Overview',
                      '## Chart Generation', '## Calendar Systems', '## Advanced Features']
-    
+
     for section in major_sections:
         content = content.replace(section, dividers['major_section'] + section)
-    
+
     # Simple replacement for subsections to avoid regex issues
     lines = content.split('\n')
     enhanced_lines = []
@@ -239,62 +239,62 @@ def enhance_markdown_structure(content):
             enhanced_lines.append('\\vspace{0.3cm}')
             enhanced_lines.append('')
         enhanced_lines.append(line)
-    
+
     return '\n'.join(enhanced_lines)
 
 def main():
     input_file = "USER_MANUAL.md"
     output_file = "USER_MANUAL_enhanced.pdf"
     temp_file = "USER_MANUAL_enhanced.md"
-    
+
     print("Creating Enhanced USER_MANUAL PDF with Graphics...")
     print("=" * 60)
-    
+
     # Check if input file exists
     if not os.path.exists(input_file):
         print(f"Error: {input_file} not found")
         sys.exit(1)
-    
+
     # Read and process the markdown
     print("Processing markdown file...")
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
-    
+
     # Remove the existing title section and replace with enhanced cover
     content = re.sub(r'^# .*?(?=\n## )', '', content, flags=re.DOTALL)
-    
+
     # Create enhanced content
     enhanced_content = create_enhanced_book_cover()
     cleaned_content = clean_markdown_for_pdf(content)
     enhanced_content += enhance_markdown_structure(cleaned_content)
-    
+
     # Write enhanced content
     with open(temp_file, 'w', encoding='utf-8') as f:
         f.write(enhanced_content)
-    
+
     print("Converting to PDF with graphics...")
-    
+
     # Enhanced pandoc command with LaTeX engine for graphics support
     commands = [
         # Try with XeLaTeX for best Unicode and graphics support
-        ["pandoc", temp_file, "-o", output_file, 
+        ["pandoc", temp_file, "-o", output_file,
          "--pdf-engine=xelatex", "--toc", "--number-sections",
          "--template=default", "--variable", "geometry:margin=1in"],
-        
+
         # Fallback to pdflatex
         ["pandoc", temp_file, "-o", output_file,
          "--pdf-engine=pdflatex", "--toc", "--number-sections"],
-        
+
         # Simple fallback
         ["pandoc", temp_file, "-o", output_file, "--toc"]
     ]
-    
+
     success = False
     for i, cmd in enumerate(commands):
         try:
             print(f"Attempt {i+1}: {' '.join(cmd[:6])}...")
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-            
+
             if result.returncode == 0 and os.path.exists(output_file):
                 success = True
                 break
@@ -302,16 +302,16 @@ def main():
                 print(f"Attempt {i+1} failed:")
                 if result.stderr:
                     print(result.stderr[:300])
-                    
+
         except subprocess.TimeoutExpired:
             print(f"Attempt {i+1} timed out")
         except Exception as e:
             print(f"Attempt {i+1} error: {e}")
-    
+
     # Clean up temp file
     if os.path.exists(temp_file):
         os.remove(temp_file)
-    
+
     if success:
         print("SUCCESS: Enhanced PDF with graphics created!")
         print(f"Output file: {output_file}")
@@ -329,7 +329,7 @@ def main():
     else:
         print("ERROR: Enhanced PDF conversion failed")
         print("Falling back to standard conversion...")
-        
+
         # Fallback to original converter
         try:
             subprocess.run(["python3", "convert_to_pdf.py"], check=True)

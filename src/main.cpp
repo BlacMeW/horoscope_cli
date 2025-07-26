@@ -110,7 +110,11 @@ struct CommandLineArgs {
     int ephemerisIntervalDays = 1;
     std::string ephemerisFormat = "table";
     bool ephemerisShowDeclination = false;
-    std::string ephemerisCoordinateType = "longitude"; // "longitude", "declination", or "both"
+    std::string ephemerisCoordinateType = "longitude"; // "longitude", "declination", "both", "3line", "latitude", "distance", or "right-ascension"
+    bool ephemerisShow3LineCoordinates = false; // Show longitude, latitude, and declination in 3-line format
+    bool ephemerisShowLatitudeOnly = false; // Show ecliptic latitude only
+    bool ephemerisShowDistance = false; // Show distance from Earth
+    bool ephemerisShowRightAscension = false; // Show right ascension
     bool ephemerisShowSiderealTime = false;
     bool ephemerisCompactFormat = false;
     bool ephemerisUseColors = true; // Enable colors by default
@@ -573,12 +577,22 @@ void printHelp() {
     std::cout << "                       Show declination instead of longitude\n\n";
 
     std::cout << "    --ephemeris-coordinates TYPE\n";
-    std::cout << "                       longitude   = Show ecliptic longitude (default)\n";
-    std::cout << "                       declination = Show celestial declination\n";
-    std::cout << "                       both        = Show both longitude and declination\n\n";
+    std::cout << "                       longitude      = Show ecliptic longitude (default)\n";
+    std::cout << "                       declination    = Show celestial declination\n";
+    std::cout << "                       both           = Show both longitude and declination\n";
+    std::cout << "                       3line          = Show longitude, latitude, and declination in 3-line format\n";
+    std::cout << "                       latitude       = Show ecliptic latitude only\n";
+    std::cout << "                       distance       = Show distance from Earth only\n";
+    std::cout << "                       right-ascension = Show right ascension only\n\n";
 
     std::cout << "    --ephemeris-sidereal-time\n";
     std::cout << "                       Include Greenwich Sidereal Time in ephemeris\n\n";
+
+    std::cout << "    --ephemeris-distance\n";
+    std::cout << "                       Show distance from Earth (in AU)\n\n";
+
+    std::cout << "    --ephemeris-right-ascension\n";
+    std::cout << "                       Show right ascension (celestial coordinate)\n\n";
 
     std::cout << "    --ephemeris-compact\n";
     std::cout << "                       Use compact Astrodienst-style format\n";
@@ -1871,15 +1885,28 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.ephemerisCoordinateType = "declination";
         } else if (arg == "--ephemeris-coordinates" && i + 1 < argc) {
             args.ephemerisCoordinateType = argv[++i];
-            if (args.ephemerisCoordinateType != "longitude" && args.ephemerisCoordinateType != "declination" && args.ephemerisCoordinateType != "both") {
-                std::cerr << "Error: Ephemeris coordinates must be 'longitude', 'declination', or 'both'\n";
+            if (args.ephemerisCoordinateType != "longitude" && args.ephemerisCoordinateType != "declination" && args.ephemerisCoordinateType != "both" && args.ephemerisCoordinateType != "3line" && args.ephemerisCoordinateType != "latitude" && args.ephemerisCoordinateType != "distance" && args.ephemerisCoordinateType != "right-ascension") {
+                std::cerr << "Error: Ephemeris coordinates must be 'longitude', 'declination', 'both', '3line', 'latitude', 'distance', or 'right-ascension'\n";
                 return false;
             }
             if (args.ephemerisCoordinateType == "declination" || args.ephemerisCoordinateType == "both") {
                 args.ephemerisShowDeclination = true;
+            } else if (args.ephemerisCoordinateType == "3line") {
+                args.ephemerisShow3LineCoordinates = true;
+                args.ephemerisShowDeclination = true; // 3line includes declination
+            } else if (args.ephemerisCoordinateType == "latitude") {
+                args.ephemerisShowLatitudeOnly = true;
+            } else if (args.ephemerisCoordinateType == "distance") {
+                args.ephemerisShowDistance = true;
+            } else if (args.ephemerisCoordinateType == "right-ascension") {
+                args.ephemerisShowRightAscension = true;
             }
         } else if (arg == "--ephemeris-sidereal-time") {
             args.ephemerisShowSiderealTime = true;
+        } else if (arg == "--ephemeris-distance") {
+            args.ephemerisShowDistance = true;
+        } else if (arg == "--ephemeris-right-ascension") {
+            args.ephemerisShowRightAscension = true;
         } else if (arg == "--ephemeris-compact") {
             args.ephemerisCompactFormat = true;
         } else if (arg == "--ephemeris-colors") {
@@ -2870,6 +2897,25 @@ int main(int argc, char* argv[]) {
                 config.showDeclination = true;
                 config.showDegreeMinutes = true;
                 config.showSign = true;   // Show both longitude with signs and declination
+            } else if (args.ephemerisCoordinateType == "3line") {
+                config.show3LineCoordinates = true;
+                config.showLatitude = true;   // Enable latitude display
+                config.showDeclination = true;
+                config.showDegreeMinutes = true;
+                config.showSign = true;   // Show signs for longitude
+            } else if (args.ephemerisCoordinateType == "latitude") {
+                config.showLatitudeOnly = true;
+                config.showLatitude = true;   // Enable latitude display
+                config.showDegreeMinutes = true;
+                config.showSign = false;  // Latitude doesn't use zodiac signs
+            } else if (args.ephemerisCoordinateType == "distance") {
+                config.showDistance = true;
+                config.showDegreeMinutes = false; // Distance doesn't use degree format
+                config.showSign = false;  // Distance doesn't use zodiac signs
+            } else if (args.ephemerisCoordinateType == "right-ascension") {
+                config.showRightAscension = true;
+                config.showDegreeMinutes = false; // RA uses hour format, not degrees
+                config.showSign = false;  // RA doesn't use zodiac signs
             } else {
                 // Default longitude mode
                 config.showDeclination = false;
@@ -2879,6 +2925,8 @@ int main(int argc, char* argv[]) {
 
             // Set sidereal time and compact format options
             config.showSiderealTime = args.ephemerisShowSiderealTime;
+            config.showDistance = args.ephemerisShowDistance;
+            config.showRightAscension = args.ephemerisShowRightAscension;
             config.compactFormat = args.ephemerisCompactFormat;
             config.useColors = args.ephemerisUseColors;
 

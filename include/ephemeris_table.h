@@ -42,9 +42,11 @@ struct EphemerisConfig {
     bool showSpeed;             // Show daily motion
     bool showDistance;          // Show distance from Earth
     bool showLatitude;          // Show ecliptic latitude
+    bool showLatitudeOnly;      // Show ecliptic latitude only (not longitude)
     bool showDeclination;       // Show declination
     bool showRightAscension;    // Show right ascension
     bool showSiderealTime;      // Show sidereal time
+    bool show3LineCoordinates;  // Show longitude, latitude, and declination in 3-line format
     bool compactFormat;         // Use compact Astrodienst-style format
     std::string format;         // Output format: "table", "csv", "json"
 
@@ -130,6 +132,7 @@ private:
 
     // Format planet position for table
     std::string formatPlanetPosition(const PlanetPosition& position, const EphemerisConfig& config) const;
+    std::string format3LinePosition(const PlanetPosition& position, const EphemerisConfig& config) const;
 
     // Calculate column widths
     std::vector<int> calculateColumnWidths(const std::vector<EphemerisEntry>& entries,
@@ -145,6 +148,8 @@ private:
     // Format single table row
     std::string formatTableRow(const EphemerisEntry& entry, const EphemerisConfig& config,
                               const std::vector<int>& widths) const;
+    std::string format3LineTableRow(const EphemerisEntry& entry, const EphemerisConfig& config,
+                                   const std::vector<int>& widths) const;
 
     // Helper functions for specific calculations
     double calculateDeclination(const PlanetPosition& position) const;
@@ -164,6 +169,9 @@ private:
     std::string formatDegrees(double degrees, bool showMinutes = true) const;
     std::string formatDegreeWithSign(double longitude) const;
     std::string formatDeclination(double declination) const;
+    std::string formatLatitude(double latitude) const;
+    std::string formatDistance(double distance) const;
+    std::string formatRightAscension(double rightAscension) const;
     std::string formatSiderealTime(double siderealHours) const;
     std::string formatTime(double hours) const;
 
