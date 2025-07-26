@@ -236,19 +236,19 @@ std::string MyanmarMonthlyCalendar::generateTraditionalLayout(const MyanmarMonth
     std::stringstream ss;
 
     // Traditional Myanmar calendar header
-    ss << "╔══════════════════════════════════════════════════════════════════════════════════╗\n";
-    ss << "║                            MYANMAR CALENDAR                                      ║\n";
-    ss << "╠══════════════════════════════════════════════════════════════════════════════════╣\n";
+    ss << "╔══════════════════════════════════════════════════════════════════════════════════════════╗\n";
+    ss << "║                            MYANMAR CALENDAR                                              ║\n";
+    ss << "╠══════════════════════════════════════════════════════════════════════════════════════════╣\n";
     ss << "║  " << monthData.gregorianMonthName << " " << monthData.gregorianYear;
     ss << " CE   |   " << monthData.myanmarMonthName << " " << monthData.myanmarYear << " ME";
 
     // Calculate padding
     int used = monthData.gregorianMonthName.length() + std::to_string(monthData.gregorianYear).length() +
                monthData.myanmarMonthName.length() + std::to_string(monthData.myanmarYear).length() + 15;
-    int padding = 82 - used;
+    int padding = 88 - used;
     ss << std::string(padding, ' ') << "║\n";
 
-    ss << "╠══════════════════════════════════════════════════════════════════════════════════╣\n";
+    ss << "╠══════════════════════════════════════════════════════════════════════════════════════════╣\n";
 
     // Weekday headers (both English and Myanmar) - 12 chars per column with proper Unicode alignment
     ss << "║    Sun     │    Mon     │    Tue     │    Wed     │    Thu     │    Fri     │    Sat     ║\n";
