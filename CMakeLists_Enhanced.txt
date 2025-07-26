@@ -1,0 +1,349 @@
+# CMakeLists.txt for Enhanced Horoscope CLI v2.0
+# Professional Astrology Toolkit with AI, Multi-language, and Plugin Support
+
+cmake_minimum_required(VERSION 3.16)
+
+# Project definition
+project(HoroscopeCLI
+    VERSION 2.0.0
+    DESCRIPTION "Professional Command-Line Astrology Toolkit"
+    LANGUAGES CXX
+)
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Build options
+option(ENABLE_TESTING "Enable testing" OFF)
+option(ENABLE_PLUGINS "Enable plugin system" ON)
+option(ENABLE_AI_FEATURES "Enable AI-powered interpretations" ON)
+option(ENABLE_MULTILANG "Enable multi-language support" ON)
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(ENABLE_OPTIMIZATION "Enable compiler optimizations" ON)
+
+# Output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+
+# Compiler-specific options
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+    if(ENABLE_OPTIMIZATION)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -mtune=native")
+    endif()
+
+    # Enable all warnings but disable specific ones that are too verbose
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-sign-compare")
+
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+    if(ENABLE_OPTIMIZATION)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -mtune=native")
+    endif()
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-sign-compare")
+endif()
+
+# Platform-specific settings
+if(WIN32)
+    add_definitions(-DWINDOWS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32_LEAN_AND_MEAN")
+elseif(APPLE)
+    add_definitions(-DMACOS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMACOS")
+elseif(UNIX)
+    add_definitions(-DLINUX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX")
+endif()
+
+# Feature-specific definitions
+if(ENABLE_PLUGINS)
+    add_definitions(-DENABLE_PLUGINS)
+endif()
+
+if(ENABLE_AI_FEATURES)
+    add_definitions(-DENABLE_AI_FEATURES)
+endif()
+
+if(ENABLE_MULTILANG)
+    add_definitions(-DENABLE_MULTILANG)
+endif()
+
+# Include directories
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src
+)
+
+# Find required packages
+find_package(Threads REQUIRED)
+
+# Check for optional libraries
+find_library(MATH_LIBRARY m)
+if(NOT MATH_LIBRARY)
+    set(MATH_LIBRARY "")
+endif()
+
+# Swiss Ephemeris source files
+set(SWISSEPH_SOURCES
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/swecl.c
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/swedate.c
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/swehouse.c
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/swejpl.c
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/swemmoon.c
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/swemplan.c
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/sweph.c
+    ${CMAKE_SOURCE_DIR}/third_party/swisseph/src/swephlib.c
+)
+
+# Core source files
+set(CORE_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_SOURCE_DIR}/src/astro_types.cpp
+    ${CMAKE_SOURCE_DIR}/src/birth_chart.cpp
+    ${CMAKE_SOURCE_DIR}/src/planet_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/src/house_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/src/aspect_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/src/ephemeris_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/ephemeris_table.cpp
+    ${CMAKE_SOURCE_DIR}/src/conjunction_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/src/eclipse_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/src/location_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/astro_calendar.cpp
+    ${CMAKE_SOURCE_DIR}/src/hindu_calendar.cpp
+    ${CMAKE_SOURCE_DIR}/src/myanmar_calendar.cpp
+    ${CMAKE_SOURCE_DIR}/src/myanmar_monthly_calendar.cpp
+    ${CMAKE_SOURCE_DIR}/src/kp_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/eastern_chart_drawer.cpp
+    ${CMAKE_SOURCE_DIR}/src/western_chart_drawer.cpp
+    ${CMAKE_SOURCE_DIR}/src/solar_system_drawer.cpp
+    ${CMAKE_SOURCE_DIR}/src/professional_table.cpp
+)
+
+# Enhanced feature source files (when implemented)
+set(ENHANCED_SOURCES)
+
+if(ENABLE_PLUGINS)
+    list(APPEND ENHANCED_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/plugin_system.cpp
+    )
+endif()
+
+if(ENABLE_AI_FEATURES)
+    list(APPEND ENHANCED_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/ai_interpretation.cpp
+    )
+endif()
+
+if(ENABLE_MULTILANG)
+    list(APPEND ENHANCED_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/localization.cpp
+    )
+endif()
+
+# Check if enhanced source files exist
+foreach(SOURCE_FILE ${ENHANCED_SOURCES})
+    if(NOT EXISTS ${SOURCE_FILE})
+        message(STATUS "Enhanced source file not found: ${SOURCE_FILE}")
+        message(STATUS "Skipping enhanced features - headers available for future implementation")
+        set(ENHANCED_SOURCES "")
+        break()
+    endif()
+endforeach()
+
+# All source files
+set(ALL_SOURCES
+    ${CORE_SOURCES}
+    ${ENHANCED_SOURCES}
+    ${SWISSEPH_SOURCES}
+)
+
+# Create the executable
+add_executable(horoscope_cli ${ALL_SOURCES})
+
+# Link libraries
+target_link_libraries(horoscope_cli
+    Threads::Threads
+    ${MATH_LIBRARY}
+)
+
+# Platform-specific linking
+if(WIN32)
+    target_link_libraries(horoscope_cli ws2_32)
+elseif(UNIX AND NOT APPLE)
+    target_link_libraries(horoscope_cli dl)
+endif()
+
+# Compiler-specific optimizations
+if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ENABLE_OPTIMIZATION)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(horoscope_cli PRIVATE
+            -ffast-math
+            -funroll-loops
+            -finline-functions
+        )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(horoscope_cli PRIVATE
+            -ffast-math
+            -funroll-loops
+            -finline-functions
+        )
+    endif()
+endif()
+
+# Set target properties
+set_target_properties(horoscope_cli PROPERTIES
+    OUTPUT_NAME "horoscope_cli"
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+# Installation rules
+install(TARGETS horoscope_cli
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
+# Install data files
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/
+    DESTINATION share/horoscope_cli/data
+    FILES_MATCHING PATTERN "*.*"
+)
+
+# Install documentation
+install(FILES
+    ${CMAKE_SOURCE_DIR}/README.md
+    ${CMAKE_SOURCE_DIR}/ENHANCED_README.md
+    ${CMAKE_SOURCE_DIR}/LICENSE
+    DESTINATION share/doc/horoscope_cli
+)
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/
+    DESTINATION share/doc/horoscope_cli/docs
+    FILES_MATCHING PATTERN "*.*"
+)
+
+# Install examples
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/examples/
+    DESTINATION share/horoscope_cli/examples
+    FILES_MATCHING PATTERN "*.*"
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                GROUP_READ GROUP_EXECUTE
+                WORLD_READ WORLD_EXECUTE
+)
+
+# Testing configuration
+if(ENABLE_TESTING)
+    enable_testing()
+
+    # Basic functionality tests
+    add_test(NAME version_test
+        COMMAND horoscope_cli --version
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+
+    add_test(NAME help_test
+        COMMAND horoscope_cli --help
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+
+    add_test(NAME basic_chart_test
+        COMMAND horoscope_cli --date 2000-01-01 --time 12:00:00
+                              --lat 0.0 --lon 0.0 --timezone 0
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+
+    # Test existing shell scripts if available
+    if(EXISTS ${CMAKE_SOURCE_DIR}/test.sh)
+        add_test(NAME comprehensive_tests
+            COMMAND ${CMAKE_SOURCE_DIR}/test.sh
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+    endif()
+
+    if(EXISTS ${CMAKE_SOURCE_DIR}/validate_hindu_calendar.sh)
+        add_test(NAME hindu_calendar_test
+            COMMAND ${CMAKE_SOURCE_DIR}/validate_hindu_calendar.sh
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+    endif()
+endif()
+
+# Custom targets for development
+add_custom_target(clean-all
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/bin
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/lib
+    COMMENT "Cleaning all build artifacts"
+)
+
+add_custom_target(run-demos
+    COMMAND ${CMAKE_SOURCE_DIR}/demo_calendar_output_formats.sh
+    COMMAND ${CMAKE_SOURCE_DIR}/demo_myanmar_monthly_calendar.sh
+    COMMAND ${CMAKE_SOURCE_DIR}/demo_three_calendar_systems.sh
+    DEPENDS horoscope_cli
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Running demonstration scripts"
+)
+
+# Package configuration
+set(CPACK_PACKAGE_NAME "HoroscopeCLI")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+set(CPACK_PACKAGE_VENDOR "Horoscope CLI Project")
+set(CPACK_PACKAGE_CONTACT "support@horoscope-cli.org")
+
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/ENHANCED_README.md")
+
+# Platform-specific packaging
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP;NSIS")
+elseif(APPLE)
+    set(CPACK_GENERATOR "ZIP;DragNDrop")
+else()
+    set(CPACK_GENERATOR "TGZ;DEB;RPM")
+
+    # Debian package settings
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Horoscope CLI Project")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+
+    # RPM package settings
+    set(CPACK_RPM_PACKAGE_GROUP "Applications/Science")
+    set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+endif()
+
+include(CPack)
+
+# Print configuration summary
+message(STATUS "")
+message(STATUS "========================================")
+message(STATUS "  Horoscope CLI v${PROJECT_VERSION} Configuration")
+message(STATUS "========================================")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "")
+message(STATUS "Features:")
+message(STATUS "  Plugin System: ${ENABLE_PLUGINS}")
+message(STATUS "  AI Features: ${ENABLE_AI_FEATURES}")
+message(STATUS "  Multi-language: ${ENABLE_MULTILANG}")
+message(STATUS "  Testing: ${ENABLE_TESTING}")
+message(STATUS "  Optimizations: ${ENABLE_OPTIMIZATION}")
+message(STATUS "")
+message(STATUS "Output:")
+message(STATUS "  Binary: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/horoscope_cli")
+message(STATUS "")
+message(STATUS "========================================")
+message(STATUS "")

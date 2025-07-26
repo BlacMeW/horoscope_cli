@@ -10,6 +10,8 @@
 #include "location_manager.h"
 #include "hindu_calendar.h"
 #include "myanmar_calendar.h"
+#include "myanmar_monthly_calendar.h"
+#include "hindu_monthly_calendar.h"
 #include "astro_calendar.h"
 #include "professional_table.h"
 #include "swephexp.h"
@@ -24,6 +26,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 using namespace Astro;
 
@@ -106,6 +109,17 @@ struct CommandLineArgs {
     std::string ephemerisToDate;
     int ephemerisIntervalDays = 1;
     std::string ephemerisFormat = "table";
+    bool ephemerisShowDeclination = false;
+    std::string ephemerisCoordinateType = "longitude"; // "longitude", "declination", "both", "3line", "latitude", "distance", or "right-ascension"
+    bool ephemerisShow3LineCoordinates = false; // Show longitude, latitude, and declination in 3-line format
+    bool ephemerisShowLatitudeOnly = false; // Show ecliptic latitude only
+    bool ephemerisShowDistance = false; // Show distance from Earth
+    bool ephemerisShowRightAscension = false; // Show right ascension
+    bool ephemerisShowSiderealTime = false;
+    bool ephemerisCompactFormat = false;
+    bool ephemerisUseColors = true; // Enable colors by default
+    bool ephemerisShowDayNames = true; // Show short day names (Su, Mo, etc.) - default enabled
+    std::string ephemerisCalendarMode = "auto"; // Calendar mode: "jul", "gregorian", "auto", "both" - default auto
 
     // KP System options
     bool showKPTable = false;
@@ -155,6 +169,29 @@ struct CommandLineArgs {
     bool searchAmavasya = false;
     bool searchSankranti = false;
 
+    // Julian Day search criteria
+    double searchJulianDay = -1.0;
+    double searchJulianDayStart = -1.0;
+    double searchJulianDayEnd = -1.0;
+    double searchJulianDayTolerance = 0.5;
+
+    // Varna (Savarna) search criteria
+    std::string searchVarnaDay = "";
+    std::string searchVarnaTithi = "";
+    std::string searchVarnaNakshatra = "";
+    bool searchBrahminDays = false;
+    bool searchKshatriyaDays = false;
+    bool searchVaishyaDays = false;
+    bool searchShudradays = false;
+
+    // Simplified JD-only search
+    double searchJdOnly = -1.0;           // Search by JD only, no date range needed
+    std::string searchVarnaOnly = "";     // Search by Varna only, no date range needed
+
+    // Extended JD search options
+    double searchJdMyanmarOnly = -1.0;    // Search Myanmar calendar by JD only
+    double searchJdBirthChartOnly = -1.0; // Search birth chart by JD only
+
     // Myanmar Calendar options
     bool showMyanmarCalendar = false;
     bool showMyanmarCalendarRange = false;
@@ -197,7 +234,170 @@ struct CommandLineArgs {
     bool showAstroCalendarMonthly = false;
     std::string astroCalendarFormat = "calendar";
     bool showPlanetaryTransitions = false;
+
+    // NEW ENHANCED FEATURES 🚀
+
+    // Interactive Mode
+    bool interactiveMode = false;
+    bool quickWizard = false;
+    bool beginnerMode = false;
+    bool professionalMode = false;
+
+    // AI-Powered Interpretation
+    bool aiInterpretation = false;
+    bool personalityProfile = false;
+    bool careerGuidance = false;
+    bool relationshipProfile = false;
+    bool healthInsights = false;
+    bool spiritualGuidance = false;
+    std::string interpretationStyle = "balanced"; // psychological, spiritual, practical, balanced
+    std::string interpretationDetail = "standard"; // brief, standard, detailed
+    std::vector<std::string> interpretationFocus; // personality, career, relationships, health, spiritual
+
+    // Advanced Astrological Analysis
+    bool advancedAnalysis = false;
+    bool midpointAnalysis = false;
+    bool harmonicAnalysis = false;
+    std::vector<int> specificHarmonics; // 4, 5, 7, 9, etc.
+    bool arabicParts = false;
+    bool fixedStarsAnalysis = false;
+    bool asteroidsAnalysis = false;
+    bool vertexAnalysis = false;
+
+    // Predictive Astrology
+    bool predictiveAnalysis = false;
+    bool dashaAnalysis = false;
+    std::string dashaType = "vimshottari"; // vimshottari, ashtottari, etc.
+    bool progressionAnalysis = false;
+    std::string progressionTargetDate;
+    bool transitAnalysis = false;
+    std::string transitStartDate;
+    std::string transitEndDate;
+    bool returnAnalysis = false;
+    std::string returnType = "solar"; // solar, lunar, planetary
+    int returnYear = -1;
+    bool yearlyForecast = false;
+    bool monthlyForecast = false;
+    int forecastYear = -1;
+    int forecastMonth = -1;
+
+    // Electional Astrology
+    bool electionalAnalysis = false;
+    std::string electionalStartDate;
+    std::string electionalEndDate;
+    std::string electionalPurpose; // marriage, business, travel, etc.
+    bool auspiciousTimings = false;
+
+    // Relationship Analysis (Synastry)
+    bool synastryAnalysis = false;
+    bool compositeAnalysis = false;
+    std::string partnerBirthDate;
+    std::string partnerBirthTime;
+    double partnerLatitude = 0.0;
+    double partnerLongitude = 0.0;
+    double partnerTimezone = 0.0;
+    std::string partnerLocation;
+
+    // Relocation Astrology
+    bool relocationAnalysis = false;
+    double relocationLatitude = 0.0;
+    double relocationLongitude = 0.0;
+    std::string relocationLocation;
+
+    // Financial Astrology
+    bool financialAnalysis = false;
+    std::string stockSymbol;
+    bool marketAnalysis = false;
+    bool cryptoAnalysis = false;
+    std::string investmentDate;
+
+    // Medical Astrology
+    bool medicalAnalysis = false;
+    bool healthPredictions = false;
+    std::string healthConcern;
+    bool ayurvedicAnalysis = false;
+
+    // Mundane Astrology
+    bool mundaneAnalysis = false;
+    std::string country;
+    std::string region;
+    bool weatherPredictions = false;
+    bool politicalAnalysis = false;
+    bool economicAnalysis = false;
+
+    // Multi-language Support
+    std::string language = "english";
+    bool useNativeScript = false;
+    std::string culturalRegion;
+    std::string numberFormat = "western";
+    std::string dateFormat = "YYYY-MM-DD";
+    std::string timeFormat = "24h";
+
+    // Batch Processing
+    bool batchMode = false;
+    std::string batchInputFile;
+    std::string batchOutputFile;
+    std::string batchOperation;
+
+    // Data Management
+    bool exportData = false;
+    bool importData = false;
+    std::string dataFile;
+    std::string dataFormat = "json";
+    bool backup = false;
+    bool restore = false;
+
+    // Visualization Enhancements
+    bool colorOutput = true;
+    bool unicodeSymbols = true;
+    std::string chartTheme = "default"; // default, dark, light, classic
+    bool showProgressBars = true;
+    bool verboseOutput = false;
+
+    // Configuration
+    std::string configFile;
+    bool saveConfig = false;
+    bool loadConfig = false;
+    bool resetConfig = false;
+    std::string userProfile;
+
+    // Output Enhancements
+    bool saveToFile = false;
+    std::string outputFile;
+    bool printToPDF = false;
+    bool emailResults = false;
+    std::string emailAddress;
+    bool uploadToCloud = false;
+
+    // Development and Testing
+    bool debugMode = false;
+    bool testMode = false;
+    bool benchmarkMode = false;
+    bool validateData = false;
+    std::string logLevel = "info"; // debug, info, warn, error
+
+    // API Integration
+    bool apiMode = false;
+    std::string apiEndpoint;
+    std::string apiKey;
+    bool webhookNotification = false;
+    std::string webhookUrl;
     bool showAllFestivals = false;
+
+    // Myanmar Monthly Calendar options
+    bool showMyanmarMonthlyCalendar = false;
+    std::string myanmarMonthlyCalendarDate; // Format: YYYY-MM for monthly view
+    std::string myanmarMonthlyCalendarFormat = "traditional";
+
+    // Hindu Monthly Calendar options
+    bool showHinduMonthlyCalendar = false;
+    std::string hinduMonthlyCalendarDate; // Format: YYYY-MM for monthly view, supports BC dates
+    std::string hinduMonthlyCalendarFormat = "traditional";
+    bool hinduMonthlyShowMuhurta = false;
+    bool includeGregorian = false;
+    bool includeHindu = false;
+    bool includePlanetary = false;
+    bool includeAdvancedAstro = false;
 };
 
 void printHelp() {
@@ -373,6 +573,64 @@ void printHelp() {
     std::cout << "                       csv   = Comma-separated values\n";
     std::cout << "                       json  = JSON structure\n\n";
 
+    std::cout << "    --ephemeris-declination\n";
+    std::cout << "                       Show declination instead of longitude\n\n";
+
+    std::cout << "    --ephemeris-coordinates TYPE\n";
+    std::cout << "                       longitude      = Show ecliptic longitude (default)\n";
+    std::cout << "                       declination    = Show celestial declination\n";
+    std::cout << "                       both           = Show both longitude and declination\n";
+    std::cout << "                       3line          = Show longitude, latitude, and declination in 3-line format\n";
+    std::cout << "                       latitude       = Show ecliptic latitude only\n";
+    std::cout << "                       distance       = Show distance from Earth only\n";
+    std::cout << "                       right-ascension = Show right ascension only\n\n";
+
+    std::cout << "    --ephemeris-sidereal-time\n";
+    std::cout << "                       Include Greenwich Sidereal Time in ephemeris\n\n";
+
+    std::cout << "    --ephemeris-distance\n";
+    std::cout << "                       Show distance from Earth (in AU)\n\n";
+
+    std::cout << "    --ephemeris-right-ascension\n";
+    std::cout << "                       Show right ascension (celestial coordinate)\n\n";
+
+    std::cout << "    --ephemeris-compact\n";
+    std::cout << "                       Use compact Astrodienst-style format\n";
+    std::cout << "                       • Month headers with grouped entries\n";
+    std::cout << "                       • Planet abbreviations (Sun, Moon, Merc, etc.)\n";
+    std::cout << "                       • Compact position notation (DDMMx)\n";
+    std::cout << "                       • Supports tropical and sidereal zodiac modes\n";
+    std::cout << "                       • Use --zodiac-mode and --ayanamsa options\n\n";
+
+    std::cout << "    --ephemeris-colors Color-coded planetary motion (default: enabled)\n";
+    std::cout << "                       • Red = Retrograde motion\n";
+    std::cout << "                       • Green = Fast direct motion\n";
+    std::cout << "                       • Yellow = Slow direct motion\n";
+    std::cout << "                       • Blue = Nearly stationary\n";
+    std::cout << "                       • White = Normal motion\n\n";
+
+    std::cout << "    --ephemeris-no-colors\n";
+    std::cout << "                       Disable color coding for planetary motion\n\n";
+
+    std::cout << "    --ephemeris-day-names\n";
+    std::cout << "                       Show short day names (Su, Mo, Tu, We, Th, Fr, Sa) - default enabled\n\n";
+
+    std::cout << "    --ephemeris-no-day-names\n";
+    std::cout << "                       Hide short day names\n\n";
+
+    std::cout << "    --ephemeris-calendar MODE\n";
+    std::cout << "                       Calendar display mode (default: auto)\n";
+    std::cout << "                       • jul: Julian calendar only\n";
+    std::cout << "                       • gregorian: Gregorian calendar only\n";
+    std::cout << "                       • auto: Automatic (Julian before Oct 15, 1582, Gregorian after)\n";
+    std::cout << "                       • both: Show both calendars side by side\n\n";
+
+    std::cout << "    --ephemeris-julian-calendar\n";
+    std::cout << "                       Show Julian calendar dates only (shortcut for --ephemeris-calendar jul)\n\n";
+
+    std::cout << "    --ephemeris-gregorian-calendar\n";
+    std::cout << "                       Show Gregorian calendar dates only (shortcut for --ephemeris-calendar gregorian)\n\n";
+
     std::cout << "KP SYSTEM OPTIONS (Krishnamurti Paddhati) 🇮🇳🔢\n";
     std::cout << "    --kp-table         Show complete KP Sub Lord 5 Levels analysis\n";
     std::cout << "                       • Includes all planets with sub-lords\n";
@@ -479,6 +737,46 @@ void printHelp() {
     std::cout << "    --hindu-search-sankranti Search for Sankranti days\n";
     std::cout << "    --hindu-search-nakshatra N Search for specific Nakshatra (1-27)\n";
     std::cout << "    --hindu-search-yoga N   Search for specific Yoga (1-27)\n\n";
+
+    std::cout << "JULIAN DAY (JD) SEARCH OPTIONS 🔢📅\n";
+    std::cout << "    --search-jd JD          🎯 SIMPLE: Search single day by Julian Day number\n";
+    std::cout << "                            • Example: horoscope_cli --search-jd 1555550\n";
+    std::cout << "                            • Shows complete Hindu Panchanga for that exact day\n";
+    std::cout << "                            • No date range required - JD defines exactly one day\n\n";
+
+    std::cout << "    --search-jd-myanmar JD  🎯 SIMPLE: Search Myanmar calendar by Julian Day\n";
+    std::cout << "                            • Example: horoscope_cli --search-jd-myanmar 1555550\n";
+    std::cout << "                            • Shows complete Myanmar calendar for that exact day\n\n";
+
+    std::cout << "    --search-jd-chart JD    🎯 SIMPLE: Search birth chart by Julian Day\n";
+    std::cout << "                            • Example: horoscope_cli --search-jd-chart 1555550\n";
+    std::cout << "                            • Shows complete birth chart for that exact day\n";
+    std::cout << "                            • Requires coordinates: --lat and --lon\n\n";
+
+    std::cout << "    --search-julian-day JD  Search for specific Julian Day number\n";
+    std::cout << "                            • Example: --search-julian-day 1555550\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-julian-day 1555550\n";
+    std::cout << "    --search-julian-day-range START END  Search for Julian Day range\n";
+    std::cout << "                                          • Example: --search-julian-day-range 1555550 1555580\n";
+    std::cout << "                                          • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-julian-day-range 1555550 1555580\n\n";
+
+    std::cout << "SAVARNA (VARNA) DAY SEARCH OPTIONS 🕉️⚡\n";
+    std::cout << "    --search-varna-day TYPE Search for specific Varna day type\n";
+    std::cout << "                            • brahmin = Brahmin Varna days (spiritual/priestly)\n";
+    std::cout << "                            • kshatriya = Kshatriya Varna days (warrior/ruling)\n";
+    std::cout << "                            • vaishya = Vaishya Varna days (merchant/farming)\n";
+    std::cout << "                            • shudra = Shudra Varna days (service/labor)\n";
+    std::cout << "                            • Example: --search-varna-day brahmin\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-varna-day brahmin\n\n";
+
+    std::cout << "    --search-brahmin-days   Search for all Brahmin Varna days\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-brahmin-days\n";
+    std::cout << "    --search-kshatriya-days Search for all Kshatriya Varna days\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-kshatriya-days\n";
+    std::cout << "    --search-vaishya-days   Search for all Vaishya Varna days\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-vaishya-days\n";
+    std::cout << "    --search-shudra-days    Search for all Shudra Varna days\n";
+    std::cout << "                            • Quick: horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 --search-shudra-days\n\n";
 
     std::cout << "MYANMAR CALENDAR OPTIONS 🇲🇲📅\n";
     std::cout << "    --myanmar-calendar Show Myanmar calendar for birth date\n";
@@ -593,6 +891,89 @@ void printHelp() {
     std::cout << "                       • Religious holidays, special events\n";
     std::cout << "                       • Cultural celebrations and fasting days\n\n";
 
+    std::cout << "MYANMAR MONTHLY CALENDAR 🇲🇲📅 (NEW)\n";
+    std::cout << "    --myanmar-monthly YYYY-MM, -m YYYY-MM\n";
+    std::cout << "                       Generate Myanmar monthly calendar inspired by mmcal.blogspot.com\n";
+    std::cout << "                       • Format: 2024-01 for January 2024 (Gregorian)\n";
+    std::cout << "                       • Beautiful traditional Myanmar calendar layout\n";
+    std::cout << "                       • Shows both Gregorian and Myanmar dates\n";
+    std::cout << "                       • Includes astrological days, festivals, moon phases\n";
+    std::cout << "                       • Multiple output formats available\n";
+    std::cout << "                       • Short option: -m 2025-07 (equivalent to --myanmar-monthly 2025-07)\n";
+
+    std::cout << "    --myanmar-monthly-format FORMAT\n";
+    std::cout << "                       Myanmar monthly calendar output format\n";
+    std::cout << "                       traditional     = Traditional Myanmar style with script (default)\n";
+    std::cout << "                       modern          = Modern layout with visual elements\n";
+    std::cout << "                       compact         = Compact view for quick reference\n";
+    std::cout << "                       blog-style      = mmcal.blogspot.com inspired layout\n";
+    std::cout << "                       tabulate        = Beautiful table using tabulate library\n";
+    std::cout << "                       tabulate-modern = Modern table with contemporary styling\n";
+    std::cout << "                       tabulate-classic= Classic table with traditional borders\n";
+    std::cout << "                       tabulate-minimal= Minimal table with clean appearance\n";
+    std::cout << "                       multi-calendar  = Multi-calendar view (Myanmar+Gregorian+Hindu)\n";
+    std::cout << "                       planetary       = Planetary calendar with astronomical events\n";
+    std::cout << "                       hindu-myanmar   = Combined Hindu and Myanmar calendar\n";
+    std::cout << "                       full-astronomical= Complete astronomical reference\n";
+    std::cout << "                       json            = JSON structure for integration\n";
+    std::cout << "                       csv             = Comma-separated values\n";
+    std::cout << "                       html            = HTML format for web display\n\n";
+
+    std::cout << "HINDU MONTHLY CALENDAR 🕉️📅 (NEW)\n";
+    std::cout << "    --hindu-monthly YYYY-MM, -hm YYYY-MM\n";
+    std::cout << "                       Generate Hindu monthly calendar with BC era support\n";
+    std::cout << "                       • Format: 2024-01 for January 2024 (Gregorian)\n";
+    std::cout << "                       • Format: 500BC-03 for March 500 BC\n";
+    std::cout << "                       • Format: -0499-03 for 500 BC (astronomical year)\n";
+    std::cout << "                       • Complete Panchanga calculations for each day\n";
+    std::cout << "                       • BC era support (unlike Myanmar calendar)\n";
+    std::cout << "                       • Tithi, Nakshatra, Yoga, Karana for each day\n";
+    std::cout << "                       • Supports multiple Hindu calendar systems\n";
+    std::cout << "                       • Enhanced format shows Julian Day (JD) and Varna info\n";
+    std::cout << "                       • Use JD values from monthly display for --search-julian-day\n";
+    std::cout << "                       • Short option: -hm 2025-07 (equivalent to --hindu-monthly 2025-07)\n";
+
+    std::cout << "    --hindu-monthly-format FORMAT\n";
+    std::cout << "                       Hindu monthly calendar output format\n";
+    std::cout << "                       traditional     = Traditional Panchanga layout (default)\n";
+    std::cout << "                       detailed        = Detailed view with muhurta timings\n";
+    std::cout << "                       panchanga       = Focus on five Panchanga elements\n";
+    std::cout << "                       compact         = Compact view for quick reference\n";
+    std::cout << "                       festivals       = Highlight festivals and special events\n";
+    std::cout << "                       astronomical    = Include astronomical data\n";
+    std::cout << "                       csv             = Comma-separated values\n";
+    std::cout << "                       json            = JSON structure for integration\n";
+    std::cout << "                       html            = HTML format for web display\n";
+
+    std::cout << "    --hindu-monthly-muhurta\n";
+    std::cout << "                       Include muhurta timings in Hindu monthly calendar\n";
+    std::cout << "                       • Brahma Muhurta, Abhijit Muhurta timings\n";
+    std::cout << "                       • Rahu Kaal, Yamaganda, Gulikai periods\n";
+    std::cout << "                       • Auspicious and inauspicious timings\n\n";
+
+    std::cout << "CALENDAR SYSTEM OPTIONS 📅🌍\n";
+    std::cout << "    --include-gregorian\n";
+    std::cout << "                       Include Gregorian calendar data (enabled by default)\n";
+    std::cout << "                       • Western calendar system\n";
+    std::cout << "                       • Weekend detection, holidays\n\n";
+
+    std::cout << "    --include-hindu    Include Hindu calendar and Vedic astrology\n";
+    std::cout << "                       • Panchanga (Tithi, Nakshatra, Yoga, Karana)\n";
+    std::cout << "                       • Ekadashi, Purnima, Amavasya detection\n";
+    std::cout << "                       • Hindu festivals and auspicious days\n\n";
+
+    std::cout << "    --include-planetary\n";
+    std::cout << "                       Include planetary transitions and astronomical events\n";
+    std::cout << "                       • Retrograde motion tracking\n";
+    std::cout << "                       • Planetary conjunctions\n";
+    std::cout << "                       • Sign changes and eclipses\n\n";
+
+    std::cout << "    --include-advanced-astro\n";
+    std::cout << "                       Include advanced astrological calculations\n";
+    std::cout << "                       • KP system star lords\n";
+    std::cout << "                       • Aspect formations\n";
+    std::cout << "                       • Planetary weather patterns\n\n";
+
     std::cout << "UTILITY OPTIONS ⚙️🛠️\n";
     std::cout << "    --solar-system     Show solar system orbital paths only\n";
     std::cout << "                       • No birth data required for this option\n";
@@ -625,6 +1006,110 @@ void printHelp() {
     std::cout << "    --help, -h         Show this comprehensive help message\n";
     std::cout << "    --features, -f     Show colorful feature showcase\n";
     std::cout << "    --version, -v      Show version and build information\n\n";
+
+    // std::cout << "NEW ENHANCED FEATURES 🚀✨\n";
+    // std::cout << "    --interactive      Launch interactive mode with guided wizards\n";
+    // std::cout << "    --quick-wizard     Quick setup wizard for beginners\n";
+    // std::cout << "    --professional     Professional mode with advanced options\n\n";
+
+    // std::cout << "AI-POWERED INTERPRETATION 🤖🧠\n";
+    // std::cout << "    --ai-interpretation  Generate AI-powered chart interpretation\n";
+    // std::cout << "    --personality        Generate detailed personality profile\n";
+    // std::cout << "    --career-guidance    AI-generated career guidance and advice\n";
+    // std::cout << "    --relationship-profile  Relationship patterns and compatibility\n";
+    // std::cout << "    --health-insights    Health insights and wellness guidance\n";
+    // std::cout << "    --spiritual-guidance Spiritual path and life purpose analysis\n\n";
+
+    // std::cout << "    --interpretation-style STYLE\n";
+    // std::cout << "                       Interpretation approach (default: balanced)\n";
+    // std::cout << "                       psychological = Jungian psychological approach\n";
+    // std::cout << "                       spiritual     = Esoteric and spiritual focus\n";
+    // std::cout << "                       practical     = Practical life guidance\n";
+    // std::cout << "                       balanced      = Holistic balanced approach\n\n";
+
+    // std::cout << "    --interpretation-detail LEVEL\n";
+    // std::cout << "                       Detail level (default: standard)\n";
+    // std::cout << "                       brief         = Concise summary format\n";
+    // std::cout << "                       standard      = Comprehensive analysis\n";
+    // std::cout << "                       detailed      = In-depth exploration\n\n";
+
+    // std::cout << "ADVANCED ASTROLOGICAL ANALYSIS 🔮⭐\n";
+    // std::cout << "    --advanced-analysis  Complete advanced astrological analysis\n";
+    // std::cout << "    --midpoints         Planetary midpoint analysis\n";
+    // std::cout << "    --harmonics         Harmonic chart analysis (4th, 5th, 7th, 9th)\n";
+    // std::cout << "    --harmonic N        Specific harmonic analysis (e.g., --harmonic 7)\n";
+    // std::cout << "    --arabic-parts      Calculate Arabic Parts/Lots\n";
+    // std::cout << "    --fixed-stars       Fixed star analysis and influences\n";
+    // std::cout << "    --asteroids         Asteroid analysis (Ceres, Pallas, Juno, Vesta)\n";
+    // std::cout << "    --vertex            Vertex and Anti-Vertex analysis\n\n";
+
+    // std::cout << "PREDICTIVE ASTROLOGY 🔮🌟\n";
+    // std::cout << "    --predictive        Complete predictive analysis package\n";
+    // std::cout << "    --dasha            Vedic Dasha analysis (Vimshottari by default)\n";
+    // std::cout << "    --dasha-type TYPE  Specify dasha system (vimshottari, ashtottari)\n";
+    // std::cout << "    --progressions DATE Secondary progressions for target date\n";
+    // std::cout << "    --transits FROM TO  Transit analysis for date range\n";
+    // std::cout << "    --returns TYPE YEAR Planetary returns (solar, lunar, jupiter, saturn)\n";
+    // std::cout << "    --yearly-forecast YEAR  Complete yearly forecast\n";
+    // std::cout << "    --monthly-forecast YYYY-MM  Monthly forecast\n\n";
+
+    // std::cout << "ELECTIONAL ASTROLOGY ⏰🌙\n";
+    // std::cout << "    --electional FROM TO PURPOSE\n";
+    // std::cout << "                       Find auspicious timing for specific purpose\n";
+    // std::cout << "                       Purposes: marriage, business, travel, surgery,\n";
+    // std::cout << "                                education, moving, investment\n";
+    // std::cout << "    --auspicious-times  Find generally auspicious times in date range\n\n";
+
+    // std::cout << "RELATIONSHIP ANALYSIS 💕👥\n";
+    // std::cout << "    --synastry         Synastry analysis with partner's chart\n";
+    // std::cout << "    --composite        Composite chart analysis\n";
+    // std::cout << "    --partner-date DATE --partner-time TIME\n";
+    // std::cout << "                       Partner's birth date and time\n";
+    // std::cout << "    --partner-lat LAT --partner-lon LON --partner-tz TZ\n";
+    // std::cout << "                       Partner's birth location\n";
+    // std::cout << "    --partner-location \"CITY\"\n";
+    // std::cout << "                       Partner's birth city (alternative to coordinates)\n\n";
+
+    // std::cout << "SPECIALIZED ASTROLOGY 🎯🏥💰\n";
+    // std::cout << "    --financial        Financial astrology analysis\n";
+    // std::cout << "    --market-analysis  Stock market and crypto predictions\n";
+    // std::cout << "    --stock-symbol SYM Analyze specific stock symbol\n";
+    // std::cout << "    --medical          Medical astrology and health analysis\n";
+    // std::cout << "    --ayurvedic        Ayurvedic constitution analysis\n";
+    // std::cout << "    --mundane COUNTRY  Mundane astrology for country/region\n";
+    // std::cout << "    --relocation LAT LON  Relocation astrology analysis\n\n";
+
+    // std::cout << "MULTI-LANGUAGE SUPPORT 🌍🗣️\n";
+    // std::cout << "    --language LANG    Set language (english, hindi, sanskrit, spanish,\n";
+    // std::cout << "                       french, german, italian, portuguese, russian,\n";
+    // std::cout << "                       chinese, japanese, korean, arabic, thai, burmese)\n";
+    // std::cout << "    --native-script    Use native script (Devanagari, Arabic, etc.)\n";
+    // std::cout << "    --cultural-region REGION  Set cultural preferences\n";
+    // std::cout << "    --date-format FORMAT  Date format (YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY)\n";
+    // std::cout << "    --time-format FORMAT  Time format (24h, 12h)\n\n";
+
+    // std::cout << "BATCH PROCESSING 📊⚡\n";
+    // std::cout << "    --batch INPUT.csv OUTPUT.csv OPERATION\n";
+    // std::cout << "                       Batch process multiple charts\n";
+    // std::cout << "                       Operations: charts, predictions, compatibility\n";
+    // std::cout << "    --batch-charts     Generate charts for multiple birth data\n";
+    // std::cout << "    --batch-predictions Predictions for multiple people\n\n";
+
+    // std::cout << "CONFIGURATION & PROFILES 🛠️👤\n";
+    // std::cout << "    --config FILE      Load configuration from file\n";
+    // std::cout << "    --save-config FILE Save current settings to configuration\n";
+    // std::cout << "    --user-profile PROFILE  Load user profile\n";
+    // std::cout << "    --save-profile PROFILE  Save current data as profile\n";
+    // std::cout << "    --reset-config     Reset to default configuration\n\n";
+
+    // std::cout << "OUTPUT ENHANCEMENTS 🎨📄\n";
+    // std::cout << "    --color           Enable colorized output (default: on)\n";
+    // std::cout << "    --no-color        Disable colorized output\n";
+    // std::cout << "    --theme THEME     Output theme (default, dark, light, classic)\n";
+    // std::cout << "    --save-to FILE    Save results to file\n";
+    // std::cout << "    --pdf             Generate PDF output\n";
+    // std::cout << "    --email ADDRESS   Email results to address\n";
+    // std::cout << "    --verbose         Verbose output with detailed progress\n\n";
 
     std::cout << "═══════════════════════════════════════════════════════════════════════════════\n";
     std::cout << "                                 EXAMPLES 💡\n";
@@ -763,6 +1248,18 @@ void printHelp() {
     std::cout << "                --ephemeris-interval 7 \\\n";
     std::cout << "                --ephemeris-format csv\n\n";
 
+    std::cout << "  # Sidereal ephemeris with Lahiri ayanamsa\n";
+    std::cout << "  horoscope_cli --ephemeris \\\n";
+    std::cout << "                --ephemeris-range 2025-01-01 2025-01-31 \\\n";
+    std::cout << "                --zodiac-mode sidereal --ayanamsa lahiri \\\n";
+    std::cout << "                --ephemeris-compact --ephemeris-sidereal-time\n\n";
+
+    std::cout << "  # Vedic ephemeris with Krishnamurti ayanamsa\n";
+    std::cout << "  horoscope_cli --ephemeris \\\n";
+    std::cout << "                --ephemeris-range 2025-01-01 2025-01-31 \\\n";
+    std::cout << "                --zodiac-mode sidereal --ayanamsa krishnamurti \\\n";
+    std::cout << "                --ephemeris-compact\n\n";
+
     std::cout << "SOLAR SYSTEM VIEWS 🌌\n";
     std::cout << "  # Standalone solar system orbital display\n";
     std::cout << "  horoscope_cli --solar-system\n\n";
@@ -827,10 +1324,254 @@ void printHelp() {
     std::cout << "                --hindu-search-logic and \\\n";
     std::cout << "                --hindu-search-format json\n\n";
 
+    std::cout << "  # 🎯 SIMPLE Julian Day search - show Hindu Panchanga for exact day\n";
+    std::cout << "  horoscope_cli --search-jd 1555550\n\n";
+
+    std::cout << "  # 🎯 SIMPLE Julian Day search with coordinates for accurate timings\n";
+    std::cout << "  horoscope_cli --search-jd 1555550 --lat 27.7172 --lon 85.3240\n\n";
+
+    std::cout << "  # 🎯 SIMPLE Myanmar calendar search by Julian Day\n";
+    std::cout << "  horoscope_cli --search-jd-myanmar 1555550\n\n";
+
+    std::cout << "  # 🎯 SIMPLE Birth chart search by Julian Day with location\n";
+    std::cout << "  horoscope_cli --search-jd-chart 1555550 --lat 12.97 --lon 77.59\n\n";
+
+    std::cout << "  # Julian Day search - find dates by specific JD number\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-julian-day 1555550 \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240\n\n";
+
+    std::cout << "  # Julian Day range search - find all dates in JD range\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-julian-day-range 1555550 1555580 \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240 \\\n";
+    std::cout << "                --hindu-search-format list\n\n";
+
+    std::cout << "  # Savarna (Varna) day search - find Brahmin Varna days\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-brahmin-days \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240\n\n";
+
+    std::cout << "  # Varna type search - find specific Varna days\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-varna-day kshatriya \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240 \\\n";
+    std::cout << "                --hindu-search-format table\n\n";
+
+    std::cout << "  # Combined search - Brahmin days OR Purnima (Full Moon)\n";
+    std::cout << "  horoscope_cli --hindu-search 563BC-05-01 563BC-05-31 \\\n";
+    std::cout << "                --search-brahmin-days \\\n";
+    std::cout << "                --hindu-search-purnima \\\n";
+    std::cout << "                --hindu-search-logic or \\\n";
+    std::cout << "                --lat 27.7172 --lon 85.3240\n\n";
+
     std::cout << "  # Myanmar calendar search - simple date list format\n";
     std::cout << "  horoscope_cli --myanmar-search 2025-01-01 2025-12-31 \\\n";
     std::cout << "                --myanmar-search-moon-phase 1 \\\n";
     std::cout << "                --myanmar-search-format list\n\n";
+
+    std::cout << "MYANMAR MONTHLY CALENDAR 🇲🇲📅\n";
+    std::cout << "  # Myanmar monthly calendar with multi-calendar view and Hindu dates\n";
+    std::cout << "  horoscope_cli --myanmar-monthly 2025-07 \\\n";
+    std::cout << "                --myanmar-monthly-format multi-calendar \\\n";
+    std::cout << "                --include-hindu\n\n";
+
+    std::cout << "  # Short form (equivalent to above)\n";
+    std::cout << "  horoscope_cli -m 2025-07\n\n";
+
+    std::cout << "  # Other Myanmar monthly formats\n";
+    std::cout << "  horoscope_cli --myanmar-monthly 2025-07 \\\n";
+    std::cout << "                --myanmar-monthly-format traditional\n\n";
+
+    std::cout << "  horoscope_cli --myanmar-monthly 2025-07 \\\n";
+    std::cout << "                --myanmar-monthly-format blog-style\n\n";
+
+    std::cout << "HINDU MONTHLY CALENDAR 🕉️📅\n";
+    std::cout << "  # Hindu monthly calendar with complete Panchanga for each day\n";
+    std::cout << "  horoscope_cli --hindu-monthly 2025-07 \\\n";
+    std::cout << "                --hindu-monthly-format detailed \\\n";
+    std::cout << "                --hindu-monthly-muhurta\n\n";
+
+    std::cout << "  # Short form (equivalent to above without muhurta)\n";
+    std::cout << "  horoscope_cli -hm 2025-07\n\n";
+
+    std::cout << "  # Hindu calendar for BC era (500 BC example)\n";
+    std::cout << "  horoscope_cli --hindu-monthly 500BC-03 \\\n";
+    std::cout << "                --hindu-monthly-format panchanga\n\n";
+
+    std::cout << "  # Hindu calendar with JD and Varna values (enhanced format - default)\n";
+    std::cout << "  horoscope_cli -hm 563BC-05 --lat 27.7172 --lon 85.3240\n";
+    std::cout << "  # Note: JD numbers from calendar can be used with --search-julian-day\n\n";
+
+    std::cout << "  # Hindu calendar using astronomical year format for BC\n";
+    std::cout << "  horoscope_cli --hindu-monthly -0499-03 \\\n";
+    std::cout << "                --hindu-monthly-format traditional\n\n";
+
+    std::cout << "  # Hindu calendar with festivals highlighted\n";
+    std::cout << "  horoscope_cli --hindu-monthly 2025-12 \\\n";
+    std::cout << "                --hindu-monthly-format festivals\n\n";
+
+    std::cout << "  # Export Hindu calendar to CSV\n";
+    std::cout << "  horoscope_cli --hindu-monthly 2025-07 \\\n";
+    std::cout << "                --hindu-monthly-format csv > hindu_calendar_2025_07.csv\n\n";
+
+    std::cout << "NEW ENHANCED FEATURES EXAMPLES 🚀✨\n\n";
+
+    std::cout << "INTERACTIVE MODE 🖥️\n";
+    std::cout << "  # Launch interactive mode\n";
+    std::cout << "  horoscope_cli --interactive\n\n";
+
+    std::cout << "  # Quick wizard for beginners\n";
+    std::cout << "  horoscope_cli --quick-wizard\n\n";
+
+    std::cout << "  # Professional mode with all features\n";
+    std::cout << "  horoscope_cli --professional\n\n";
+
+    std::cout << "AI-POWERED INTERPRETATION 🤖\n";
+    std::cout << "  # Complete AI interpretation\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --ai-interpretation\n\n";
+
+    std::cout << "  # Detailed personality profile\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --personality --interpretation-detail detailed\n\n";
+
+    std::cout << "  # Career guidance with practical focus\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --career-guidance --interpretation-style practical\n\n";
+
+    std::cout << "  # Spiritual guidance with esoteric focus\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --spiritual-guidance --interpretation-style spiritual\n\n";
+
+    std::cout << "ADVANCED ANALYSIS 🔮\n";
+    std::cout << "  # Complete advanced astrological analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --advanced-analysis\n\n";
+
+    std::cout << "  # Midpoint and harmonic analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --midpoints --harmonics\n\n";
+
+    std::cout << "  # Specific 7th harmonic analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --harmonic 7\n\n";
+
+    std::cout << "  # Fixed stars and Arabic parts\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --fixed-stars --arabic-parts\n\n";
+
+    std::cout << "PREDICTIVE ASTROLOGY 🔮\n";
+    std::cout << "  # Complete predictive analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --predictive\n\n";
+
+    std::cout << "  # Dasha analysis with progressions\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --dasha --progressions 2025-07-21\n\n";
+
+    std::cout << "  # Transit analysis for next 6 months\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --transits 2025-07-21 2026-01-21\n\n";
+
+    std::cout << "  # Solar return for 2025\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --returns solar 2025\n\n";
+
+    std::cout << "  # Monthly forecast for August 2025\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --monthly-forecast 2025-08\n\n";
+
+    std::cout << "ELECTIONAL ASTROLOGY ⏰\n";
+    std::cout << "  # Find best timing for marriage\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --electional 2025-08-01 2025-12-31 marriage\n\n";
+
+    std::cout << "  # Find auspicious business start times\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --electional 2025-09-01 2025-11-30 business\n\n";
+
+    std::cout << "RELATIONSHIP ANALYSIS 💕\n";
+    std::cout << "  # Synastry with partner\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --synastry \\\n";
+    std::cout << "                --partner-date 1992-06-10 --partner-time 16:45:00 \\\n";
+    std::cout << "                --partner-lat 51.5074 --partner-lon -0.1278 --partner-tz 0\n\n";
+
+    std::cout << "  # Composite chart using location names\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --location \"New York\" \\\n";
+    std::cout << "                --composite \\\n";
+    std::cout << "                --partner-date 1992-06-10 --partner-time 16:45:00 \\\n";
+    std::cout << "                --partner-location \"London\"\n\n";
+
+    std::cout << "SPECIALIZED ASTROLOGY 🎯\n";
+    std::cout << "  # Financial astrology for stock analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --financial --stock-symbol AAPL\n\n";
+
+    std::cout << "  # Medical astrology with Ayurvedic analysis\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --medical --ayurvedic\n\n";
+
+    std::cout << "  # Relocation astrology\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --relocation 51.5074 -0.1278\n\n";
+
+    std::cout << "MULTI-LANGUAGE EXAMPLES 🌍\n";
+    std::cout << "  # Chart in Hindi with Devanagari script\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 28.6139 --lon 77.2090 --timezone 5.5 \\\n";
+    std::cout << "                --language hindi --native-script\n\n";
+
+    std::cout << "  # Chart in Spanish with European date format\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.4168 --lon -3.7038 --timezone 1 \\\n";
+    std::cout << "                --language spanish --date-format DD/MM/YYYY\n\n";
+
+    std::cout << "  # Chinese chart with traditional Chinese\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 39.9042 --lon 116.4074 --timezone 8 \\\n";
+    std::cout << "                --language chinese --cultural-region china\n\n";
+
+    std::cout << "BATCH PROCESSING 📊\n";
+    std::cout << "  # Batch generate charts from CSV file\n";
+    std::cout << "  horoscope_cli --batch birth_data.csv charts_output.csv charts\n\n";
+
+    std::cout << "  # Batch compatibility analysis\n";
+    std::cout << "  horoscope_cli --batch couples_data.csv compatibility.csv compatibility\n\n";
+
+    std::cout << "CONFIGURATION EXAMPLES 🛠️\n";
+    std::cout << "  # Save current settings\n";
+    std::cout << "  horoscope_cli --save-config my_settings.conf\n\n";
+
+    std::cout << "  # Load user profile\n";
+    std::cout << "  horoscope_cli --user-profile john_doe.profile --ai-interpretation\n\n";
+
+    std::cout << "  # Professional setup with dark theme and verbose output\n";
+    std::cout << "  horoscope_cli --date 1990-01-15 --time 14:30:00 \\\n";
+    std::cout << "                --lat 40.7128 --lon -74.0060 --timezone -5 \\\n";
+    std::cout << "                --professional --theme dark --verbose \\\n";
+    std::cout << "                --advanced-analysis --save-to detailed_report.html\n\n";
 
     std::cout << "COORDINATE EXAMPLES 🌍\n";
     std::cout << "  # Major cities coordinates for reference:\n";
@@ -1139,6 +1880,56 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
                 std::cerr << "Error: Ephemeris format must be 'table', 'csv', or 'json'\n";
                 return false;
             }
+        } else if (arg == "--ephemeris-declination") {
+            args.ephemerisShowDeclination = true;
+            args.ephemerisCoordinateType = "declination";
+        } else if (arg == "--ephemeris-coordinates" && i + 1 < argc) {
+            args.ephemerisCoordinateType = argv[++i];
+            if (args.ephemerisCoordinateType != "longitude" && args.ephemerisCoordinateType != "declination" && args.ephemerisCoordinateType != "both" && args.ephemerisCoordinateType != "3line" && args.ephemerisCoordinateType != "latitude" && args.ephemerisCoordinateType != "distance" && args.ephemerisCoordinateType != "right-ascension") {
+                std::cerr << "Error: Ephemeris coordinates must be 'longitude', 'declination', 'both', '3line', 'latitude', 'distance', or 'right-ascension'\n";
+                return false;
+            }
+            if (args.ephemerisCoordinateType == "declination" || args.ephemerisCoordinateType == "both") {
+                args.ephemerisShowDeclination = true;
+            } else if (args.ephemerisCoordinateType == "3line") {
+                args.ephemerisShow3LineCoordinates = true;
+                args.ephemerisShowDeclination = true; // 3line includes declination
+            } else if (args.ephemerisCoordinateType == "latitude") {
+                args.ephemerisShowLatitudeOnly = true;
+            } else if (args.ephemerisCoordinateType == "distance") {
+                args.ephemerisShowDistance = true;
+            } else if (args.ephemerisCoordinateType == "right-ascension") {
+                args.ephemerisShowRightAscension = true;
+            }
+        } else if (arg == "--ephemeris-sidereal-time") {
+            args.ephemerisShowSiderealTime = true;
+        } else if (arg == "--ephemeris-distance") {
+            args.ephemerisShowDistance = true;
+        } else if (arg == "--ephemeris-right-ascension") {
+            args.ephemerisShowRightAscension = true;
+        } else if (arg == "--ephemeris-compact") {
+            args.ephemerisCompactFormat = true;
+        } else if (arg == "--ephemeris-colors") {
+            args.ephemerisUseColors = true;
+        } else if (arg == "--ephemeris-no-colors") {
+            args.ephemerisUseColors = false;
+        } else if (arg == "--ephemeris-day-names") {
+            args.ephemerisShowDayNames = true;
+        } else if (arg == "--ephemeris-no-day-names") {
+            args.ephemerisShowDayNames = false;
+        } else if (arg == "--ephemeris-calendar" && i + 1 < argc) {
+            args.ephemerisCalendarMode = argv[++i];
+            if (args.ephemerisCalendarMode != "jul" && args.ephemerisCalendarMode != "gregorian" &&
+                args.ephemerisCalendarMode != "auto" && args.ephemerisCalendarMode != "both") {
+                std::cerr << "Error: Calendar mode must be 'jul', 'gregorian', 'auto', or 'both'\n";
+                return false;
+            }
+        } else if (arg == "--ephemeris-julian-calendar") {
+            args.ephemerisCalendarMode = "jul";
+        } else if (arg == "--ephemeris-gregorian-calendar") {
+            args.ephemerisCalendarMode = "gregorian";
+        } else if (arg == "--ephemeris-no-gregorian") {
+            args.ephemerisCalendarMode = "jul";
         } else if (arg == "--eclipse-format" && i + 1 < argc) {
             args.eclipseFormat = argv[++i];
             if (args.eclipseFormat != "table" && args.eclipseFormat != "text" && args.eclipseFormat != "csv" && args.eclipseFormat != "json") {
@@ -1243,6 +2034,45 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.searchNakshatra = std::stoi(argv[++i]);
         } else if (arg == "--hindu-search-yoga" && i + 1 < argc) {
             args.searchYoga = std::stoi(argv[++i]);
+
+        // Julian Day search options
+        } else if (arg == "--search-julian-day" && i + 1 < argc) {
+            args.searchJulianDay = std::stod(argv[++i]);
+        } else if (arg == "--search-julian-day-range" && i + 2 < argc) {
+            args.searchJulianDayStart = std::stod(argv[++i]);
+            args.searchJulianDayEnd = std::stod(argv[++i]);
+
+        // Simplified JD search options
+        } else if (arg == "--search-jd" && i + 1 < argc) {
+            args.searchJdOnly = std::stod(argv[++i]);
+        } else if (arg == "--search-jd-myanmar" && i + 1 < argc) {
+            args.searchJdMyanmarOnly = std::stod(argv[++i]);
+        } else if (arg == "--search-jd-chart" && i + 1 < argc) {
+            args.searchJdBirthChartOnly = std::stod(argv[++i]);
+
+        // Varna search options
+        } else if (arg == "--search-varna-day" && i + 1 < argc) {
+            std::string varnaType = argv[++i];
+            if (varnaType == "brahmin") {
+                args.searchBrahminDays = true;
+            } else if (varnaType == "kshatriya") {
+                args.searchKshatriyaDays = true;
+            } else if (varnaType == "vaishya") {
+                args.searchVaishyaDays = true;
+            } else if (varnaType == "shudra") {
+                args.searchShudradays = true;
+            } else {
+                std::cerr << "Error: Invalid Varna type. Must be 'brahmin', 'kshatriya', 'vaishya', or 'shudra'\n";
+                return false;
+            }
+        } else if (arg == "--search-brahmin-days") {
+            args.searchBrahminDays = true;
+        } else if (arg == "--search-kshatriya-days") {
+            args.searchKshatriyaDays = true;
+        } else if (arg == "--search-vaishya-days") {
+            args.searchVaishyaDays = true;
+        } else if (arg == "--search-shudra-days") {
+            args.searchShudradays = true;
 
         // Myanmar Calendar options
         } else if (arg == "--myanmar-calendar") {
@@ -1359,6 +2189,75 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.showPlanetaryTransitions = true;
         } else if (arg == "--all-festivals") {
             args.showAllFestivals = true;
+        } else if (arg == "--myanmar-monthly" || arg == "-m") {
+            if (i + 1 < argc) {
+                args.myanmarMonthlyCalendarDate = argv[++i];
+                args.showMyanmarMonthlyCalendar = true;
+                // Set default format to multi-calendar and include Hindu for short option convenience
+                if (arg == "-m") {
+                    args.myanmarMonthlyCalendarFormat = "multi-calendar";
+                    args.includeHindu = true;
+                }
+                // Validate YYYY-MM format
+                if (args.myanmarMonthlyCalendarDate.length() != 7 || args.myanmarMonthlyCalendarDate[4] != '-') {
+                    std::cerr << "Error: --myanmar-monthly requires YYYY-MM format (e.g., 2024-01)\n";
+                    return false;
+                }
+            } else {
+                std::cerr << "Error: --myanmar-monthly requires a month argument (YYYY-MM)\n";
+                return false;
+            }
+        } else if (arg == "--myanmar-monthly-format") {
+            if (i + 1 < argc) {
+                args.myanmarMonthlyCalendarFormat = argv[++i];
+            } else {
+                std::cerr << "Error: --myanmar-monthly-format requires a format argument\n";
+                return false;
+            }
+            if (args.myanmarMonthlyCalendarFormat != "traditional" && args.myanmarMonthlyCalendarFormat != "modern" &&
+                args.myanmarMonthlyCalendarFormat != "compact" && args.myanmarMonthlyCalendarFormat != "blog-style" &&
+                args.myanmarMonthlyCalendarFormat != "tabulate" && args.myanmarMonthlyCalendarFormat != "tabulate-modern" &&
+                args.myanmarMonthlyCalendarFormat != "tabulate-classic" && args.myanmarMonthlyCalendarFormat != "tabulate-minimal" &&
+                args.myanmarMonthlyCalendarFormat != "multi-calendar" && args.myanmarMonthlyCalendarFormat != "planetary" &&
+                args.myanmarMonthlyCalendarFormat != "hindu-myanmar" && args.myanmarMonthlyCalendarFormat != "full-astronomical" &&
+                args.myanmarMonthlyCalendarFormat != "json" && args.myanmarMonthlyCalendarFormat != "csv" &&
+                args.myanmarMonthlyCalendarFormat != "html") {
+                std::cerr << "Error: Myanmar monthly format must be 'traditional', 'modern', 'compact', 'blog-style', 'tabulate', 'tabulate-modern', 'tabulate-classic', 'tabulate-minimal', 'multi-calendar', 'planetary', 'hindu-myanmar', 'full-astronomical', 'json', 'csv', or 'html'\n";
+                return false;
+            }
+        } else if (arg == "--hindu-monthly" || arg == "-hm") {
+            args.showHinduMonthlyCalendar = true;
+            if (i + 1 < argc) {
+                args.hinduMonthlyCalendarDate = argv[++i];
+            } else {
+                std::cerr << "Error: --hindu-monthly requires a month argument (YYYY-MM or YYYYBC-MM)\n";
+                return false;
+            }
+        } else if (arg == "--hindu-monthly-format") {
+            if (i + 1 < argc) {
+                args.hinduMonthlyCalendarFormat = argv[++i];
+            } else {
+                std::cerr << "Error: --hindu-monthly-format requires a format argument\n";
+                return false;
+            }
+            if (args.hinduMonthlyCalendarFormat != "traditional" && args.hinduMonthlyCalendarFormat != "detailed" &&
+                args.hinduMonthlyCalendarFormat != "panchanga" && args.hinduMonthlyCalendarFormat != "compact" &&
+                args.hinduMonthlyCalendarFormat != "festivals" && args.hinduMonthlyCalendarFormat != "astronomical" &&
+                args.hinduMonthlyCalendarFormat != "json" && args.hinduMonthlyCalendarFormat != "csv" &&
+                args.hinduMonthlyCalendarFormat != "html") {
+                std::cerr << "Error: Hindu monthly format must be 'traditional', 'detailed', 'panchanga', 'compact', 'festivals', 'astronomical', 'json', 'csv', or 'html'\n";
+                return false;
+            }
+        } else if (arg == "--hindu-monthly-muhurta") {
+            args.hinduMonthlyShowMuhurta = true;
+        } else if (arg == "--include-gregorian") {
+            args.includeGregorian = true;
+        } else if (arg == "--include-hindu") {
+            args.includeHindu = true;
+        } else if (arg == "--include-planetary") {
+            args.includePlanetary = true;
+        } else if (arg == "--include-advanced-astro") {
+            args.includeAdvancedAstro = true;
         } else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             return false;
@@ -1371,6 +2270,21 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
 bool validateArgs(const CommandLineArgs& args) {
     if (args.showHelp || args.showVersion || args.showFeatures || args.showSolarSystemOnly ||
         args.listLocations || !args.searchLocation.empty()) {
+        return true;
+    }
+
+    // Astro calendar can work without location data for monthly view
+    if (args.showAstroCalendarMonthly) {
+        return true;
+    }
+
+    // Myanmar monthly calendar can work without location data
+    if (args.showMyanmarMonthlyCalendar) {
+        return true;
+    }
+
+    // Hindu monthly calendar can work without location data (uses default coordinates)
+    if (args.showHinduMonthlyCalendar) {
         return true;
     }
 
@@ -1400,12 +2314,15 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    if (args.date.empty() && !args.showAstroCalendarMonthly) {
+    // Skip date/time requirements for JD search commands
+    if (args.date.empty() && !args.showAstroCalendarMonthly &&
+        args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0) {
         std::cerr << "Error: --date is required\n";
         return false;
     }
 
-    if (args.time.empty() && !args.showAstroCalendarMonthly) {
+    if (args.time.empty() && !args.showAstroCalendarMonthly &&
+        args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0) {
         std::cerr << "Error: --time is required\n";
         return false;
     }
@@ -1953,20 +2870,81 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            // Generate ephemeris table
-            std::string result;
-            if (args.ephemerisFormat == "csv") {
-                result = ephemTable.generateCSVTable(fromDate, toDate, args.ephemerisIntervalDays);
-            } else if (args.ephemerisFormat == "json") {
-                result = ephemTable.generateJSONTable(fromDate, toDate, args.ephemerisIntervalDays);
+            // Generate ephemeris table with configuration
+            Astro::EphemerisConfig config;
+
+            // Initialize BirthData structures with default values
+            config.startDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+            config.endDate = {0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0};
+
+            // Parse date strings with BC era support
+            Astro::parseBCDate(fromDate, config.startDate.year, config.startDate.month, config.startDate.day);
+            Astro::parseBCDate(toDate, config.endDate.year, config.endDate.month, config.endDate.day);
+
+            config.intervalDays = args.ephemerisIntervalDays;
+            config.format = args.ephemerisFormat;
+
+            // Set zodiac mode and ayanamsa
+            config.zodiacMode = args.zodiacMode;
+            config.ayanamsa = args.ayanamsa;
+
+            // Set coordinate type options
+            if (args.ephemerisCoordinateType == "declination") {
+                config.showDeclination = true;
+                config.showDegreeMinutes = true;
+                config.showSign = false;  // Declination doesn't use zodiac signs
+            } else if (args.ephemerisCoordinateType == "both") {
+                config.showDeclination = true;
+                config.showDegreeMinutes = true;
+                config.showSign = true;   // Show both longitude with signs and declination
+            } else if (args.ephemerisCoordinateType == "3line") {
+                config.show3LineCoordinates = true;
+                config.showLatitude = true;   // Enable latitude display
+                config.showDeclination = true;
+                config.showDegreeMinutes = true;
+                config.showSign = true;   // Show signs for longitude
+            } else if (args.ephemerisCoordinateType == "latitude") {
+                config.showLatitudeOnly = true;
+                config.showLatitude = true;   // Enable latitude display
+                config.showDegreeMinutes = true;
+                config.showSign = false;  // Latitude doesn't use zodiac signs
+            } else if (args.ephemerisCoordinateType == "distance") {
+                config.showDistance = true;
+                config.showDegreeMinutes = false; // Distance doesn't use degree format
+                config.showSign = false;  // Distance doesn't use zodiac signs
+            } else if (args.ephemerisCoordinateType == "right-ascension") {
+                config.showRightAscension = true;
+                config.showDegreeMinutes = false; // RA uses hour format, not degrees
+                config.showSign = false;  // RA doesn't use zodiac signs
             } else {
-                result = ephemTable.generateTable(fromDate, toDate, args.ephemerisIntervalDays);
+                // Default longitude mode
+                config.showDeclination = false;
+                config.showDegreeMinutes = true;
+                config.showSign = true;
             }
+
+            // Set sidereal time and compact format options
+            config.showSiderealTime = args.ephemerisShowSiderealTime;
+            config.showDistance = args.ephemerisShowDistance;
+            config.showRightAscension = args.ephemerisShowRightAscension;
+            config.compactFormat = args.ephemerisCompactFormat;
+            config.useColors = args.ephemerisUseColors;
+
+            // Set new date display options
+            config.showDayNames = args.ephemerisShowDayNames;
+            config.calendarMode = args.ephemerisCalendarMode;
+
+            std::string result = ephemTable.generateTable(config);
 
             if (!result.empty()) {
                 std::cout << result << std::endl;
             } else {
-                std::cout << "Failed to generate ephemeris table" << std::endl;
+                std::string error = ephemTable.getLastError();
+                if (!error.empty()) {
+                    std::cout << "Error: " << error << std::endl;
+                } else {
+                    std::cout << "Failed to generate ephemeris table" << std::endl;
+                }
             }
         }
 
@@ -2221,6 +3199,134 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Handle Simplified Julian Day Search
+        if (args.searchJdOnly > 0) {
+            HinduCalendar hinduCalendar;
+            if (!hinduCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Hindu Calendar system: " << hinduCalendar.getLastError() << std::endl;
+                return 1;
+            }
+
+            try {
+                // Search for the specific Julian Day
+                HinduCalendar::SearchResult result = hinduCalendar.searchJulianDayOnly(args.searchJdOnly, args.latitude, args.longitude);
+
+                std::cout << "🔢 JULIAN DAY SEARCH RESULT 🕉️\n";
+                std::cout << "=================================\n\n";
+                std::cout << "Julian Day: " << std::fixed << std::setprecision(1) << result.julianDay << "\n";
+                std::cout << "Gregorian Date: " << result.gregorianDate << "\n";
+                std::cout << "Weekday: " << hinduCalendar.getVaraName(result.panchangaData.vara) << "\n\n";
+
+                // Display complete Panchanga information
+                std::cout << hinduCalendar.generatePanchangaTable(result.panchangaData) << std::endl;
+
+                // Exit after successful JD search
+                return 0;
+
+            } catch (const std::exception& e) {
+                std::cerr << "Error searching Julian Day " << args.searchJdOnly << ": " << e.what() << std::endl;
+                return 1;
+            }
+        }
+
+        // Handle Simplified Myanmar Calendar JD Search
+        if (args.searchJdMyanmarOnly > 0) {
+            MyanmarCalendar myanmarCalendar;
+            if (!myanmarCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Myanmar Calendar system" << std::endl;
+                return 1;
+            }
+
+            try {
+                // Calculate Myanmar calendar data for the specific Julian Day
+                MyanmarCalendarData result = myanmarCalendar.calculateMyanmarCalendar(args.searchJdMyanmarOnly);
+
+                std::cout << "🔢 JULIAN DAY MYANMAR CALENDAR RESULT 🇲🇲\n";
+                std::cout << "==========================================\n\n";
+                std::cout << "Julian Day: " << std::fixed << std::setprecision(1) << args.searchJdMyanmarOnly << "\n";
+
+                // Convert JD to Gregorian date for reference
+                int year, month, day;
+                double gTime;
+                swe_revjul(args.searchJdMyanmarOnly, SE_GREG_CAL, &year, &month, &day, &gTime);
+                std::cout << "Gregorian Date: " << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setw(2) << day << "\n";
+
+                // Display complete Myanmar calendar information
+                std::cout << myanmarCalendar.generateMyanmarCalendarTable(result) << std::endl;
+
+                // Exit after successful Myanmar JD search
+                return 0;
+
+            } catch (const std::exception& e) {
+                std::cerr << "Error searching Myanmar calendar for Julian Day " << args.searchJdMyanmarOnly << ": " << e.what() << std::endl;
+                return 1;
+            }
+        }
+
+        // Handle Simplified Birth Chart JD Search
+        if (args.searchJdBirthChartOnly > 0) {
+            // Birth chart requires coordinates
+            if (args.latitude < -90.0 || args.latitude > 90.0 ||
+                args.longitude < -180.0 || args.longitude > 180.0) {
+                std::cerr << "Error: Valid coordinates (--lat and --lon) required for birth chart JD search\n";
+                return 1;
+            }
+
+            try {
+                // Convert JD to Gregorian date and time
+                int year, month, day;
+                double gTime;
+                swe_revjul(args.searchJdBirthChartOnly, SE_GREG_CAL, &year, &month, &day, &gTime);
+
+                // Convert fractional day to hours:minutes (gTime is fractional part of day)
+                double fractionalDay = gTime - floor(gTime);
+                int hours = static_cast<int>(fractionalDay * 24);
+                int minutes = static_cast<int>((fractionalDay * 24 - hours) * 60);
+
+                // Create BirthData from JD
+                BirthData birthData;
+                birthData.year = year;
+                birthData.month = month;
+                birthData.day = day;
+                birthData.hour = hours;
+                birthData.minute = minutes;
+                birthData.second = 0;
+                birthData.latitude = args.latitude;
+                birthData.longitude = args.longitude;
+                birthData.timezone = 0.0; // UTC
+
+                // Use HoroscopeCalculator to properly calculate the birth chart
+                HoroscopeCalculator calculator;
+                if (!calculator.initialize(args.ephemerisPath)) {
+                    std::cerr << "Error: Failed to initialize horoscope calculator: " << calculator.getLastError() << "\n";
+                    return 1;
+                }
+
+                BirthChart chart;
+                if (!calculator.calculateBirthChart(birthData, args.houseSystem, args.zodiacMode, args.ayanamsa, chart)) {
+                    std::cerr << "Error: Failed to calculate birth chart: " << calculator.getLastError() << "\n";
+                    return 1;
+                }
+
+                std::cout << "🔢 JULIAN DAY BIRTH CHART RESULT ⭐\n";
+                std::cout << "====================================\n\n";
+                std::cout << "Julian Day: " << std::fixed << std::setprecision(1) << args.searchJdBirthChartOnly << "\n";
+                std::cout << "Gregorian Date: " << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setw(2) << day << "\n";
+                std::cout << "Time: " << std::setfill('0') << std::setw(2) << hours << ":" << std::setw(2) << minutes << " UTC\n";
+                std::cout << "Location: " << std::fixed << std::setprecision(4) << args.latitude << "°N, " << args.longitude << "°E\n\n";
+
+                // Display birth chart
+                std::cout << chart.getFormattedChart() << std::endl;
+
+                // Exit after successful birth chart JD search
+                return 0;
+
+            } catch (const std::exception& e) {
+                std::cerr << "Error generating birth chart for Julian Day " << args.searchJdBirthChartOnly << ": " << e.what() << std::endl;
+                return 1;
+            }
+        }
+
         // Handle Hindu Calendar Search
         if (args.showHinduSearch) {
             HinduCalendar hinduCalendar;
@@ -2293,6 +3399,20 @@ int main(int argc, char* argv[]) {
             criteria.searchPurnima = args.searchPurnima;
             criteria.searchAmavasya = args.searchAmavasya;
             criteria.searchSankranti = args.searchSankranti;
+
+            // Julian Day criteria
+            if (args.searchJulianDay > 0) {
+                criteria.exactJulianDay = args.searchJulianDay;
+            } else if (args.searchJulianDayStart > 0) {
+                criteria.julianDayRangeStart = args.searchJulianDayStart;
+                criteria.julianDayRangeEnd = args.searchJulianDayEnd;
+            }
+
+            // Varna day criteria
+            criteria.searchBrahminDays = args.searchBrahminDays;
+            criteria.searchKshatriyaDays = args.searchKshatriyaDays;
+            criteria.searchVaishyaDays = args.searchVaishyaDays;
+            criteria.searchShudradays = args.searchShudradays;
 
             // Perform search
             std::vector<HinduCalendar::SearchResult> searchResults = hinduCalendar.searchHinduCalendar(criteria, args.latitude, args.longitude);
@@ -2846,6 +3966,123 @@ int main(int argc, char* argv[]) {
         }
 
         return 0; // Exit after monthly astro-calendar
+    }
+
+    // Handle Myanmar Monthly Calendar (doesn't need birth data)
+    if (args.showMyanmarMonthlyCalendar) {
+        MyanmarMonthlyCalendar myanmarMonthlyCalendar;
+
+        if (!myanmarMonthlyCalendar.initialize()) {
+            std::cerr << "Error: Failed to initialize Myanmar Monthly Calendar: " << myanmarMonthlyCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        try {
+            // Parse year and month from myanmarMonthlyCalendarDate
+            int year, month;
+            if (sscanf(args.myanmarMonthlyCalendarDate.c_str(), "%d-%d", &year, &month) == 2) {
+                // Use Yangon coordinates as default if not provided
+                double latitude = args.latitude != 0.0 ? args.latitude : 16.8661;  // Yangon
+                double longitude = args.longitude != 0.0 ? args.longitude : 96.1951; // Yangon
+
+                // Auto-enable calendars based on format
+                bool enableHindu = args.includeHindu;
+                bool enablePlanetary = args.includePlanetary;
+                bool enableAdvancedAstro = args.includeAdvancedAstro;
+
+                if (args.myanmarMonthlyCalendarFormat == "multi-calendar" ||
+                    args.myanmarMonthlyCalendarFormat == "hindu-myanmar" ||
+                    args.myanmarMonthlyCalendarFormat == "full-astronomical") {
+                    enableHindu = true;
+                }
+
+                if (args.myanmarMonthlyCalendarFormat == "planetary" ||
+                    args.myanmarMonthlyCalendarFormat == "full-astronomical") {
+                    enablePlanetary = true;
+                }
+
+                if (args.myanmarMonthlyCalendarFormat == "full-astronomical") {
+                    enableAdvancedAstro = true;
+                }
+
+                MyanmarMonthlyData monthData = myanmarMonthlyCalendar.calculateMonthlyData(
+                    year, month, latitude, longitude,
+                    args.includeGregorian, enableHindu, enablePlanetary, enableAdvancedAstro
+                );
+                std::cout << myanmarMonthlyCalendar.generateMonthlyCalendar(monthData, args.myanmarMonthlyCalendarFormat) << std::endl;
+            } else {
+                std::cerr << "Error: Invalid date format for Myanmar monthly calendar. Use YYYY-MM format.\n";
+                return 1;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error generating Myanmar monthly calendar: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after Myanmar monthly calendar
+    }
+
+    // Handle Hindu Monthly Calendar (doesn't need birth data, supports BC dates)
+    if (args.showHinduMonthlyCalendar) {
+        HinduMonthlyCalendar hinduMonthlyCalendar;
+
+        // Use provided coordinates or default to New Delhi if not provided
+        double latitude = args.latitude != 0.0 ? args.latitude : 28.6139;  // New Delhi
+        double longitude = args.longitude != 0.0 ? args.longitude : 77.2090; // New Delhi
+
+        // Set up display options
+        HinduMonthlyCalendar::DisplayOptions displayOptions = HinduMonthlyCalendar::getDefaultDisplayOptions();
+        displayOptions.ayanamsa = args.ayanamsa;
+        displayOptions.showMuhurta = args.hinduMonthlyShowMuhurta;
+
+        // Configure display based on format
+        if (args.hinduMonthlyCalendarFormat == "detailed") {
+            displayOptions.showMuhurta = true;
+            displayOptions.showRashiInfo = true;
+            displayOptions.showLunarPhase = true;
+        } else if (args.hinduMonthlyCalendarFormat == "panchanga") {
+            displayOptions.showTithi = true;
+            displayOptions.showNakshatra = true;
+            displayOptions.showYoga = true;
+            displayOptions.showKarana = true;
+        } else if (args.hinduMonthlyCalendarFormat == "compact") {
+            displayOptions.showPackedLayout = true;
+            displayOptions.cellWidth = 8;
+        } else if (args.hinduMonthlyCalendarFormat == "festivals") {
+            displayOptions.showFestivals = true;
+            displayOptions.showSpecialDays = true;
+            displayOptions.showVrataInfo = true;
+        } else if (args.hinduMonthlyCalendarFormat == "astronomical") {
+            displayOptions.showRashiInfo = true;
+            displayOptions.showLunarPhase = true;
+            displayOptions.showMuhurta = true;
+        } else if (args.hinduMonthlyCalendarFormat == "html") {
+            displayOptions.htmlOutput = true;
+        }
+
+        if (!hinduMonthlyCalendar.initialize(latitude, longitude, displayOptions)) {
+            std::cerr << "Error: Failed to initialize Hindu Monthly Calendar: " << hinduMonthlyCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        try {
+            if (args.hinduMonthlyCalendarFormat == "csv") {
+                HinduMonthlyCalendar::MonthlyData monthData = hinduMonthlyCalendar.generateMonthlyData(args.hinduMonthlyCalendarDate);
+                std::cout << hinduMonthlyCalendar.exportToCSV(monthData) << std::endl;
+            } else if (args.hinduMonthlyCalendarFormat == "json") {
+                HinduMonthlyCalendar::MonthlyData monthData = hinduMonthlyCalendar.generateMonthlyData(args.hinduMonthlyCalendarDate);
+                std::cout << hinduMonthlyCalendar.exportToJSON(monthData) << std::endl;
+            } else if (args.hinduMonthlyCalendarFormat == "html") {
+                std::cout << hinduMonthlyCalendar.generateHTMLCalendar(args.hinduMonthlyCalendarDate) << std::endl;
+            } else {
+                std::cout << hinduMonthlyCalendar.generateCalendar(args.hinduMonthlyCalendarDate) << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error generating Hindu monthly calendar: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after Hindu monthly calendar
     }
 
     // Parse date and time (required for all other functions)

@@ -101,18 +101,100 @@ struct PanchangaData {
     double moonLongitude;      // Moon's longitude
     double lunarPhase;         // 0-360 degrees from new moon
 
+    // Sun/Moon rise and set times (in decimal hours from midnight)
+    double sunriseTime;        // Sunrise time
+    double sunsetTime;         // Sunset time
+    double moonriseTime;       // Moonrise time
+    double moonsetTime;        // Moonset time
+
+    // Day/night duration
+    double dayLength;          // Day length in hours
+    double nightLength;        // Night length in hours
+
+    // Muhurta timings (all in decimal hours from midnight)
+    double brahmaMuhurtaStart; // Brahma Muhurta start
+    double brahmaMuhurtaEnd;   // Brahma Muhurta end
+    double abhijitStart;       // Abhijit Muhurta start
+    double abhijitEnd;         // Abhijit Muhurta end
+    double godhuliBelStart;    // Godhuli Bela start
+    double godhuliBelEnd;      // Godhuli Bela end
+    double nishitaMuhurtaStart;// Nishita Muhurta start
+    double nishitaMuhurtaEnd;  // Nishita Muhurta end
+
+    // Rahu Kaal timing
+    double rahuKaalStart;      // Rahu Kaal start
+    double rahuKaalEnd;        // Rahu Kaal end
+
+    // Yamaganda timing
+    double yamagandaStart;     // Yamaganda start
+    double yamagandaEnd;       // Yamaganda end
+
+    // Gulikai timing
+    double gulikaiStart;       // Gulikai start
+    double gulikaiEnd;         // Gulikai end
+
+    // Dur Muhurtam timing
+    double durMuhurtamStart;   // Dur Muhurtam start
+    double durMuhurtamEnd;     // Dur Muhurtam end
+
+    // Varjyam timing
+    std::vector<std::pair<double, double>> varjyamTimes; // Multiple Varjyam periods
+
+    // Ayanamsa and astronomical data
+    double ayanamsaValue;      // Current Ayanamsa value
+    double julianDay;          // Julian Day Number
+    int kaliyugaYear;          // Kali Yuga year
+    int shakaYear;             // Shaka Samvat year
+    int vikramYear;            // Vikram Samvat year
+
+    // Season and direction information
+    std::string ritu;          // Current Ritu (season)
+    std::string ayana;         // Uttarayana or Dakshinayana
+    std::string dishaShool;    // Direction of Shool
+    std::string nakshatraShool;// Nakshatra Shool direction
+
+    // Varna (Savarna) information
+    std::string varnaDay;      // Varna of the day (Brahmin, Kshatriya, Vaishya, Shudra)
+    std::string varnaTithi;    // Varna based on Tithi
+    std::string varnaNakshatra;// Varna based on Nakshatra
+
+    // Nakshatra Pada information
+    int nakshatraPada;         // Current Nakshatra Pada (1-4)
+    double nakshatraPadaEndTime; // When current pada ends
+
+    // Chandra Balam and Tara Balam
+    std::vector<Rashi> goodChandraBalam;    // Good Chandra Balam for these rashis
+    std::vector<HinduNakshatra> goodTaraBalam; // Good Tara Balam for these nakshatras
+
     // Special events and festivals
     std::vector<std::string> festivals;
     std::vector<std::string> specialEvents;
+    std::vector<std::string> ekadashiNames;  // Specific Ekadashi names
     bool isEkadashi;
     bool isPurnima;
     bool isAmavasya;
     bool isSankranti;          // Solar transition
+    bool isNavratri;           // Navratri period
+    bool isGandaMool;          // Ganda Mool Nakshatra
+    bool isPanchak;            // Panchak period
+    bool isBhadra;             // Bhadra period
+
+    // Additional astronomical yogas
+    bool isSarvarthaSiddhi;    // Sarvartha Siddhi Yoga
+    bool isAmritaSiddhi;       // Amrita Siddhi Yoga
+    bool isDwipushkar;         // Dwipushkar Yoga
+    bool isTripushkar;         // Tripushkar Yoga
+    bool isRaviPushya;         // Ravi Pushya Yoga
+    bool isGuruPushya;         // Guru Pushya Yoga
 
     // Quality assessments
     bool isShubhaMuhurta;      // Auspicious time
     bool isAshubhaMuhurta;     // Inauspicious time
     std::string muhurtaDescription;
+
+    // Vrata and Upavas
+    std::vector<std::string> vrataList;     // List of applicable vratas
+    bool isFastingDay;         // Whether it's a fasting day
 
     // Formatting methods
     std::string getFormattedTithi() const;
@@ -121,6 +203,7 @@ struct PanchangaData {
     std::string getFormattedKarana() const;
     std::string getFullDescription() const;
     std::string getSummary() const;
+    std::string getTimeString(double hours) const;  // Convert decimal hours to HH:MM format
 };
 
 // Main Hindu Calendar System
@@ -235,6 +318,25 @@ private:
 
     // Muhurta calculations
     void calculateMuhurta(PanchangaData& panchanga) const;
+    void calculateSunMoonTimes(PanchangaData& panchanga, double latitude, double longitude) const;
+    void calculateRahuKaal(PanchangaData& panchanga) const;
+    void calculateYamaganda(PanchangaData& panchanga) const;
+    void calculateGulikai(PanchangaData& panchanga) const;
+    void calculateDurMuhurtam(PanchangaData& panchanga) const;
+    void calculateVarjyam(PanchangaData& panchanga) const;
+    void calculateSpecialYogas(PanchangaData& panchanga) const;
+    void calculateNakshatraPada(PanchangaData& panchanga) const;
+    void calculateChandraTaraBalam(PanchangaData& panchanga) const;
+    void calculateRituAyana(PanchangaData& panchanga) const;
+    void calculateShoolDirections(PanchangaData& panchanga) const;
+    void calculateVarnaInformation(PanchangaData& panchanga) const;  // New method for Savarna calculation
+    void identifyVrataUpavas(PanchangaData& panchanga) const;
+
+    // Helper methods for time calculations
+    double calculateBrahmaMuhurta(double sunriseTime, bool isStart) const;
+    double calculateAbhijitMuhurta(double sunriseTime, double sunsetTime, bool isStart) const;
+    double calculateGodhuliBela(double sunsetTime, bool isStart) const;
+    double calculateNishitaMuhurta(double sunsetTime, double nextSunriseTime, bool isStart) const;
 
     bool initialized;
     mutable std::string lastError;
@@ -349,6 +451,21 @@ public:
         bool searchAmavasya = false;  // Search for Amavasya (new moon) days
         bool searchSankranti = false; // Search for Sankranti days
 
+        // Julian Day criteria
+        double exactJulianDay = -1.0;      // Search for specific Julian Day (-1 = ignore)
+        double julianDayRangeStart = -1.0; // Julian Day range start (-1 = ignore)
+        double julianDayRangeEnd = -1.0;   // Julian Day range end (-1 = ignore)
+        double julianDayTolerance = 0.5;   // Tolerance for Julian Day matching (default 0.5 days)
+
+        // Varna (Savarna) criteria
+        std::string exactVarnaDay = "";        // Search for specific day Varna ("Brahmin", "Kshatriya", "Vaishya", "Shudra", "" = ignore)
+        std::string exactVarnaTithi = "";      // Search for specific tithi Varna ("" = ignore)
+        std::string exactVarnaNakshatra = "";  // Search for specific nakshatra Varna ("" = ignore)
+        bool searchBrahminDays = false;        // Search for Brahmin Varna days
+        bool searchKshatriyaDays = false;      // Search for Kshatriya Varna days
+        bool searchVaishyaDays = false;        // Search for Vaishya Varna days
+        bool searchShudradays = false;         // Search for Shudra Varna days
+
         // Logical combination mode
         LogicMode logicMode = LogicMode::AND; // How to combine multiple criteria
 
@@ -382,6 +499,23 @@ public:
     std::vector<SearchResult> searchPurnimaOrAmavasya(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchByNakshatra(int nakshatra, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchMultiCriteria(const SearchCriteria& criteria, LogicMode logicMode, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+    // Julian Day search methods
+    std::vector<SearchResult> searchByJulianDay(double julianDay, const std::string& startDate, const std::string& endDate, double latitude, double longitude, double tolerance = 0.5) const;
+    std::vector<SearchResult> searchByJulianDayRange(double jdStart, double jdEnd, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+    // Simplified JD search methods (no date range required)
+    SearchResult searchJulianDayOnly(double julianDay, double latitude = 0.0, double longitude = 0.0) const;
+    PanchangaData calculatePanchangaFromJD(double julianDay, double latitude = 0.0, double longitude = 0.0) const;
+
+    // Varna (Savarna) search methods
+    std::vector<SearchResult> searchByVarnaDay(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByVarnaTithi(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchByVarnaNakshatra(const std::string& varnaType, const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchBrahminDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchKshatriyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchVaishyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+    std::vector<SearchResult> searchShudradays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
 
 private:
     // Utility method for parsing dates

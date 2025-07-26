@@ -39,7 +39,10 @@ set(SOURCES
     src/ephemeris_table.cpp
     src/kp_system.cpp
     src/hindu_calendar.cpp
+    src/hindu_monthly_calendar.cpp
     src/myanmar_calendar.cpp
+    src/myanmar_monthly_calendar.cpp
+    src/professional_table.cpp
     src/astro_calendar.cpp
     ${SWISSEPH_SOURCES}
 )
