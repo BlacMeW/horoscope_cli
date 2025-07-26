@@ -115,13 +115,13 @@ MyanmarMonthlyData MyanmarMonthlyCalendar::calculateMonthlyData(int year, int mo
 
             // Determine day quality
             if (dayData.isSabbath || dayData.isThamanyo) {
-                dayData.qualityIndicator = "⭐"; // Excellent/Religious
+                dayData.qualityIndicator = "*"; // Excellent/Religious (changed from emoji)
             } else if (dayData.isPyathada || dayData.isYatyaza) {
-                dayData.qualityIndicator = "⚠️"; // Inauspicious
+                dayData.qualityIndicator = "!"; // Inauspicious (changed from emoji)
             } else if (dayData.isHoliday) {
-                dayData.qualityIndicator = "🎉"; // Festival
+                dayData.qualityIndicator = "#"; // Festival (changed from emoji)
             } else {
-                dayData.qualityIndicator = "⚪"; // Neutral
+                dayData.qualityIndicator = "."; // Neutral (changed from emoji)
             }
 
             // Calculate additional calendar systems if requested
@@ -142,7 +142,7 @@ MyanmarMonthlyData MyanmarMonthlyCalendar::calculateMonthlyData(int year, int mo
             dayData.myanmarDay = 0;
             dayData.weekday = MyanmarWeekday::SATURDAY;
             dayData.moonPhase = MyanmarMoonPhase::NEW_MOON;
-            dayData.qualityIndicator = "⚪";
+            dayData.qualityIndicator = ".";
 
             // Initialize Hindu data with default values to prevent segfault
             if (includeHindu) {
@@ -237,7 +237,7 @@ std::string MyanmarMonthlyCalendar::generateTraditionalLayout(const MyanmarMonth
 
     // Traditional Myanmar calendar header
     ss << "╔══════════════════════════════════════════════════════════════════════════════════╗\n";
-    ss << "║                          🇲🇲 MYANMAR CALENDAR 🇲🇲                                ║\n";
+    ss << "║                            MYANMAR CALENDAR                                      ║\n";
     ss << "╠══════════════════════════════════════════════════════════════════════════════════╣\n";
     ss << "║  " << monthData.gregorianMonthName << " " << monthData.gregorianYear;
     ss << " CE   |   " << monthData.myanmarMonthName << " " << monthData.myanmarYear << " ME";
@@ -253,23 +253,7 @@ std::string MyanmarMonthlyCalendar::generateTraditionalLayout(const MyanmarMonth
     // Weekday headers (both English and Myanmar) - 12 chars per column with proper Unicode alignment
     ss << "║    Sun     │    Mon     │    Tue     │    Wed     │    Thu     │    Fri     │    Sat     ║\n";
 
-    // Myanmar weekday headers with proper Unicode-aware padding
-    ss << "║";
-    std::vector<std::string> myanmarDays = {
-        "တနင်္ဂနွေ",    // Sunday
-        "တနင်္လာ",     // Monday
-        "အင်္ဂါ",       // Tuesday
-        "ဗုဒ္ဓဟူး",     // Wednesday
-        "ကြာသပတေး",   // Thursday
-        "သောကြာ",      // Friday
-        "စနေ"          // Saturday
-    };
-
-    for (size_t i = 0; i < myanmarDays.size(); i++) {
-        ss << padToDisplayWidth(myanmarDays[i], 12, false);
-        if (i < myanmarDays.size() - 1) ss << "│";
-    }
-    ss << "║\n";
+    // Skip Myanmar weekday headers - using English only
 
     ss << "╠════════════╪════════════╪════════════╪════════════╪════════════╪════════════╪════════════╣\n";
 
@@ -411,7 +395,7 @@ std::string MyanmarMonthlyCalendar::generateCompactLayout(const MyanmarMonthlyDa
     }
 
     ss << std::string(27, '-') << "\n";
-    ss << "⭐Religious ⚠️Caution 🎉Festival ⚪Normal\n";
+    ss << "*Religious !Caution #Festival .Normal\n";
 
     return ss.str();
 }
@@ -465,13 +449,13 @@ std::string MyanmarMonthlyCalendar::generateBlogStyleLayout(const MyanmarMonthly
     ss << "└─────────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────┘\n\n";
 
     // Blog-style summary with highlights
-    ss << "🌟 MONTH HIGHLIGHTS:\n";
+    ss << "* MONTH HIGHLIGHTS:\n";
     ss << "───────────────────\n";
     for (const auto& festival : monthData.majorFestivals) {
-        ss << "🎉 " << festival << "\n";
+        ss << "# " << festival << "\n";
     }
     for (const auto& [day, description] : monthData.specialDays) {
-        ss << "⭐ " << day << ": " << description << "\n";
+        ss << "* " << day << ": " << description << "\n";
     }
 
     ss << "\n📊 MONTHLY STATISTICS:\n";
@@ -555,11 +539,11 @@ std::string MyanmarMonthlyCalendar::formatTraditionalCell(const MyanmarMonthlyDa
     ss << std::setw(2) << std::setfill('0') << day.myanmarDay << std::setfill(' ');
     ss << " ";
 
-    // Add quality indicator (these are Unicode and need special handling)
+    // Add quality indicator (now using simple ASCII characters)
     std::string indicator;
-    if (day.qualityIndicator == "⭐") indicator = "⭐"; // 2 display width
-    else if (day.qualityIndicator == "⚠️") indicator = "⚠"; // Use just ⚠ (1 display width)
-    else if (day.qualityIndicator == "🎉") indicator = "🎉"; // 2 display width
+    if (day.qualityIndicator == "*") indicator = "*"; // 1 display width
+    else if (day.qualityIndicator == "!") indicator = "!"; // 1 display width
+    else if (day.qualityIndicator == "#") indicator = "#"; // 1 display width
     else indicator = " "; // 1 display width
 
     ss << indicator;
@@ -582,10 +566,10 @@ std::string MyanmarMonthlyCalendar::formatModernCell(const MyanmarMonthlyData::D
     // Format: " DD ⭐M"  (7 chars)
     ss << std::setw(2) << std::right << day.gregorianDay << " ";
 
-    // Quality indicator
-    if (day.qualityIndicator == "⭐") ss << "⭐";
-    else if (day.qualityIndicator == "⚠️") ss << "⚠";
-    else if (day.qualityIndicator == "🎉") ss << "🎉";
+    // Quality indicator (using simple ASCII characters)
+    if (day.qualityIndicator == "*") ss << "*";
+    else if (day.qualityIndicator == "!") ss << "!";
+    else if (day.qualityIndicator == "#") ss << "#";
     else ss << " ";
 
     // Moon phase indicator
@@ -600,12 +584,12 @@ std::string MyanmarMonthlyCalendar::formatModernCell(const MyanmarMonthlyData::D
 std::string MyanmarMonthlyCalendar::formatCompactCell(const MyanmarMonthlyData::DayData& day) const {
     std::stringstream ss;
 
-    // Format: "DD⭐"  (4 chars including space)
+    // Format: "DD*"  (4 chars including space)
     ss << std::setw(2) << std::right << day.gregorianDay;
 
-    if (day.qualityIndicator == "⭐") ss << "⭐";
-    else if (day.qualityIndicator == "⚠️") ss << "⚠";
-    else if (day.qualityIndicator == "🎉") ss << "🎉";
+    if (day.qualityIndicator == "*") ss << "*";
+    else if (day.qualityIndicator == "!") ss << "!";
+    else if (day.qualityIndicator == "#") ss << "#";
     else ss << " ";
 
     ss << " ";
@@ -616,15 +600,15 @@ std::string MyanmarMonthlyCalendar::formatCompactCell(const MyanmarMonthlyData::
 std::string MyanmarMonthlyCalendar::formatBlogStyleCell(const MyanmarMonthlyData::DayData& day) const {
     std::stringstream ss;
 
-    // Format: " DD    ⭐"  (9 chars)
+    // Format: " DD    *"  (9 chars)
     ss << std::setw(2) << std::right << day.gregorianDay;
 
     // Add spaces and indicators
     ss << "   ";
 
-    if (day.qualityIndicator == "⭐") ss << "⭐";
-    else if (day.qualityIndicator == "⚠️") ss << "⚠";
-    else if (day.qualityIndicator == "🎉") ss << "🎉";
+    if (day.qualityIndicator == "*") ss << "*";
+    else if (day.qualityIndicator == "!") ss << "!";
+    else if (day.qualityIndicator == "#") ss << "#";
     else ss << " ";
 
     // Myanmar indicators
@@ -668,20 +652,50 @@ std::string MyanmarMonthlyCalendar::getWeekdaySymbol(MyanmarWeekday weekday) con
 std::string MyanmarMonthlyCalendar::generateMonthlySummary(const MyanmarMonthlyData& monthData) const {
     std::stringstream ss;
 
-    ss << "\n📊 MONTHLY SUMMARY:\n";
+    ss << "\n* MONTHLY SUMMARY:\n";
     ss << "═══════════════════════════════════════════════════════════════════════════════\n";
-    ss << "🙏 Buddhist Sabbath Days: " << monthData.sabbathDays << "\n";
-    ss << "✅ Auspicious Days: " << monthData.auspiciousDays << "\n";
-    ss << "⚠️  Inauspicious Days: " << monthData.inauspiciousDays << "\n";
-    ss << "🎉 Festival Days: " << monthData.festivalDays << "\n\n";
+    ss << "* Buddhist Sabbath Days: " << monthData.sabbathDays << "\n";
+    ss << "* Auspicious Days: " << monthData.auspiciousDays << "\n";
+    ss << "!  Inauspicious Days: " << monthData.inauspiciousDays << "\n";
+    ss << "# Festival Days: " << monthData.festivalDays << "\n\n";
 
     if (!monthData.majorFestivals.empty()) {
-        ss << "🌟 MAJOR FESTIVALS:\n";
+        ss << "* MAJOR FESTIVALS:\n";
         for (const auto& festival : monthData.majorFestivals) {
             ss << "   • " << festival << "\n";
         }
         ss << "\n";
     }
+
+    // Add Julian Day reference footer
+    ss << "* JULIAN DAY REFERENCE (Complete Values):\n";
+    ss << "═══════════════════════════════════════════════════════════════════════════════\n";
+
+    // Display Julian Days in rows of 7 (weekly format)
+    for (size_t i = 0; i < monthData.days.size(); i += 7) {
+        ss << "Days ";
+
+        // Day range for this row
+        int startDay = i + 1;
+        int endDay = std::min(static_cast<int>(i + 7), static_cast<int>(monthData.days.size()));
+
+        if (startDay < 10) ss << " ";
+        ss << startDay << "-";
+        if (endDay < 10) ss << " ";
+        ss << endDay << ": ";
+
+        // Julian days for this week
+        for (size_t j = i; j < std::min(i + 7, monthData.days.size()); j++) {
+            ss << static_cast<int>(monthData.days[j].julianDay);
+            if (j < std::min(i + 7, monthData.days.size()) - 1) {
+                ss << " ";
+            }
+        }
+        ss << "\n";
+    }
+
+    ss << "Note: Julian Day is the continuous count of days since beginning of Julian period\n";
+    ss << "      Used for astronomical calculations and date conversions\n\n";
 
     return ss.str();
 }
@@ -689,9 +703,9 @@ std::string MyanmarMonthlyCalendar::generateMonthlySummary(const MyanmarMonthlyD
 std::string MyanmarMonthlyCalendar::generateMyanmarLegend() const {
     std::stringstream ss;
 
-    ss << "🔮 MYANMAR CALENDAR LEGEND:\n";
+    ss << "* MYANMAR CALENDAR LEGEND:\n";
     ss << "═══════════════════════════════════════════════════════════════════════════════\n";
-    ss << "⭐ Religious/Excellent Day    ⚠️  Inauspicious Day    🎉 Festival Day    ⚪ Normal Day\n";
+    ss << "* Religious/Excellent Day    !  Inauspicious Day    # Festival Day    . Normal Day\n";
     ss << "S = Sabbath    P = Pyathada    Y = Yatyaza    T = Thamanyo\n";
     ss << "● New Moon    ◐ Waxing    ○ Full Moon    ◑ Waning\n";
     ss << "☀ Sun ☽ Mon ♂ Tue ☿ Wed ♃ Thu ♀ Fri ♄ Sat\n\n";
@@ -702,7 +716,7 @@ std::string MyanmarMonthlyCalendar::generateMyanmarLegend() const {
 std::string MyanmarMonthlyCalendar::generateLegend() const {
     std::stringstream ss;
 
-    ss << "Legend: ⭐Religious ⚠️Caution 🎉Festival ⚪Normal | ●◐○◑ Moon Phases\n";
+    ss << "Legend: *Religious !Caution #Festival .Normal | ●◐○◑ Moon Phases\n";
 
     return ss.str();
 }
@@ -832,16 +846,16 @@ std::string MyanmarMonthlyCalendar::generateTabulateClassic(const MyanmarMonthly
     ss << calendarTable << "\n\n";
 
     // Classic summary with highlights
-    ss << "🌟 MONTH HIGHLIGHTS:\n";
+    ss << "* MONTH HIGHLIGHTS:\n";
     ss << "───────────────────\n";
     for (const auto& festival : monthData.majorFestivals) {
-        ss << "🎉 " << festival << "\n";
+        ss << "# " << festival << "\n";
     }
     for (const auto& [day, description] : monthData.specialDays) {
-        ss << "⭐ " << day << ": " << description << "\n";
+        ss << "* " << day << ": " << description << "\n";
     }
 
-    ss << "\n📊 MONTHLY STATISTICS:\n";
+    ss << "\n* MONTHLY STATISTICS:\n";
     ss << "─────────────────────\n";
     ss << "Buddhist Sabbath Days: " << monthData.sabbathDays << "\n";
     ss << "Auspicious Days: " << monthData.auspiciousDays << "\n";
@@ -866,7 +880,7 @@ std::string MyanmarMonthlyCalendar::generateTabulateMinimal(const MyanmarMonthly
     // Add the calendar table
     ss << calendarTable << "\n\n";
 
-    ss << "⭐Religious ⚠️Caution 🎉Festival ⚪Normal\n";
+    ss << "*Religious !Caution #Festival .Normal\n";
 
     return ss.str();
 }
@@ -1020,9 +1034,9 @@ std::string MyanmarMonthlyCalendar::formatCellContent(const MyanmarMonthlyData::
         ss << std::setw(2) << std::setfill('0') << day.myanmarDay;
 
         // Quality indicator (single ASCII character)
-        if (day.qualityIndicator == "⭐") ss << "*";
-        else if (day.qualityIndicator == "⚠️") ss << "!";
-        else if (day.qualityIndicator == "🎉") ss << "F";
+        if (day.qualityIndicator == "*") ss << "*";
+        else if (day.qualityIndicator == "!") ss << "!";
+        else if (day.qualityIndicator == "#") ss << "#";
         else ss << " ";
 
         // NO newlines - keep everything on single line
@@ -1175,7 +1189,7 @@ std::string MyanmarMonthlyCalendar::generateHTML(const MyanmarMonthlyData& month
     ss << "</style>\n";
     ss << "</head>\n<body>\n";
 
-    ss << "<h1>🇲🇲 Myanmar Calendar</h1>\n";
+    ss << "<h1>Myanmar Calendar</h1>\n";
     ss << "<h2>" << monthData.gregorianMonthName << " " << monthData.gregorianYear;
     ss << " | " << monthData.myanmarMonthName << " " << monthData.myanmarYear << " ME</h2>\n";
 
@@ -1225,7 +1239,7 @@ std::string MyanmarMonthlyCalendar::generateHTML(const MyanmarMonthlyData& month
 
     // Add legend
     ss << "<h3>Legend:</h3>\n";
-    ss << "<p>⭐ Religious Day | ⚠️ Inauspicious | 🎉 Festival | ⚪ Normal</p>\n";
+    ss << "<p>* Religious Day | ! Inauspicious | # Festival | . Normal</p>\n";
     ss << "<p>● New Moon | ◐ Waxing | ○ Full Moon | ◑ Waning</p>\n";
 
     ss << "</body>\n</html>";
@@ -1636,7 +1650,7 @@ std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonth
         ss << "Planetary: R=Retrograde C=Conjunction X=Eclipse T=Transit\n";
     }
     ss << "🌙 MOON PHASES: F=Full, W=Waxing, N=New, w=Waning\n";
-    ss << "🇲🇲 MYANMAR DAYS: Tha=Thamanyo, Pya=Pyathada, Yat=Yatyaza, Sab=Sabbath\n";
+    ss << "MYANMAR DAYS: Tha=Thamanyo, Pya=Pyathada, Yat=Yatyaza, Sab=Sabbath\n";
     ss << "Quality: * = Auspicious ! = Caution # = Festival . = Normal\n\n";
 
     // Statistics with consistent formatting
