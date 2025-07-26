@@ -483,11 +483,10 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
     // Enhanced legend with comprehensive Hindu calendar information
     ss << "🕉️ ENHANCED HINDU CALENDAR LEGEND:\n";
     ss << "═══════════════════════════════════════════════════════════════════════════════\n";
-    ss << "Day Format: [GG][T##][P][JD][V] = Gregorian / Hindu Tithi+Paksha / Julian+Varna\n";
+    ss << "Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna\n";
     ss << "           GG = Gregorian day (1-31)\n";
     ss << "           T## = Tithi number (1-15 in each Paksha)\n";
     ss << "           P = Paksha (S=Shukla/Waxing, K=Krishna/Waning)\n";
-    ss << "           JD = Julian Day (last 3 digits for astronomical reference)\n";
     ss << "           V = Varna Day (B=Brahmin, K=Kshatriya, V=Vaishya, S=Shudra)\n\n";
 
     ss << "🌟 PANCHANGA INDICATORS:\n";
@@ -559,17 +558,37 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
         ss << "   Krishna Paksha (Waning): " << krishnaCount << " days\n";
     }
 
+    // Add complete Julian Day values section
+    ss << "\n🌌 JULIAN DAY REFERENCE (Complete Values):\n";
+    ss << "═══════════════════════════════════════════════════════════════════════════════\n";
+
+    // Display Julian Days in a formatted grid - 7 days per row
+    for (int day = 1; day <= monthData.daysInMonth; day++) {
+        if ((day - 1) % 7 == 0) {
+            if (day > 1) ss << "\n";
+            ss << "Days " << std::setw(2) << day << "-" << std::setw(2) << std::min(day + 6, monthData.daysInMonth) << ": ";
+        }
+
+        long jdValue = static_cast<long>(monthData.dailyPanchanga[day - 1].julianDay);
+        ss << std::setw(7) << jdValue;
+        if ((day - 1) % 7 < 6 && day < monthData.daysInMonth) {
+            ss << " ";
+        }
+    }
+    ss << "\n";
+    ss << "Note: Julian Day is the continuous count of days since beginning of Julian period\n";
+    ss << "      Used for astronomical calculations and date conversions\n";
+
     return ss.str();
 }
 
 std::string HinduMonthlyCalendar::formatEnhancedDateCell(const PanchangaData& panchanga, int day, const MonthlyData& monthData) const {
     std::stringstream ss;
 
-    // Enhanced format: [GG][T##][P][JD][V] - 15 characters
+    // Enhanced format: [GG][T##][P][V] - 15 characters (removed JD to fix table borders)
     // GG = Gregorian day (2 chars, right-aligned)
     // T## = Tithi number (3 chars)
     // P = Paksha indicator (1 char: S=Shukla, K=Krishna)
-    // JD = Julian Day (last 3 digits)
     // V = Varna indicator (1 char: B=Brahmin, K=Kshatriya, V=Vaishya, S=Shudra)
 
     ss << std::setw(2) << std::setfill(' ') << day;
@@ -586,11 +605,6 @@ std::string HinduMonthlyCalendar::formatEnhancedDateCell(const PanchangaData& pa
         ss << "K";
     }
 
-    // Add Julian Day (last 3 digits for compactness)
-    long jdInt = static_cast<long>(panchanga.julianDay);
-    int jdLast3 = jdInt % 1000;
-    ss << std::setw(3) << std::setfill('0') << jdLast3;
-
     // Add Varna indicator from day-based Varna
     char varnaChar = '.';
     if (!panchanga.varnaDay.empty()) {
@@ -604,8 +618,8 @@ std::string HinduMonthlyCalendar::formatEnhancedDateCell(const PanchangaData& pa
     }
     ss << varnaChar;
 
-    // Add final space to reach 15 characters
-    ss << " ";
+    // Add padding to reach 15 characters
+    ss << std::string(8, ' '); // 8 spaces to make total 15 chars
 
     std::string result = ss.str();
 
@@ -630,7 +644,7 @@ std::string HinduMonthlyCalendar::formatEnhancedQualityCell(const PanchangaData&
     bool isAmavasya = (static_cast<int>(panchanga.tithi) == 30);
 
     if (isPurnima || isAmavasya) {
-        ss << "✨"; // Highly auspicious - full/new moon
+        ss << "#"; // Highly auspicious - full/new moon (removed emoji for table alignment)
     } else if (isEkadashi) {
         ss << "*"; // Auspicious - Ekadashi
     } else if (static_cast<int>(panchanga.tithi) == 4 || static_cast<int>(panchanga.tithi) == 9 ||
@@ -674,9 +688,7 @@ std::string HinduMonthlyCalendar::formatEnhancedQualityCell(const PanchangaData&
         result = result.substr(0, 15);
     } else if (result.length() < 15) {
         result += std::string(15 - result.length(), ' ');
-    }
-
-    return result;
+    }    return result;
 }
 
 std::string HinduMonthlyCalendar::highlightSpecialDay(const PanchangaData& panchanga,
