@@ -37,7 +37,6 @@ bool HinduCalendar::initialize() {
     try {
         // Set the ayanamsa for Swiss Ephemeris
         swe_set_sid_mode(getSweAyanamsaId(), 0, 0);
-        swe_set_ephe_path("third_party/swisseph/ephe");
 
         initializeNakshatraData();
         initializeTithiData();
@@ -826,6 +825,8 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         }
 
         // Calculate timezone offset based on longitude
+        // ...existing code...
+
         // Calculate the Julian Day for local midnight (Bangkok local time)
         // Drik Panchang uses local midnight as the start of the day
         double localMidnightJD = floor(panchanga.julianDay - timezoneOffset / 24.0) + 0.5 + timezoneOffset / 24.0;
@@ -1084,6 +1085,8 @@ void HinduCalendar::handleException(const std::exception& e, PanchangaData& panc
     panchanga.sunsetTime = 18.0;
     panchanga.moonriseTime = 7.0;
     panchanga.moonsetTime = 19.0;
+    panchanga.dayLength = 12.0;
+    panchanga.nightLength = 12.0;
 }
 
 void HinduCalendar::calculateRahuKaal(PanchangaData& panchanga) const {
@@ -1993,9 +1996,6 @@ std::string HinduCalendar::generatePanchangaTableFormat(const std::vector<Pancha
         // Julian calendar is approximately 13 days behind Gregorian in current era
         int julYear = gregYear;
         int julMonth = gregMonth;
-        int julDay = gregDay - 13;
-
-        // Handle month/year rollover for negative days
         int julDay = gregDay - 13;
 
         // Handle month/year rollover for negative days
