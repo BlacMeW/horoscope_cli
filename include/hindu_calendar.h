@@ -176,6 +176,13 @@ struct PanchangaData {
     bool isSankranti;          // Solar transition
     bool isNavratri;           // Navratri period
     bool isGandaMool;          // Ganda Mool Nakshatra
+
+    // Enhanced Sankranti information
+    std::string sankrantiName; // Name of the current Sankranti
+    double sankrantiTime;      // Exact time of Sankranti (hours from midnight)
+    bool isSankrantiToday;     // If Sankranti occurs today
+    std::string nextSankranti; // Next upcoming Sankranti name
+    double daysToNextSankranti;// Days until next Sankranti
     bool isPanchak;            // Panchak period
     bool isBhadra;             // Bhadra period
 
@@ -516,6 +523,20 @@ public:
     std::vector<SearchResult> searchKshatriyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchVaishyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchShudradays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
+
+    // Enhanced Sankranti calculation methods
+    double calculateSankrantiTime(double julianDay, Rashi currentRashi, Rashi nextRashi) const;
+    std::string calculateNextSankranti(double julianDay, double& daysUntil) const;
+    bool isSankrantiOccurringToday(double julianDay, double tolerance = 0.5) const;
+    std::vector<std::pair<double, std::string>> getSankrantiTimesForMonth(int year, int month) const;
+    std::vector<std::pair<double, std::string>> getSankrantiTimesForYear(int year) const;
+
+    // Sankranti search and analysis methods
+    std::vector<SearchResult> searchSankranti(const std::string& startDate, const std::string& endDate,
+                                             double latitude = 0.0, double longitude = 0.0) const;
+    std::vector<SearchResult> searchSpecificSankranti(Rashi rashi, const std::string& startDate,
+                                                     const std::string& endDate, double latitude = 0.0,
+                                                     double longitude = 0.0) const;
 
 private:
     // Utility method for parsing dates

@@ -716,11 +716,42 @@ void HinduCalendar::identifyFestivals(PanchangaData& panchanga) const {
 }
 
 void HinduCalendar::identifySpecialEvents(PanchangaData& panchanga) const {
-    // Check for solar transitions (Sankranti)
-    if (std::fmod(panchanga.sunLongitude, 30.0) < 1.0) {
+    // Enhanced Sankranti detection with exact timing
+    double sunLongMod30 = std::fmod(panchanga.sunLongitude, 30.0);
+    bool isSankrantiClose = (sunLongMod30 < 2.0) || (sunLongMod30 > 28.0);
+
+    if (isSankrantiClose) {
         panchanga.isSankranti = true;
-        panchanga.specialEvents.push_back("Sankranti - " + getRashiName(panchanga.sunRashi));
+        panchanga.isSankrantiToday = isSankrantiOccurringToday(panchanga.julianDay, 0.5);
+
+        // Determine which Sankranti this is
+        std::string rashiName = getRashiName(panchanga.sunRashi);
+        size_t spacePos = rashiName.find(' ');
+        if (spacePos != std::string::npos) {
+            rashiName = rashiName.substr(0, spacePos);
+        }
+        panchanga.sankrantiName = rashiName + " Sankranti";
+
+        // Calculate exact Sankranti time if it's occurring today
+        if (panchanga.isSankrantiToday) {
+            Rashi nextRashi = static_cast<Rashi>((static_cast<int>(panchanga.sunRashi) % 12) + 1);
+            panchanga.sankrantiTime = calculateSankrantiTime(panchanga.julianDay, panchanga.sunRashi, nextRashi);
+        }
+
+        // Add Sankranti event with time information
+        if (panchanga.isSankrantiToday && panchanga.sankrantiTime > 0) {
+            // Include time in HH:MM:SS format
+            panchanga.specialEvents.push_back("Sankranti - " + panchanga.sankrantiName + 
+                                             " (at " + panchanga.getTimeString(panchanga.sankrantiTime) + ")");
+        } else {
+            panchanga.specialEvents.push_back("Sankranti - " + panchanga.sankrantiName);
+        }
     }
+
+    // Calculate next Sankranti information
+    double daysUntil = 0.0;
+    panchanga.nextSankranti = calculateNextSankranti(panchanga.julianDay, daysUntil);
+    panchanga.daysToNextSankranti = daysUntil;
 
     // Add other special astronomical events
     if (panchanga.yoga == Yoga::VYATIPATA || panchanga.yoga == Yoga::VAIDHRITI) {
@@ -1223,9 +1254,10 @@ std::string PanchangaData::getTimeString(double hours) const {
 
     int h = static_cast<int>(hours);
     int m = static_cast<int>((hours - h) * 60);
+    int s = static_cast<int>(((hours - h) * 60 - m) * 60);
 
     char timeStr[16];
-    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", h, m);
+    snprintf(timeStr, sizeof(timeStr), "%02d:%02d:%02d", h, m, s);
     return std::string(timeStr);
 }
 
@@ -1357,7 +1389,14 @@ std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga
         if (panchanga.isEkadashi) oss << "   • Ekadashi - Fasting day\n";
         if (panchanga.isPurnima) oss << "   • Purnima - Full Moon\n";
         if (panchanga.isAmavasya) oss << "   • Amavasya - New Moon\n";
-        if (panchanga.isSankranti) oss << "   • Sankranti - Solar transition\n";
+        if (panchanga.isSankranti) {
+            if (panchanga.isSankrantiToday && panchanga.sankrantiTime > 0) {
+                oss << "   • Sankranti - Solar transition (at " 
+                    << panchanga.getTimeString(panchanga.sankrantiTime) << ")\n";
+            } else {
+                oss << "   • Sankranti - Solar transition\n";
+            }
+        }
         if (panchanga.isNavratri) oss << "   • Navratri period\n";
         if (panchanga.isGandaMool) oss << "   • Ganda Mool Nakshatra\n";
         if (panchanga.isPanchak) oss << "   • Panchak period\n";
@@ -2527,6 +2566,217 @@ HinduCalendar::SearchResult HinduCalendar::searchJulianDayOnly(double julianDay,
 
 PanchangaData HinduCalendar::calculatePanchangaFromJD(double julianDay, double latitude, double longitude) const {
     return calculatePanchanga(julianDay, latitude, longitude);
+}
+
+// Enhanced Sankranti calculation methods implementation
+double HinduCalendar::calculateSankrantiTime(double julianDay, Rashi currentRashi, Rashi nextRashi) const {
+    // Calculate exact time when Sun transits from currentRashi to nextRashi
+    double targetLongitude = static_cast<int>(nextRashi) * 30.0;
+    if (targetLongitude == 0.0) targetLongitude = 360.0; // Handle Meena to Mesha transition
+
+    // Use iterative method to find exact transition time
+    double searchStart = julianDay - 2.0; // Search 2 days before
+    double searchEnd = julianDay + 2.0;   // Search 2 days after
+    double precision = 0.001; // 1.44 minutes precision
+
+    while ((searchEnd - searchStart) > precision) {
+        double midPoint = (searchStart + searchEnd) / 2.0;
+
+        // Calculate sun position at midpoint
+        double sunPos[6];
+        char errorString[256];
+        int result = swe_calc(midPoint, SE_SUN, SEFLG_SIDEREAL, sunPos, errorString);
+
+        if (result < 0) {
+            return 12.0; // Default noon if calculation fails
+        }
+
+        double sunLongitude = sunPos[0];
+
+        // Normalize longitude to 0-360 range
+        while (sunLongitude < 0) sunLongitude += 360.0;
+        while (sunLongitude >= 360.0) sunLongitude -= 360.0;
+
+        // Check if we've crossed the target longitude
+        if (std::abs(sunLongitude - targetLongitude) < 0.1) {
+            // Found the transition time, convert to hours from midnight
+            return (midPoint - floor(midPoint)) * 24.0;
+        }
+
+        // Determine which half to search next
+        double distanceToTarget = targetLongitude - sunLongitude;
+        if (distanceToTarget > 180.0) distanceToTarget -= 360.0;
+        if (distanceToTarget < -180.0) distanceToTarget += 360.0;
+
+        if (distanceToTarget > 0) {
+            searchStart = midPoint;
+        } else {
+            searchEnd = midPoint;
+        }
+    }
+
+    // Return time in hours from midnight
+    return (searchStart - floor(searchStart)) * 24.0;
+}
+
+std::string HinduCalendar::calculateNextSankranti(double julianDay, double& daysUntil) const {
+    // Get current sun longitude
+    double sunPos[6];
+    char errorString[256];
+    int result = swe_calc(julianDay, SE_SUN, SEFLG_SIDEREAL, sunPos, errorString);
+
+    if (result < 0) {
+        daysUntil = 30.0; // Default to ~30 days if calculation fails
+        return "Unknown Sankranti";
+    }
+
+    double currentLongitude = sunPos[0];
+    while (currentLongitude < 0) currentLongitude += 360.0;
+    while (currentLongitude >= 360.0) currentLongitude -= 360.0;
+
+    // Calculate which rashi we're currently in and the next one
+    int currentRashiNum = static_cast<int>(currentLongitude / 30.0) + 1;
+    int nextRashiNum = (currentRashiNum % 12) + 1;
+
+    // Calculate degrees until next Sankranti
+    double nextSankrantiLongitude = nextRashiNum * 30.0;
+    if (nextSankrantiLongitude > 360.0) nextSankrantiLongitude = 0.0;
+
+    double degreesToGo = nextSankrantiLongitude - currentLongitude;
+    if (degreesToGo <= 0) degreesToGo += 360.0;
+
+    // Sun moves approximately 1 degree per day
+    daysUntil = degreesToGo;
+
+    // Get next Sankranti name
+    Rashi nextRashi = static_cast<Rashi>(nextRashiNum);
+    std::string nextRashiName = getRashiName(nextRashi);
+    size_t spacePos = nextRashiName.find(' ');
+    if (spacePos != std::string::npos) {
+        nextRashiName = nextRashiName.substr(0, spacePos);
+    }
+
+    return nextRashiName + " Sankranti";
+}
+
+bool HinduCalendar::isSankrantiOccurringToday(double julianDay, double tolerance) const {
+    // Check if Sankranti occurs within the tolerance period (default 0.5 days = 12 hours)
+    double startCheck = julianDay - tolerance;
+    double endCheck = julianDay + tolerance;
+
+    for (double checkJD = startCheck; checkJD <= endCheck; checkJD += 0.1) {
+        double sunPos[6];
+        char errorString[256];
+        int result = swe_calc(checkJD, SE_SUN, SEFLG_SIDEREAL, sunPos, errorString);
+
+        if (result >= 0) {
+            double sunLongitude = sunPos[0];
+            while (sunLongitude < 0) sunLongitude += 360.0;
+            while (sunLongitude >= 360.0) sunLongitude -= 360.0;
+
+            // Check if sun is very close to a 30-degree boundary
+            double modulo = std::fmod(sunLongitude, 30.0);
+            if (modulo < 0.5 || modulo > 29.5) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+std::vector<std::pair<double, std::string>> HinduCalendar::getSankrantiTimesForMonth(int year, int month) const {
+    std::vector<std::pair<double, std::string>> sankrantiTimes;
+
+    // Calculate Julian Day for first and last day of month
+    double startJD = gregorianDateToJulianDay(year, month, 1);
+    int daysInMonth = (month == 2) ? (isLeapYear(year) ? 29 : 28) :
+                     ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31);
+    double endJD = gregorianDateToJulianDay(year, month, daysInMonth);
+
+    // Check each day of the month for Sankranti
+    for (double jd = startJD; jd <= endJD; jd += 1.0) {
+        if (isSankrantiOccurringToday(jd, 0.5)) {
+            // Calculate which Sankranti this is
+            double sunPos[6];
+            char errorString[256];
+            int result = swe_calc(jd, SE_SUN, SEFLG_SIDEREAL, sunPos, errorString);
+
+            if (result >= 0) {
+                double sunLongitude = sunPos[0];
+                while (sunLongitude < 0) sunLongitude += 360.0;
+                while (sunLongitude >= 360.0) sunLongitude -= 360.0;
+
+                int rashiNum = static_cast<int>(sunLongitude / 30.0) + 1;
+                if (rashiNum > 12) rashiNum = 1;
+
+                Rashi rashi = static_cast<Rashi>(rashiNum);
+                std::string rashiName = getRashiName(rashi);
+                size_t spacePos = rashiName.find(' ');
+                if (spacePos != std::string::npos) {
+                    rashiName = rashiName.substr(0, spacePos);
+                }
+
+                sankrantiTimes.push_back({jd, rashiName + " Sankranti"});
+            }
+        }
+    }
+
+    return sankrantiTimes;
+}
+
+std::vector<std::pair<double, std::string>> HinduCalendar::getSankrantiTimesForYear(int year) const {
+    std::vector<std::pair<double, std::string>> sankrantiTimes;
+
+    // Check each month of the year
+    for (int month = 1; month <= 12; month++) {
+        auto monthSankrantis = getSankrantiTimesForMonth(year, month);
+        sankrantiTimes.insert(sankrantiTimes.end(), monthSankrantis.begin(), monthSankrantis.end());
+    }
+
+    return sankrantiTimes;
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchSankranti(const std::string& startDate,
+                                                                       const std::string& endDate,
+                                                                       double latitude, double longitude) const {
+    SearchCriteria criteria;
+    criteria.searchSankranti = true;
+    criteria.searchStartDate = startDate;
+    criteria.searchEndDate = endDate;
+
+    return searchHinduCalendar(criteria, latitude, longitude);
+}
+
+std::vector<HinduCalendar::SearchResult> HinduCalendar::searchSpecificSankranti(Rashi rashi,
+                                                                               const std::string& startDate,
+                                                                               const std::string& endDate,
+                                                                               double latitude, double longitude) const {
+    std::vector<SearchResult> allSankrantis = searchSankranti(startDate, endDate, latitude, longitude);
+    std::vector<SearchResult> specificSankrantis;
+
+    // Filter for the specific Rashi Sankranti
+    std::string targetRashiName = getRashiName(rashi);
+    size_t spacePos = targetRashiName.find(' ');
+    if (spacePos != std::string::npos) {
+        targetRashiName = targetRashiName.substr(0, spacePos);
+    }
+
+    for (const auto& result : allSankrantis) {
+        if (result.panchangaData.sankrantiName.find(targetRashiName) != std::string::npos) {
+            specificSankrantis.push_back(result);
+        }
+    }
+
+    return specificSankrantis;
+}
+
+// Helper function to determine if a Gregorian year is a leap year
+bool isLeapYear(int year) {
+    if (year % 400 == 0) return true;
+    if (year % 100 == 0) return false;
+    if (year % 4 == 0) return true;
+    return false;
 }
 
 } // namespace Astro

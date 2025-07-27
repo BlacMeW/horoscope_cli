@@ -483,18 +483,26 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
     // Enhanced legend with comprehensive Hindu calendar information
     ss << "🕉️ ENHANCED HINDU CALENDAR LEGEND:\n";
     ss << "═══════════════════════════════════════════════════════════════════════════════\n";
-    ss << "Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna\n";
+    ss << "Day Format: [GG][T##][P][V/@] = Gregorian / Hindu Tithi+Paksha / Varna/Sankranti\n";
     ss << "           GG = Gregorian day (1-31)\n";
     ss << "           T## = Tithi number (1-15 in each Paksha)\n";
     ss << "           P = Paksha (S=Shukla/Waxing, K=Krishna/Waning)\n";
-    ss << "           V = Varna Day (B=Brahmin, K=Kshatriya, V=Vaishya, S=Shudra)\n\n";
+    ss << "           V = Varna Day (B=Brahmin, K=Kshatriya, V=Vaishya, S=Shudra)\n";
+    ss << "           @ = Sankranti Day (Solar transition between zodiac signs)\n\n";
 
     ss << "🌟 PANCHANGA INDICATORS:\n";
-    ss << "   Special Days: Ek=Ekadashi, Pu=Purnima, Am=Amavasya, Sa=Sankranti\n";
+    ss << "   Special Days: Sk=Sankranti, Ek=Ekadashi, Pu=Purnima, Am=Amavasya\n";
     ss << "   Nakshatra: First 3 letters of current Nakshatra\n";
-    ss << "   Quality: ✨ = Highly Auspicious, * = Auspicious, ! = Caution, # = Festival, . = Normal\n";
+    ss << "   Quality: @ = Sankranti, # = Highly Auspicious, * = Auspicious, ! = Caution, . = Normal\n";
     ss << "   Yoga: Combination of Sun and Moon positions\n";
     ss << "   Karana: Half-Tithi periods\n\n";
+
+    ss << "☀️ SANKRANTI (SOLAR TRANSITIONS):\n";
+    ss << "   Sa=Sankranti Day, Solar transition between zodiac signs\n";
+    ss << "   Each Sankranti marks the beginning of a new solar month\n";
+    ss << "   Important for agricultural activities and seasonal festivals\n";
+    ss << "   12 Sankrantis per year: Mesha, Vrishabha, Mithuna, Karka, Simha, Kanya,\n";
+    ss << "                          Tula, Vrishchika, Dhanu, Makara, Kumbha, Meena\n\n";
 
     ss << "🎯 VARNA (SAVARNA) CLASSIFICATION:\n";
     ss << "   Traditional Hindu social-spiritual classification based on planetary weekday:\n";
@@ -512,7 +520,8 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
     ss << "📊 MONTHLY PANCHANGA STATISTICS:\n";
     ss << "═══════════════════════════════════════════════════════════════════════════════\n";
     ss << "🕉️  Hindu Calendar: " << monthData.ekadashiCount << " Ekadashis, "
-       << monthData.purnimaCount << " Purimas, " << monthData.amavasyaCount << " Amavasyas\n";
+       << monthData.purnimaCount << " Purimas, " << monthData.amavasyaCount << " Amavasyas, "
+       << getSankrantiDays(monthData.year, monthData.month).size() << " Sankrantis\n";
 
     // Add comprehensive Hindu calendar summary
     ss << "\n🔸 COMPREHENSIVE PANCHANGA OVERVIEW:\n";
@@ -534,6 +543,23 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
         }
     } else {
         ss << "   No major festivals this month\n";
+    }
+
+    // Show Sankranti information
+    std::vector<int> sankrantiDays = getSankrantiDays(monthData.year, monthData.month);
+    if (!sankrantiDays.empty()) {
+        ss << "\n☀️ SANKRANTI (SOLAR TRANSITIONS) THIS MONTH:\n";
+        for (int day : sankrantiDays) {
+            const auto& panchanga = monthData.dailyPanchanga[day - 1];
+            ss << "   Day " << day << ": " << panchanga.sankrantiName;
+            if (panchanga.isSankrantiToday && panchanga.sankrantiTime > 0) {
+                int hours = static_cast<int>(panchanga.sankrantiTime);
+                int minutes = static_cast<int>((panchanga.sankrantiTime - hours) * 60);
+                ss << " at " << std::setfill('0') << std::setw(2) << hours
+                   << ":" << std::setw(2) << minutes;
+            }
+            ss << "\n";
+        }
     }
 
     // Show Nakshatra distribution if we have the data
@@ -585,11 +611,11 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
 std::string HinduMonthlyCalendar::formatEnhancedDateCell(const PanchangaData& panchanga, int day, const MonthlyData& monthData) const {
     std::stringstream ss;
 
-    // Enhanced format: [GG][T##][P][V] - 15 characters (removed JD to fix table borders)
+    // Enhanced format: [GG][T##][P][V/S] - 15 characters with Sankranti support
     // GG = Gregorian day (2 chars, right-aligned)
     // T## = Tithi number (3 chars)
     // P = Paksha indicator (1 char: S=Shukla, K=Krishna)
-    // V = Varna indicator (1 char: B=Brahmin, K=Kshatriya, V=Vaishya, S=Shudra)
+    // V/S = Varna indicator or Sankranti indicator (1 char)
 
     ss << std::setw(2) << std::setfill(' ') << day;
 
@@ -605,21 +631,29 @@ std::string HinduMonthlyCalendar::formatEnhancedDateCell(const PanchangaData& pa
         ss << "K";
     }
 
-    // Add Varna indicator from day-based Varna
-    char varnaChar = '.';
-    if (!panchanga.varnaDay.empty()) {
+    // Add Sankranti or Varna indicator
+    char specialChar = '.';
+    if (panchanga.isSankrantiToday) {
+        specialChar = '@'; // Sankranti indicator
+    } else if (!panchanga.varnaDay.empty()) {
         switch (panchanga.varnaDay[0]) {
-            case 'B': varnaChar = 'B'; break; // Brahmin
-            case 'K': varnaChar = 'K'; break; // Kshatriya
-            case 'V': varnaChar = 'V'; break; // Vaishya
-            case 'S': varnaChar = 'S'; break; // Shudra
-            default: varnaChar = '.'; break;
+            case 'B': specialChar = 'B'; break; // Brahmin
+            case 'K': specialChar = 'K'; break; // Kshatriya
+            case 'V': specialChar = 'V'; break; // Vaishya
+            case 'S': specialChar = 'S'; break; // Shudra
+            default: specialChar = '.'; break;
         }
     }
-    ss << varnaChar;
+    ss << specialChar;
 
-    // Add padding to reach 15 characters
-    ss << std::string(8, ' '); // 8 spaces to make total 15 chars
+    // Add Sankranti info or padding
+    if (panchanga.isSankrantiToday && !panchanga.sankrantiName.empty()) {
+        // Show abbreviated Sankranti name (max 8 chars)
+        std::string sankrantiAbbr = panchanga.sankrantiName.substr(0, 8);
+        ss << " " << std::setw(7) << std::left << sankrantiAbbr;
+    } else {
+        ss << std::string(8, ' '); // 8 spaces to make total 15 chars
+    }
 
     std::string result = ss.str();
 
@@ -638,13 +672,16 @@ std::string HinduMonthlyCalendar::formatEnhancedQualityCell(const PanchangaData&
 
     // Enhanced fixed format: Quality + Panchanga indicators - exactly 15 characters
 
-    // Quality indicator (1 char) - Enhanced for Hindu calendar
+    // Quality indicator (1 char) - Enhanced for Hindu calendar including Sankranti
     bool isEkadashi = (static_cast<int>(panchanga.tithi) == 11 || static_cast<int>(panchanga.tithi) == 26);
     bool isPurnima = (static_cast<int>(panchanga.tithi) == 15);
     bool isAmavasya = (static_cast<int>(panchanga.tithi) == 30);
+    bool isSankranti = panchanga.isSankrantiToday;
 
-    if (isPurnima || isAmavasya) {
-        ss << "#"; // Highly auspicious - full/new moon (removed emoji for table alignment)
+    if (isSankranti) {
+        ss << "@"; // Sankranti - most significant
+    } else if (isPurnima || isAmavasya) {
+        ss << "#"; // Highly auspicious - full/new moon
     } else if (isEkadashi) {
         ss << "*"; // Auspicious - Ekadashi
     } else if (static_cast<int>(panchanga.tithi) == 4 || static_cast<int>(panchanga.tithi) == 9 ||
@@ -655,7 +692,9 @@ std::string HinduMonthlyCalendar::formatEnhancedQualityCell(const PanchangaData&
     }
 
     // Hindu special days (3 chars for enhanced coverage)
-    if (isEkadashi) {
+    if (isSankranti) {
+        ss << " Sk"; // Sankranti
+    } else if (isEkadashi) {
         ss << " Ek"; // Ekadashi
     } else if (isPurnima) {
         ss << " Pu"; // Purnima
@@ -674,13 +713,33 @@ std::string HinduMonthlyCalendar::formatEnhancedQualityCell(const PanchangaData&
     }
 
     // Additional quality indicators (7 chars remaining)
-    std::string moonPhase;
-    if (isPurnima) moonPhase = "   F"; // Full
-    else if (isAmavasya) moonPhase = "   N"; // New
-    else if (static_cast<int>(panchanga.tithi) < 15) moonPhase = "   W"; // Waxing
-    else moonPhase = "   w"; // Waning
+    std::string additionalInfo;
+    if (isSankranti && panchanga.sankrantiTime > 0) {
+        // Convert Sankranti time to HH:MM:SS format (compressed for space)
+        int hours = static_cast<int>(panchanga.sankrantiTime);
+        int minutes = static_cast<int>((panchanga.sankrantiTime - hours) * 60);
+        int seconds = static_cast<int>(((panchanga.sankrantiTime - hours) * 60 - minutes) * 60);
 
-    ss << moonPhase;
+        std::stringstream timeStream;
+        // Use compact format HH:MM:SS for better precision
+        timeStream << " " << std::setw(2) << std::setfill('0') << hours
+                   << ":" << std::setw(2) << std::setfill('0') << minutes
+                   << ":" << std::setw(2) << std::setfill('0') << seconds;
+        additionalInfo = timeStream.str();
+
+        // Ensure we don't exceed 7 characters (truncate if needed)
+        if (additionalInfo.length() > 7) {
+            additionalInfo = additionalInfo.substr(0, 7);
+        }
+    } else {
+        // Original moon phase logic
+        if (isPurnima) additionalInfo = "   F"; // Full
+        else if (isAmavasya) additionalInfo = "   N"; // New
+        else if (static_cast<int>(panchanga.tithi) < 15) additionalInfo = "   W"; // Waxing
+        else additionalInfo = "   w"; // Waning
+    }
+
+    ss << additionalInfo;
 
     // Ensure exactly 15 characters
     std::string result = ss.str();
@@ -688,7 +747,9 @@ std::string HinduMonthlyCalendar::formatEnhancedQualityCell(const PanchangaData&
         result = result.substr(0, 15);
     } else if (result.length() < 15) {
         result += std::string(15 - result.length(), ' ');
-    }    return result;
+    }
+
+    return result;
 }
 
 std::string HinduMonthlyCalendar::highlightSpecialDay(const PanchangaData& panchanga,
@@ -881,6 +942,33 @@ std::vector<int> HinduMonthlyCalendar::getAmavasyaDays(int year, int month) cons
     }
 
     return amavasyaDays;
+}
+
+std::vector<int> HinduMonthlyCalendar::getSankrantiDays(int year, int month) const {
+    MonthlyData monthData = generateMonthlyData(year, month);
+    std::vector<int> sankrantiDays;
+
+    for (size_t i = 0; i < monthData.dailyPanchanga.size(); i++) {
+        if (monthData.dailyPanchanga[i].isSankranti || monthData.dailyPanchanga[i].isSankrantiToday) {
+            sankrantiDays.push_back(i + 1);
+        }
+    }
+
+    return sankrantiDays;
+}
+
+std::vector<int> HinduMonthlyCalendar::getFestivalDays(int year, int month) const {
+    MonthlyData monthData = generateMonthlyData(year, month);
+    std::vector<int> festivalDays;
+
+    for (size_t i = 0; i < monthData.dailyPanchanga.size(); i++) {
+        if (!monthData.dailyPanchanga[i].festivals.empty() ||
+            !monthData.dailyPanchanga[i].specialEvents.empty()) {
+            festivalDays.push_back(i + 1);
+        }
+    }
+
+    return festivalDays;
 }
 
 std::string HinduMonthlyCalendar::exportToCSV(const MonthlyData& monthData) const {
