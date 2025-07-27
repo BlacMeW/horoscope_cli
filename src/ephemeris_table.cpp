@@ -477,6 +477,11 @@ std::string EphemerisTable::formatTableRow(const EphemerisEntry& entry, const Ep
         return format3LineTableRow(entry, config, widths);
     }
 
+    // Handle 2-line coordinate format for "both" mode
+    if (config.showDeclination && config.showSign) {
+        return format2LineTableRow(entry, config, widths);
+    }
+
     std::stringstream ss;
 
     // Date column - construct based on calendar mode configuration
@@ -639,6 +644,95 @@ std::string EphemerisTable::format3LineTableRow(const EphemerisEntry& entry, con
     return ss.str();
 }
 
+std::string EphemerisTable::format2LineTableRow(const EphemerisEntry& entry, const EphemerisConfig& config,
+                                               const std::vector<int>& widths) const {
+    std::stringstream ss;
+
+    // Date column - construct based on calendar mode configuration
+    std::string dateStr;
+    if (config.showDayNames) {
+        dateStr = entry.getDayName() + " ";
+    }
+
+    if (config.calendarMode == "jul") {
+        dateStr += entry.getJulianDateString();
+    } else if (config.calendarMode == "gregorian") {
+        dateStr += entry.getDateString();
+    } else if (config.calendarMode == "auto") {
+        if (entry.shouldUseJulianCalendar()) {
+            dateStr += entry.getJulianDateString() + " (Jul)";
+        } else {
+            dateStr += entry.getDateString();
+        }
+    } else if (config.calendarMode == "both") {
+        dateStr += entry.getDateString() + " (" + entry.getJulianDateString() + ")";
+    } else {
+        dateStr += entry.getDateString();
+    }
+
+    size_t columnIndex = 1;
+
+    // Collect planet position data for each line
+    std::vector<std::string> lonLines, decLines;
+
+    for (size_t i = 0; i < config.planets.size(); i++) {
+        Planet planet = config.planets[i];
+
+        auto it = std::find_if(entry.positions.begin(), entry.positions.end(),
+                             [planet](const PlanetPosition& pos) { return pos.planet == planet; });
+
+        if (it != entry.positions.end()) {
+            // Format longitude
+            std::string lonStr;
+            if (config.showDegreeMinutes) {
+                lonStr = formatDegreeWithSign(it->longitude);
+            } else if (config.showSign) {
+                lonStr = zodiacSignToString(it->sign);
+            } else {
+                std::stringstream tmpSs;
+                tmpSs << std::fixed << std::setprecision(2) << it->longitude;
+                lonStr = tmpSs.str();
+            }
+            if (config.showRetrograde && isRetrograde(*it)) {
+                lonStr += "R";
+            }
+            lonLines.push_back(lonStr);
+            decLines.push_back(formatDeclination(it->declination));
+        } else {
+            lonLines.push_back("---");
+            decLines.push_back("---");
+        }
+    }
+
+    // Generate two lines
+    // Line 1: Date + Longitude values
+    ss << padStringToWidth(dateStr, widths[0], true);
+    if (config.showSiderealTime) {
+        ss << " " << padStringToWidth(formatSiderealTime(entry.siderealTime), widths[columnIndex], true);
+        columnIndex++;
+    }
+    for (size_t i = 0; i < lonLines.size() && columnIndex < widths.size(); i++) {
+        ss << " " << padStringToWidth(lonLines[i], widths[columnIndex], true);
+        columnIndex++;
+    }
+    ss << "\n";
+
+    // Line 2: Empty date column + Declination values
+    ss << padStringToWidth("", widths[0], true);
+    columnIndex = 1;
+    if (config.showSiderealTime) {
+        ss << " " << padStringToWidth("", widths[columnIndex], true);
+        columnIndex++;
+    }
+    for (size_t i = 0; i < decLines.size() && columnIndex < widths.size(); i++) {
+        ss << " " << padStringToWidth(decLines[i], widths[columnIndex], true);
+        columnIndex++;
+    }
+    ss << "\n";
+
+    return ss.str();
+}
+
 std::string EphemerisTable::formatPlanetPosition(const PlanetPosition& position, const EphemerisConfig& config) const {
     std::stringstream ss;
 
@@ -661,11 +755,11 @@ std::string EphemerisTable::formatPlanetPosition(const PlanetPosition& position,
         // Declination only mode
         ss << formatDeclination(position.declination);
     } else if (config.showDeclination && config.showSign) {
-        // Both longitude and declination mode
+        // Both longitude and declination mode - return longitude only for single line
         if (config.showDegreeMinutes) {
-            ss << formatDegreeWithSign(position.longitude) << "/" << formatDeclination(position.declination);
+            ss << formatDegreeWithSign(position.longitude);
         } else {
-            ss << zodiacSignToString(position.sign) << "/" << formatDeclination(position.declination);
+            ss << zodiacSignToString(position.sign);
         }
     } else {
         // Default longitude mode

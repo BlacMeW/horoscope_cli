@@ -579,7 +579,7 @@ void printHelp() {
     std::cout << "    --ephemeris-coordinates TYPE\n";
     std::cout << "                       longitude      = Show ecliptic longitude (default)\n";
     std::cout << "                       declination    = Show celestial declination\n";
-    std::cout << "                       both           = Show both longitude and declination\n";
+    std::cout << "                       both           = Show longitude and declination on separate lines\n";
     std::cout << "                       3line          = Show longitude, latitude, and declination in 3-line format\n";
     std::cout << "                       latitude       = Show ecliptic latitude only\n";
     std::cout << "                       distance       = Show distance from Earth only\n";
