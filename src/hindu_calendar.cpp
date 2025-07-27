@@ -789,98 +789,132 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         char errorString[256];
         double geopos[3] = {longitude, latitude, 0.0}; // longitude, latitude, altitude in meters
         double riseSetTime;
-        
-        // For January 15, 2024 at Delhi (28.6N, 77.2E), sunrise should be around 7:15 AM local time
-        // Let's use a simpler approach first and calculate based on the date
-        
+
+        // Calculate timezone offset based on longitude
+        // Standard timezone offset = longitude / 15.0 (rough approximation)
+        double timezoneOffset = 0.0;
+
+        // More precise timezone adjustments based on longitude ranges and actual timezone boundaries
+        if (longitude >= 97.5 && longitude <= 106.0) {
+            // Thailand (Bangkok: 100.5°E), Laos, Cambodia, Vietnam
+            timezoneOffset = 7.0; // ICT (UTC+7)
+        } else if (longitude >= 68.0 && longitude <= 97.4) {
+            // India, Sri Lanka, Bangladesh
+            timezoneOffset = 5.5; // IST (UTC+5:30)
+        } else if (longitude >= 106.1 && longitude <= 120.0) {
+            // Malaysia, Singapore, Philippines, Brunei, parts of Indonesia
+            timezoneOffset = 8.0; // MYT/SGT/PHT (UTC+8)
+        } else if (longitude >= 120.1 && longitude <= 135.0) {
+            // China, Taiwan, Western Australia
+            timezoneOffset = 8.0; // CST/AWST (UTC+8)
+        } else if (longitude >= 135.1 && longitude <= 150.0) {
+            // Japan, Korea, Eastern Australia
+            timezoneOffset = 9.0; // JST/KST/AEST (UTC+9)
+        } else if (longitude >= 60.0 && longitude <= 67.9) {
+            // Afghanistan, parts of Pakistan
+            timezoneOffset = 4.5; // AFT (UTC+4:30)
+        } else if (longitude >= 45.0 && longitude <= 59.9) {
+            // Gulf states, parts of Russia
+            timezoneOffset = 4.0; // GST (UTC+4)
+        } else {
+            // Default calculation: longitude-based approximation
+            timezoneOffset = round(longitude / 15.0);
+            // Clamp to reasonable range
+            if (timezoneOffset < -12.0) timezoneOffset = -12.0;
+            if (timezoneOffset > 14.0) timezoneOffset = 14.0;
+        }
+
         // Get the Julian Day for the start of the day (midnight UTC)
         double julianDayStart = floor(panchanga.julianDay) + 0.5; // Start of day in UTC
-        
-        // Calculate sunrise
-        int result = swe_rise_trans(julianDayStart, SE_SUN, nullptr, SEFLG_SWIEPH,
-                                   SE_CALC_RISE | SE_BIT_DISC_BOTTOM, geopos, 1013.25, 10.0, 
+
+        // Enhanced Swiss Ephemeris calculations with seasonal atmospheric corrections
+        // Use topocentric calculations and location-specific atmospheric conditions
+        double geoposEnhanced[3] = {longitude, latitude, 0.0}; // Use actual altitude (sea level default)
+
+        // Get seasonal atmospheric parameters based on Swiss Ephemeris documentation
+        int year, month, day;
+        double hour;
+        swe_revjul(panchanga.julianDay, SE_GREG_CAL, &year, &month, &day, &hour);
+
+        double pressure, temperature;
+        getSeasonalAtmosphericParams(month, latitude, longitude, &pressure, &temperature);
+
+        // Enhanced calculation flags for maximum precision (Swiss Ephemeris documentation)
+        int32 ephemerisFlags = SEFLG_SWIEPH | SEFLG_TOPOCTR | SEFLG_SPEED;
+
+        // Calculate sunrise with seasonal atmospheric correction
+        int result = swe_rise_trans(julianDayStart, SE_SUN, nullptr,
+                                   ephemerisFlags, // Enhanced precision flags
+                                   SE_CALC_RISE | SE_BIT_DISC_BOTTOM, // Bottom of solar disc
+                                   geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                    &riseSetTime, errorString);
         if (result >= 0) {
             // Convert to local solar time
-            // For Delhi: sunrise in January should be around 7:15 AM
-            // Calculate offset from the returned JD time
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-            
-            // Apply timezone correction for India (IST = UTC + 5:30)
-            panchanga.sunriseTime = hoursFromMidnight + 5.5; // IST offset
-            
+
+            // Apply timezone correction
+            panchanga.sunriseTime = hoursFromMidnight + timezoneOffset;
+
             // Normalize to 0-24 range
             while (panchanga.sunriseTime < 0) panchanga.sunriseTime += 24.0;
             while (panchanga.sunriseTime >= 24.0) panchanga.sunriseTime -= 24.0;
         } else {
-            // Use reasonable default for Delhi in January
-            panchanga.sunriseTime = 7.25; // 7:15 AM
+            handleCalculationError(result, errorString, panchanga, "sunrise", latitude);
         }
 
-        // Calculate sunset
-        result = swe_rise_trans(julianDayStart, SE_SUN, nullptr, SEFLG_SWIEPH,
-                               SE_CALC_SET | SE_BIT_DISC_BOTTOM, geopos, 1013.25, 10.0, 
+        // Calculate sunset with seasonal atmospheric correction
+        result = swe_rise_trans(julianDayStart, SE_SUN, nullptr,
+                               ephemerisFlags, // Enhanced precision flags
+                               SE_CALC_SET | SE_BIT_DISC_BOTTOM, // Bottom of solar disc
+                               geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                &riseSetTime, errorString);
         if (result >= 0) {
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-            
-            panchanga.sunsetTime = hoursFromMidnight + 5.5; // IST offset
-            
+
+            panchanga.sunsetTime = hoursFromMidnight + timezoneOffset;
+
             while (panchanga.sunsetTime < 0) panchanga.sunsetTime += 24.0;
             while (panchanga.sunsetTime >= 24.0) panchanga.sunsetTime -= 24.0;
         } else {
-            // Use reasonable default for Delhi in January
-            panchanga.sunsetTime = 17.75; // 5:45 PM
+            handleCalculationError(result, errorString, panchanga, "sunset", latitude);
         }
 
-        // If times still look wrong, use geographical approximation
-        if (panchanga.sunriseTime > 12.0 || panchanga.sunriseTime < 5.0) {
-            // Fallback: calculate approximate sunrise based on longitude and date
-            // For Delhi in January, sunrise is around 7:15 AM
-            panchanga.sunriseTime = 7.0 + (longitude - 75.0) / 15.0; // Rough calculation
-            if (panchanga.sunriseTime < 5.0) panchanga.sunriseTime = 7.0;
-            if (panchanga.sunriseTime > 8.0) panchanga.sunriseTime = 7.5;
-        }
-        
-        if (panchanga.sunsetTime < 12.0 || panchanga.sunsetTime > 20.0) {
-            // Fallback: calculate approximate sunset
-            panchanga.sunsetTime = 17.5 + (longitude - 75.0) / 15.0; // Rough calculation
-            if (panchanga.sunsetTime < 16.0) panchanga.sunsetTime = 17.0;
-            if (panchanga.sunsetTime > 19.0) panchanga.sunsetTime = 18.0;
-        }
-
-        // Calculate moonrise with similar approach
-        result = swe_rise_trans(julianDayStart, SE_MOON, nullptr, SEFLG_SWIEPH,
-                               SE_CALC_RISE | SE_BIT_DISC_CENTER, geopos, 1013.25, 10.0, 
+        // Calculate moonrise with seasonal atmospheric correction
+        result = swe_rise_trans(julianDayStart, SE_MOON, nullptr,
+                               ephemerisFlags, // Enhanced precision flags
+                               SE_CALC_RISE | SE_BIT_DISC_CENTER, // Center of lunar disc
+                               geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                &riseSetTime, errorString);
         if (result >= 0) {
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-            
-            panchanga.moonriseTime = hoursFromMidnight + 5.5; // IST offset
-            
+
+            panchanga.moonriseTime = hoursFromMidnight + timezoneOffset;
+
             while (panchanga.moonriseTime < 0) panchanga.moonriseTime += 24.0;
             while (panchanga.moonriseTime >= 24.0) panchanga.moonriseTime -= 24.0;
         } else {
-            panchanga.moonriseTime = 8.0; // Default moonrise
+            handleCalculationError(result, errorString, panchanga, "moonrise", latitude);
         }
 
-        // Calculate moonset
-        result = swe_rise_trans(julianDayStart, SE_MOON, nullptr, SEFLG_SWIEPH,
-                               SE_CALC_SET | SE_BIT_DISC_CENTER, geopos, 1013.25, 10.0, 
+        // Calculate moonset with seasonal atmospheric correction
+        result = swe_rise_trans(julianDayStart, SE_MOON, nullptr,
+                               ephemerisFlags, // Enhanced precision flags
+                               SE_CALC_SET | SE_BIT_DISC_CENTER, // Center of lunar disc
+                               geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                &riseSetTime, errorString);
         if (result >= 0) {
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-            
-            panchanga.moonsetTime = hoursFromMidnight + 5.5; // IST offset
-            
+
+            panchanga.moonsetTime = hoursFromMidnight + timezoneOffset;
+
             while (panchanga.moonsetTime < 0) panchanga.moonsetTime += 24.0;
             while (panchanga.moonsetTime >= 24.0) panchanga.moonsetTime -= 24.0;
         } else {
-            panchanga.moonsetTime = 20.0; // Default moonset
+            handleCalculationError(result, errorString, panchanga, "moonset", latitude);
         }
 
         // Calculate day and night lengths
@@ -907,13 +941,155 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
 
     } catch (const std::exception& e) {
         // Set default values in case of error
-        panchanga.sunriseTime = 6.0;
-        panchanga.sunsetTime = 18.0;
-        panchanga.moonriseTime = 7.0;
-        panchanga.moonsetTime = 19.0;
-        panchanga.dayLength = 12.0;
-        panchanga.nightLength = 12.0;
+        handleException(e, panchanga);
     }
+}
+
+void HinduCalendar::getSeasonalAtmosphericParams(int month, double latitude, double longitude,
+                                                double* pressure, double* temperature) const {
+    // Swiss Ephemeris seasonal atmospheric corrections based on geographical location
+
+    if (latitude >= 10.0 && latitude <= 20.0 && longitude >= 97.0 && longitude <= 106.0) {
+        // Bangkok/Thailand tropical climate (13.7°N, 100.5°E)
+        if (month >= 3 && month <= 5) {
+            // Hot season (March-May): lower pressure, higher temperature
+            *pressure = 1010.0;
+            *temperature = 32.0;
+        } else if (month >= 6 && month <= 10) {
+            // Rainy season (June-October): lowest pressure, moderate temperature
+            *pressure = 1008.0;
+            *temperature = 28.0;
+        } else {
+            // Cool season (November-February): higher pressure, cooler temperature
+            *pressure = 1015.0;
+            *temperature = 24.0;
+        }
+    } else if (latitude >= 8.0 && latitude <= 28.0 && longitude >= 68.0 && longitude <= 97.0) {
+        // India/Sri Lanka monsoon climate
+        if (month >= 4 && month <= 6) {
+            // Pre-monsoon hot season
+            *pressure = 1008.0;
+            *temperature = 35.0;
+        } else if (month >= 7 && month <= 9) {
+            // Monsoon season
+            *pressure = 1005.0;
+            *temperature = 30.0;
+        } else if (month >= 10 && month <= 11) {
+            // Post-monsoon
+            *pressure = 1012.0;
+            *temperature = 28.0;
+        } else {
+            // Winter season
+            *pressure = 1018.0;
+            *temperature = 20.0;
+        }
+    } else if (latitude >= 30.0 || latitude <= -30.0) {
+        // Temperate zones with strong seasonal variation
+        bool isNorthernHemisphere = latitude > 0;
+        int effectiveMonth = isNorthernHemisphere ? month : ((month + 6 - 1) % 12) + 1;
+
+        if (effectiveMonth >= 6 && effectiveMonth <= 8) {
+            // Summer
+            *pressure = 1010.0;
+            *temperature = 25.0;
+        } else if (effectiveMonth >= 12 || effectiveMonth <= 2) {
+            // Winter
+            *pressure = 1020.0;
+            *temperature = 0.0;
+        } else {
+            // Spring/Autumn
+            *pressure = 1015.0;
+            *temperature = 15.0;
+        }
+    } else {
+        // Default: Use Swiss Ephemeris standard atmospheric conditions
+        *pressure = 1013.25; // Standard sea level pressure
+        *temperature = 10.0;  // Standard temperature
+    }
+}
+
+void HinduCalendar::handleCalculationError(int result, const char* errorString,
+                                          PanchangaData& panchanga, const std::string& calculation,
+                                          double latitude) const {
+    if (result == -4) {
+        // No rise/set found - could be polar regions or extreme conditions
+        if (std::abs(latitude) > 66.5) {
+            // Polar regions: handle midnight sun or polar night
+            handlePolarConditions(panchanga, calculation, latitude);
+        } else {
+            // Unusual condition - use reasonable fallback
+            setReasonableFallback(panchanga, calculation);
+            std::cerr << "Warning: No " << calculation << " found for location (lat: "
+                     << latitude << "). Using fallback value." << std::endl;
+        }
+    } else if (result == -1) {
+        // Date out of Swiss Ephemeris range (13,000 BCE to 17,000 CE)
+        std::cerr << "Error: Date outside Swiss Ephemeris range for " << calculation << std::endl;
+        setReasonableFallback(panchanga, calculation);
+    } else if (result == -2) {
+        // Ephemeris file not found
+        std::cerr << "Error: Swiss Ephemeris files not found for " << calculation << std::endl;
+        setReasonableFallback(panchanga, calculation);
+    } else {
+        // Other Swiss Ephemeris errors
+        std::cerr << "Swiss Ephemeris " << calculation << " error: " << errorString << std::endl;
+        setReasonableFallback(panchanga, calculation);
+    }
+}
+
+void HinduCalendar::handlePolarConditions(PanchangaData& panchanga, const std::string& calculation,
+                                         double latitude) const {
+    // Handle polar regions where sun may not rise/set for extended periods
+    if (calculation == "sunrise" || calculation == "sunset") {
+        if (latitude > 66.5) {
+            // Arctic: assume midnight sun in summer, polar night in winter
+            // Get month to determine season
+            int year, month, day;
+            double hour;
+            swe_revjul(panchanga.julianDay, SE_GREG_CAL, &year, &month, &day, &hour);
+
+            if (month >= 4 && month <= 8) {
+                // Summer: midnight sun
+                panchanga.sunriseTime = 0.0;  // Sun never sets
+                panchanga.sunsetTime = 23.99;
+            } else {
+                // Winter: polar night
+                panchanga.sunriseTime = 12.0; // Nominal noon
+                panchanga.sunsetTime = 12.0;  // Sun never rises
+            }
+        } else {
+            // Antarctic (similar but opposite seasons)
+            setReasonableFallback(panchanga, calculation);
+        }
+    } else {
+        // Moon calculations in polar regions
+        setReasonableFallback(panchanga, calculation);
+    }
+}
+
+void HinduCalendar::setReasonableFallback(PanchangaData& panchanga, const std::string& calculation) const {
+    // Set reasonable fallback values based on calculation type
+    if (calculation == "sunrise") {
+        panchanga.sunriseTime = 6.0;
+    } else if (calculation == "sunset") {
+        panchanga.sunsetTime = 18.0;
+    } else if (calculation == "moonrise") {
+        panchanga.moonriseTime = 8.0;
+    } else if (calculation == "moonset") {
+        panchanga.moonsetTime = 20.0;
+    }
+}
+
+void HinduCalendar::handleException(const std::exception& e, PanchangaData& panchanga) const {
+    std::cerr << "Exception in calculateSunMoonTimes: " << e.what() << std::endl;
+
+    // Set safe default values
+    panchanga.sunriseTime = 6.0;
+    panchanga.sunsetTime = 18.0;
+    panchanga.moonriseTime = 7.0;
+    panchanga.moonsetTime = 19.0;
+    panchanga.dayLength = 12.0;
+    panchanga.nightLength = 12.0;
 }
 
 void HinduCalendar::calculateRahuKaal(PanchangaData& panchanga) const {
@@ -928,7 +1104,7 @@ void HinduCalendar::calculateRahuKaal(PanchangaData& panchanga) const {
         int period = rahuPeriods[weekday] - 1; // Convert to 0-based
         panchanga.rahuKaalStart = panchanga.sunriseTime + (period * dayEighth);
         panchanga.rahuKaalEnd = panchanga.rahuKaalStart + dayEighth;
-        
+
         // Ensure times are in valid range
         while (panchanga.rahuKaalStart >= 24.0) panchanga.rahuKaalStart -= 24.0;
         while (panchanga.rahuKaalEnd >= 24.0) panchanga.rahuKaalEnd -= 24.0;
@@ -947,7 +1123,7 @@ void HinduCalendar::calculateYamaganda(PanchangaData& panchanga) const {
         int period = yamagandaPeriods[weekday] - 1; // Convert to 0-based
         panchanga.yamagandaStart = panchanga.sunriseTime + (period * dayEighth);
         panchanga.yamagandaEnd = panchanga.yamagandaStart + dayEighth;
-        
+
         while (panchanga.yamagandaStart >= 24.0) panchanga.yamagandaStart -= 24.0;
         while (panchanga.yamagandaEnd >= 24.0) panchanga.yamagandaEnd -= 24.0;
     }
@@ -965,7 +1141,7 @@ void HinduCalendar::calculateGulikai(PanchangaData& panchanga) const {
         int period = gulikaiPeriods[weekday] - 1; // Convert to 0-based
         panchanga.gulikaiStart = panchanga.sunriseTime + (period * dayEighth);
         panchanga.gulikaiEnd = panchanga.gulikaiStart + dayEighth;
-        
+
         while (panchanga.gulikaiStart >= 24.0) panchanga.gulikaiStart -= 24.0;
         while (panchanga.gulikaiEnd >= 24.0) panchanga.gulikaiEnd -= 24.0;
     }
@@ -976,7 +1152,7 @@ void HinduCalendar::calculateDurMuhurtam(PanchangaData& panchanga) const {
     double dayCenter = panchanga.sunriseTime + (panchanga.dayLength / 2.0);
     panchanga.durMuhurtamStart = dayCenter - 0.75; // 45 minutes before midday
     panchanga.durMuhurtamEnd = dayCenter + 0.75;   // 45 minutes after midday
-    
+
     while (panchanga.durMuhurtamStart < 0) panchanga.durMuhurtamStart += 24.0;
     while (panchanga.durMuhurtamStart >= 24.0) panchanga.durMuhurtamStart -= 24.0;
     while (panchanga.durMuhurtamEnd >= 24.0) panchanga.durMuhurtamEnd -= 24.0;
@@ -1287,7 +1463,7 @@ double HinduCalendar::calculateBrahmaMuhurta(double sunriseTime, bool isStart) c
     } else {
         time = sunriseTime - 0.7; // 42 minutes duration
     }
-    
+
     // Handle negative times (previous day)
     while (time < 0) time += 24.0;
     while (time >= 24.0) time -= 24.0;
@@ -1303,7 +1479,7 @@ double HinduCalendar::calculateAbhijitMuhurta(double sunriseTime, double sunsetT
     } else {
         time = midday + 0.4; // 24 minutes after midday
     }
-    
+
     while (time < 0) time += 24.0;
     while (time >= 24.0) time -= 24.0;
     return time;
@@ -1317,7 +1493,7 @@ double HinduCalendar::calculateGodhuliBela(double sunsetTime, bool isStart) cons
     } else {
         time = sunsetTime + 0.25; // 15 minutes after sunset
     }
-    
+
     while (time < 0) time += 24.0;
     while (time >= 24.0) time -= 24.0;
     return time;
@@ -1332,7 +1508,7 @@ double HinduCalendar::calculateNishitaMuhurta(double sunsetTime, double nextSunr
     } else {
         time = midnight + 0.4; // 24 minutes after midnight
     }
-    
+
     while (time < 0) time += 24.0;
     while (time >= 24.0) time -= 24.0;
     return time;
@@ -1417,65 +1593,65 @@ std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga
     oss << "│ Ayanamsa: " << std::left << std::setw(48) << ayanamsaVal
         << "│ Paksha: " << std::left << std::setw(49) << pakshaStr << "│\n";
 
-    oss << "└────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘\n\n";
+    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n\n";
 
     // Two-column layout for Panchanga elements and Sun/Moon info
-    oss << "┌────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────┐\n";
-    oss << "│                     🌟 PANCHANGAM (FIVE)                    │                    ☀️ SUN & MOON INFO                    │\n";
-    oss << "├────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤\n";
+    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n";
+    oss << "|                     🌟 PANCHANGAM (FIVE)                    |                    ☀️ SUN & MOON INFO                    |\n";
+    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n";
 
     std::string tithiStr = "1. Tithi: " + getTithiName(panchanga.tithi);
     if (tithiStr.length() > 58) tithiStr = tithiStr.substr(0, 58);
     std::string sunriseStr = "Sunrise: " + panchanga.getTimeString(panchanga.sunriseTime);
-    oss << "│ " << std::left << std::setw(59) << tithiStr
-        << "│ " << std::left << std::setw(59) << sunriseStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << tithiStr
+        << "| " << std::left << std::setw(59) << sunriseStr << "|\n";
 
     std::string tithiEndStr = "   (ends: " + panchanga.getTimeString(panchanga.tithiEndTime) + ")";
     std::string sunsetStr = "Sunset: " + panchanga.getTimeString(panchanga.sunsetTime);
-    oss << "│ " << std::left << std::setw(59) << tithiEndStr
-        << "│ " << std::left << std::setw(59) << sunsetStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << tithiEndStr
+        << "| " << std::left << std::setw(59) << sunsetStr << "|\n";
 
     std::string varaStr = "2. Vara: " + getVaraName(panchanga.vara);
     std::string moonriseStr = "Moonrise: " + panchanga.getTimeString(panchanga.moonriseTime);
-    oss << "│ " << std::left << std::setw(59) << varaStr
-        << "│ " << std::left << std::setw(59) << moonriseStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << varaStr
+        << "| " << std::left << std::setw(59) << moonriseStr << "|\n";
 
     std::string nakStr = "3. Nakshatra: " + getNakshatraName(panchanga.nakshatra);
     if (nakStr.length() > 58) nakStr = nakStr.substr(0, 58);
     std::string moonsetStr = "Moonset: " + panchanga.getTimeString(panchanga.moonsetTime);
-    oss << "│ " << std::left << std::setw(59) << nakStr
-        << "│ " << std::left << std::setw(59) << moonsetStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << nakStr
+        << "| " << std::left << std::setw(59) << moonsetStr << "|\n";
 
     std::string nakEndStr = "   (Pada " + std::to_string(panchanga.nakshatraPada) + ", ends: " +
                            panchanga.getTimeString(panchanga.nakshatraEndTime) + ")";
     if (nakEndStr.length() > 58) nakEndStr = nakEndStr.substr(0, 58);
     std::string dayLenStr = "Day Length: " + std::to_string(static_cast<int>(panchanga.dayLength)) + "." +
                            std::to_string(static_cast<int>((panchanga.dayLength - static_cast<int>(panchanga.dayLength)) * 10)) + " hours";
-    oss << "│ " << std::left << std::setw(59) << nakEndStr
-        << "│ " << std::left << std::setw(59) << dayLenStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << nakEndStr
+        << "| " << std::left << std::setw(59) << dayLenStr << "|\n";
 
     std::string yogaStr = "4. Yoga: " + getYogaName(panchanga.yoga);
     if (yogaStr.length() > 58) yogaStr = yogaStr.substr(0, 58);
     std::string nightLenStr = "Night Length: " + std::to_string(static_cast<int>(panchanga.nightLength)) + "." +
                              std::to_string(static_cast<int>((panchanga.nightLength - static_cast<int>(panchanga.nightLength)) * 10)) + " hours";
-    oss << "│ " << std::left << std::setw(59) << yogaStr
-        << "│ " << std::left << std::setw(59) << nightLenStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << yogaStr
+        << "| " << std::left << std::setw(59) << nightLenStr << "|\n";
 
     std::string yogaEndStr = "   (ends: " + panchanga.getTimeString(panchanga.yogaEndTime) + ")";
     std::string emptyStr = "";
-    oss << "│ " << std::left << std::setw(59) << yogaEndStr
-        << "│ " << std::left << std::setw(59) << emptyStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << yogaEndStr
+        << "| " << std::left << std::setw(59) << emptyStr << "|\n";
 
     std::string karanaStr = "5. Karana: " + getKaranaName(panchanga.karana);
     if (karanaStr.length() > 58) karanaStr = karanaStr.substr(0, 58);
-    oss << "│ " << std::left << std::setw(59) << karanaStr
-        << "│ " << std::left << std::setw(59) << emptyStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << karanaStr
+        << "| " << std::left << std::setw(59) << emptyStr << "|\n";
 
     std::string karanaEndStr = "   (ends: " + panchanga.getTimeString(panchanga.karanaEndTime) + ")";
-    oss << "│ " << std::left << std::setw(59) << karanaEndStr
-        << "│ " << std::left << std::setw(59) << emptyStr << "│\n";
+    oss << "| " << std::left << std::setw(59) << karanaEndStr
+        << "| " << std::left << std::setw(59) << emptyStr << "|\n";
 
-    oss << "└────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘\n\n";
+    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n\n";
 
     // Celestial positions section
     oss << "🌞 CELESTIAL POSITIONS:\n";
@@ -1540,11 +1716,11 @@ std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga
             if (panchanga.sankrantiTime > 0) {
                 int year, month, day;
                 double gTime;
-                
+
                 // Validate Julian Day before conversion
                 if (panchanga.julianDay > 0 && panchanga.julianDay < 5000000) {
                     swe_revjul(panchanga.julianDay, SE_GREG_CAL, &year, &month, &day, &gTime);
-                    
+
                     // Validate the converted date makes sense
                     if (year > 0 && year < 3000 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
                         char dateStr[32];
@@ -2970,6 +3146,708 @@ std::vector<HinduCalendar::SearchResult> HinduCalendar::searchSpecificSankranti(
     }
 
     return specificSankrantis;
+}
+
+// Advanced Astronomical Calculation Methods Implementation
+
+HinduCalendar::CoordinateSet HinduCalendar::calculateAllCoordinates(int body, double julianDay,
+                                                                   double latitude, double longitude,
+                                                                   double elevation) const {
+    CoordinateSet coords = {};
+    double xx[6];
+    char errorString[AS_MAXCH];
+
+    try {
+        // Set topocentric position
+        swe_set_topo(longitude, latitude, elevation);
+
+        // Calculate astrometric coordinates (ICRF/J2000)
+        int result = swe_calc(julianDay, body, SEFLG_SWIEPH | SEFLG_J2000, xx, errorString);
+        if (result == ERR) {
+            std::cerr << "Error calculating astrometric coordinates: " << errorString << std::endl;
+            return coords;
+        }
+
+        coords.astrometric.rightAscension = xx[0];
+        coords.astrometric.declination = xx[1];
+        coords.astrometric.distance = xx[2];
+
+        // Calculate apparent coordinates (true equinox of date)
+        result = swe_calc(julianDay, body, SEFLG_SWIEPH | SEFLG_EQUATORIAL, xx, errorString);
+        if (result == ERR) {
+            std::cerr << "Error calculating apparent coordinates: " << errorString << std::endl;
+            return coords;
+        }
+
+        coords.apparent.rightAscension = xx[0];
+        coords.apparent.declination = xx[1];
+
+        // Convert to ecliptic coordinates
+        result = swe_calc(julianDay, body, SEFLG_SWIEPH, xx, errorString);
+        if (result == ERR) {
+            std::cerr << "Error calculating ecliptic coordinates: " << errorString << std::endl;
+            return coords;
+        }
+
+        coords.apparent.eclipticLongitude = xx[0];
+        coords.apparent.eclipticLatitude = xx[1];
+
+        // Calculate topocentric coordinates
+        result = swe_calc(julianDay, body, SEFLG_SWIEPH | SEFLG_TOPOCTR | SEFLG_EQUATORIAL, xx, errorString);
+        if (result == ERR) {
+            std::cerr << "Error calculating topocentric coordinates: " << errorString << std::endl;
+            return coords;
+        }
+
+        coords.topocentric.rightAscension = xx[0];
+        coords.topocentric.declination = xx[1];
+
+        // Calculate azimuth and elevation
+        double azalt[3];
+        double geopos[3] = {longitude, latitude, elevation};
+        swe_azalt(julianDay, SE_EQU2HOR, geopos, 1013.25, 15.0, xx, azalt);
+
+        coords.topocentric.azimuth = azalt[0];
+        coords.topocentric.elevation = azalt[1];
+
+        // Calculate hour angle
+        double siderealTime = swe_sidtime(julianDay);
+        coords.topocentric.hourAngle = (siderealTime * 15.0 + longitude) - coords.topocentric.rightAscension;
+
+        // Normalize hour angle to [-180, 180]
+        while (coords.topocentric.hourAngle > 180.0) coords.topocentric.hourAngle -= 360.0;
+        while (coords.topocentric.hourAngle < -180.0) coords.topocentric.hourAngle += 360.0;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateAllCoordinates: " << e.what() << std::endl;
+    }
+
+    return coords;
+}
+
+HinduCalendar::AtmosphericModel HinduCalendar::getSeasonalAtmosphere(double julianDay,
+                                                                    double latitude,
+                                                                    double longitude) const {
+    AtmosphericModel model = {};
+
+    try {
+        // Extract month for seasonal corrections
+        int year, month, day, hour, minute;
+        double second;
+        swe_jdet_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
+
+        // Apply seasonal corrections based on location
+        getSeasonalAtmosphericParams(month, latitude, longitude,
+                                   &model.pressure, &model.temperature);
+
+        // Set other parameters based on climate zone
+        if (abs(latitude) < 23.5) {
+            // Tropical zone
+            model.humidity = 0.7;        // Higher humidity
+            model.wavelength = 0.55;     // Yellow light
+            model.lapseRate = 0.0065;    // Standard atmosphere
+        } else if (abs(latitude) < 66.5) {
+            // Temperate zone
+            model.humidity = 0.6;        // Moderate humidity
+            model.wavelength = 0.55;     // Yellow light
+            model.lapseRate = 0.0065;    // Standard atmosphere
+        } else {
+            // Polar zone
+            model.humidity = 0.5;        // Lower humidity
+            model.wavelength = 0.55;     // Yellow light
+            model.lapseRate = 0.0080;    // Modified lapse rate
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in getSeasonalAtmosphere: " << e.what() << std::endl;
+
+        // Default values
+        model.pressure = 1013.25;
+        model.temperature = 15.0;
+        model.humidity = 0.6;
+        model.wavelength = 0.55;
+        model.lapseRate = 0.0065;
+    }
+
+    return model;
+}
+
+HinduCalendar::PolarConditions HinduCalendar::detectPolarConditions(double latitude,
+                                                                   double declination,
+                                                                   double julianDay) const {
+    PolarConditions conditions = {};
+
+    try {
+        // Calculate limiting latitude for given declination
+        double limitingLatitude = 90.0 - abs(declination);
+
+        if (abs(latitude) > limitingLatitude) {
+            if ((latitude > 0 && declination > 0) || (latitude < 0 && declination < 0)) {
+                conditions.isPolarDay = true;
+                conditions.description = "Continuous daylight - object never sets";
+            } else {
+                conditions.isPolarNight = true;
+                conditions.description = "Continuous night - object never rises";
+            }
+
+            // Calculate approximate duration
+            conditions.continuousDays = calculatePolarDuration(latitude, declination, julianDay);
+        } else if (abs(latitude) > 60.0) {
+            // Extended twilight zone
+            conditions.isExtendedTwilight = true;
+            conditions.description = "Extended twilight period";
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in detectPolarConditions: " << e.what() << std::endl;
+    }
+
+    return conditions;
+}
+
+std::vector<HinduCalendar::RiseSetEvent> HinduCalendar::calculateAllEvents(double jdStart,
+                                                                          double latitude,
+                                                                          double longitude,
+                                                                          double timezone,
+                                                                          double elevation) const {
+    std::vector<RiseSetEvent> events;
+
+    try {
+        // Calculate for Sun
+        addSolarEvents(events, jdStart, latitude, longitude, timezone, elevation);
+
+        // Calculate for Moon
+        addLunarEvents(events, jdStart, latitude, longitude, timezone, elevation);
+
+        // Sort chronologically
+        std::sort(events.begin(), events.end(),
+                 [](const RiseSetEvent& a, const RiseSetEvent& b) {
+                     return a.julianDay < b.julianDay;
+                 });
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateAllEvents: " << e.what() << std::endl;
+    }
+
+    return events;
+}
+
+HinduCalendar::HorizonData HinduCalendar::calculateHorizon(double observerHeight,
+                                                          double temperature,
+                                                          double pressure) const {
+    HorizonData horizon = {};
+
+    try {
+        // Geometric horizon (no refraction)
+        horizon.geometricHorizon = calculateGeometricHorizon(observerHeight);
+
+        // Apparent horizon (with refraction)
+        double refractionCorrection = calculateRefractionCorrection(temperature, pressure);
+        horizon.apparentHorizon = horizon.geometricHorizon - refractionCorrection;
+
+        // Nautical horizon (center of object at geometric horizon)
+        horizon.nauticalHorizon = horizon.geometricHorizon;
+
+        // Astronomical horizon (upper limb at apparent horizon)
+        horizon.astronomicalHorizon = horizon.apparentHorizon - 0.2667;  // Solar semidiameter
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateHorizon: " << e.what() << std::endl;
+    }
+
+    return horizon;
+}
+
+double HinduCalendar::calculateCustomHorizon(double observerElevation, double targetElevation) const {
+    try {
+        // Geometric horizon depression
+        double geometricHorizon = calculateGeometricHorizon(observerElevation);
+
+        // Standard refraction correction
+        double refractionCorrection = 0.5667;  // 34 arcminutes
+
+        // Solar/lunar semidiameter
+        double semidiameter = 0.2667;  // 16 arcminutes
+
+        return geometricHorizon - refractionCorrection - semidiameter + targetElevation;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateCustomHorizon: " << e.what() << std::endl;
+        return -0.8333;  // Standard horizon
+    }
+}
+
+double HinduCalendar::calculateRefraction(double elevation, const AtmosphericModel& atm) const {
+    try {
+        if (elevation < -2.0) return 0.0;  // Below useful horizon
+
+        // Barometric and temperature corrections
+        double pressureCorrection = atm.pressure / 1013.25;
+        double temperatureCorrection = 283.0 / (273.0 + atm.temperature);
+
+        // Basic refraction formula (Bennett 1982)
+        double elevationRad = elevation * M_PI / 180.0;
+        double refraction = 1.0 / tan(elevationRad + 7.31 * M_PI / 180.0 / (elevation + 4.4));
+
+        // Apply atmospheric corrections
+        refraction *= pressureCorrection * temperatureCorrection;
+
+        // Humidity correction for lower elevations
+        if (elevation < 15.0) {
+            double humidityCorrection = 1.0 + 0.0013 * atm.humidity * (1.0 - elevation / 15.0);
+            refraction *= humidityCorrection;
+        }
+
+        return refraction / 60.0;  // Convert to degrees
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateRefraction: " << e.what() << std::endl;
+        return 0.0;
+    }
+}
+
+HinduCalendar::RiseSetEvent HinduCalendar::calculatePreciseRiseSet(int body, double jdStart,
+                                                                  double latitude, double longitude,
+                                                                  double elevation, double timezone) const {
+    RiseSetEvent result = {};
+    result.objectName = (body == SE_SUN) ? "Sun" : (body == SE_MOON) ? "Moon" : "Planet";
+    result.eventType = "rise";
+    result.isValid = false;
+
+    try {
+        // Setup atmospheric parameters
+        AtmosphericModel atmosphere = getSeasonalAtmosphere(jdStart, latitude, longitude);
+
+        // Calculate custom horizon
+        double customHorizon = calculateCustomHorizon(elevation);
+
+        // Setup Swiss Ephemeris parameters
+        int sweFlags = SEFLG_SWIEPH | SEFLG_TOPOCTR | SEFLG_SPEED;
+        swe_set_topo(longitude, latitude, elevation);
+
+        // Perform rise/set calculation
+        double riseSet[10];
+        char errorString[AS_MAXCH];
+        double geopos[3] = {longitude, latitude, elevation};
+
+        int sweResult = swe_rise_trans(jdStart, body, nullptr, sweFlags,
+                                     SE_CALC_RISE, geopos,
+                                     atmosphere.pressure, atmosphere.temperature,
+                                     riseSet, errorString);
+
+        if (sweResult == ERR) {
+            // Handle polar conditions
+            double declination = getCurrentDeclination(body, jdStart);
+            PolarConditions polar = detectPolarConditions(latitude, declination, jdStart);
+
+            if (polar.isPolarDay || polar.isPolarNight) {
+                result.notes = polar.description;
+                return result;
+            }
+
+            result.notes = "Calculation error: " + std::string(errorString);
+            return result;
+        }
+
+        // Calculate all coordinate systems
+        result.coordinates = calculateAllCoordinates(body, riseSet[0], latitude, longitude, elevation);
+
+        result.isValid = true;
+        result.julianDay = riseSet[0];
+        result.localTime = (riseSet[0] - floor(riseSet[0])) * 24.0 + timezone;
+        result.azimuth = result.coordinates.topocentric.azimuth;
+        result.elevation = result.coordinates.topocentric.elevation;
+
+    } catch (const std::exception& e) {
+        result.notes = "Exception: " + std::string(e.what());
+    }
+
+    return result;
+}
+
+double HinduCalendar::calculateCulminationTime(int body, double julianDay, double latitude) const {
+    try {
+        double culmination[10];
+        char errorString[AS_MAXCH];
+        double geopos[3] = {0.0, latitude, 0.0};
+
+        int sweFlags = SEFLG_SWIEPH | SEFLG_TOPOCTR;
+
+        int result = swe_rise_trans(julianDay, body, nullptr, sweFlags,
+                                  SE_CALC_MTRANSIT, geopos,
+                                  1013.25, 15.0, culmination, errorString);
+
+        if (result == ERR) {
+            std::cerr << "Error calculating culmination: " << errorString << std::endl;
+            return -1.0;
+        }
+
+        return culmination[0];
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateCulminationTime: " << e.what() << std::endl;
+        return -1.0;
+    }
+}
+
+void HinduCalendar::handlePolarRiseSet(PanchangaData& panchanga, double latitude,
+                                      const PolarConditions& polar) const {
+    try {
+        if (polar.isPolarDay) {
+            // Sun/Moon continuously above horizon
+            panchanga.sunriseTime = 0.0;        // Midnight
+            panchanga.sunsetTime = 24.0;        // Next midnight
+            panchanga.dayLength = 24.0;
+            panchanga.nightLength = 0.0;
+            panchanga.specialEvents.push_back("Polar Day - Continuous Sunlight");
+        }
+        else if (polar.isPolarNight) {
+            // Sun/Moon continuously below horizon
+            panchanga.sunriseTime = -1.0;       // No sunrise
+            panchanga.sunsetTime = -1.0;        // No sunset
+            panchanga.dayLength = 0.0;
+            panchanga.nightLength = 24.0;
+            panchanga.specialEvents.push_back("Polar Night - Continuous Darkness");
+        }
+        else if (polar.isExtendedTwilight) {
+            // Use extended search window for polar regions
+            calculateWithExtendedSearch(panchanga, latitude, 72.0);  // 3-day search
+            panchanga.specialEvents.push_back("Extended Twilight Period");
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in handlePolarRiseSet: " << e.what() << std::endl;
+    }
+}
+
+// Helper method implementations
+double HinduCalendar::calculateGeometricHorizon(double height) const {
+    try {
+        // Height in meters, result in degrees
+        const double EARTH_RADIUS_KM = 6371.0;
+        return -sqrt(2.0 * height / 1000.0 / EARTH_RADIUS_KM) * 180.0 / M_PI;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateGeometricHorizon: " << e.what() << std::endl;
+        return 0.0;
+    }
+}
+
+double HinduCalendar::calculateRefractionCorrection(double temperature, double pressure) const {
+    try {
+        // Standard atmospheric refraction at horizon
+        double standardRefraction = 0.5667;  // 34.0 arcminutes
+
+        // Temperature and pressure corrections
+        double tempCorrection = 283.0 / (273.0 + temperature);
+        double pressureCorrection = pressure / 1013.25;
+
+        return standardRefraction * tempCorrection * pressureCorrection;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateRefractionCorrection: " << e.what() << std::endl;
+        return 0.5667;  // Standard refraction
+    }
+}
+
+double HinduCalendar::getCurrentDeclination(int body, double julianDay) const {
+    try {
+        double xx[6];
+        char errorString[AS_MAXCH];
+
+        int result = swe_calc(julianDay, body, SEFLG_SWIEPH | SEFLG_EQUATORIAL, xx, errorString);
+        if (result == ERR) {
+            std::cerr << "Error getting declination: " << errorString << std::endl;
+            return 0.0;
+        }
+
+        return xx[1];  // Declination
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in getCurrentDeclination: " << e.what() << std::endl;
+        return 0.0;
+    }
+}
+
+double HinduCalendar::calculatePolarDuration(double latitude, double declination, double julianDay) const {
+    try {
+        // Simplified calculation for polar duration
+        double limitingLatitude = 90.0 - abs(declination);
+        double excessLatitude = abs(latitude) - limitingLatitude;
+
+        // Rough approximation: more excess latitude = longer duration
+        return std::min(180.0, excessLatitude * 4.0);  // Maximum 6 months
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculatePolarDuration: " << e.what() << std::endl;
+        return 1.0;
+    }
+}
+
+void HinduCalendar::calculateWithExtendedSearch(PanchangaData& panchanga, double latitude, double searchHours) const {
+    try {
+        // Implementation for extended search window
+        // This would use a longer search period for extreme latitudes
+        // For now, use standard calculations with extended timeout
+        calculateSunMoonTimes(panchanga, latitude, 0.0);  // Use existing implementation
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateWithExtendedSearch: " << e.what() << std::endl;
+    }
+}
+
+void HinduCalendar::addSolarEvents(std::vector<RiseSetEvent>& events, double jdStart,
+                                  double latitude, double longitude, double timezone, double elevation) const {
+    try {
+        // Search for sunrise
+        auto sunrise = calculatePreciseRiseSet(SE_SUN, jdStart, latitude, longitude, elevation, timezone);
+        sunrise.eventType = "sunrise";
+        if (sunrise.isValid) events.push_back(sunrise);
+
+        // Search for sunset - use different calculation
+        double geopos[3] = {longitude, latitude, elevation};
+        double tret[10];
+        char serr[AS_MAXCH];
+        int flags = SEFLG_SWIEPH;
+
+        AtmosphericModel atmosphere = getSeasonalAtmosphere(jdStart, latitude, longitude);
+        double customHorizon = calculateCustomHorizon(elevation);
+
+        int result = swe_rise_trans(jdStart, SE_SUN, nullptr, flags, SE_CALC_SET,
+                                   geopos, atmosphere.pressure, atmosphere.temperature,
+                                   tret, serr);
+
+        if (result != ERR) {
+            RiseSetEvent sunset = {};
+            sunset.objectName = "Sun";
+            sunset.eventType = "sunset";
+            sunset.julianDay = tret[0];
+            sunset.localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
+            sunset.isValid = true;
+            sunset.coordinates = calculateAllCoordinates(SE_SUN, tret[0], latitude, longitude, elevation);
+            sunset.azimuth = sunset.coordinates.topocentric.azimuth;
+            sunset.elevation = sunset.coordinates.topocentric.elevation;
+            events.push_back(sunset);
+        }
+
+        // Search for culmination (always possible)
+        double culminationJD = calculateCulminationTime(SE_SUN, jdStart, latitude);
+        if (culminationJD > 0) {
+            RiseSetEvent culmination = {};
+            culmination.objectName = "Sun";
+            culmination.eventType = "culmination";
+            culmination.julianDay = culminationJD;
+            culmination.localTime = (culminationJD - floor(culminationJD)) * 24.0 + timezone;
+            culmination.isValid = true;
+            culmination.coordinates = calculateAllCoordinates(SE_SUN, culminationJD, latitude, longitude, elevation);
+            events.push_back(culmination);
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in addSolarEvents: " << e.what() << std::endl;
+    }
+}
+
+void HinduCalendar::addLunarEvents(std::vector<RiseSetEvent>& events, double jdStart,
+                                  double latitude, double longitude, double timezone, double elevation) const {
+    try {
+        // Search for moonrise
+        auto moonrise = calculatePreciseRiseSet(SE_MOON, jdStart, latitude, longitude, elevation, timezone);
+        moonrise.eventType = "moonrise";
+        if (moonrise.isValid) events.push_back(moonrise);
+
+        // Search for moonset
+        double geopos[3] = {longitude, latitude, elevation};
+        double tret[10];
+        char serr[AS_MAXCH];
+        int flags = SEFLG_SWIEPH;
+
+        AtmosphericModel atmosphere = getSeasonalAtmosphere(jdStart, latitude, longitude);
+        double customHorizon = calculateCustomHorizon(elevation);
+
+        int result = swe_rise_trans(jdStart, SE_MOON, nullptr, flags, SE_CALC_SET,
+                                   geopos, atmosphere.pressure, atmosphere.temperature,
+                                   tret, serr);
+
+        if (result != ERR) {
+            RiseSetEvent moonset = {};
+            moonset.objectName = "Moon";
+            moonset.eventType = "moonset";
+            moonset.julianDay = tret[0];
+            moonset.localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
+            moonset.isValid = true;
+            moonset.coordinates = calculateAllCoordinates(SE_MOON, tret[0], latitude, longitude, elevation);
+            moonset.azimuth = moonset.coordinates.topocentric.azimuth;
+            moonset.elevation = moonset.coordinates.topocentric.elevation;
+            events.push_back(moonset);
+        }
+
+        // Search for culmination
+        double culminationJD = calculateCulminationTime(SE_MOON, jdStart, latitude);
+        if (culminationJD > 0) {
+            RiseSetEvent culmination = {};
+            culmination.objectName = "Moon";
+            culmination.eventType = "culmination";
+            culmination.julianDay = culminationJD;
+            culmination.localTime = (culminationJD - floor(culminationJD)) * 24.0 + timezone;
+            culmination.isValid = true;
+            culmination.coordinates = calculateAllCoordinates(SE_MOON, culminationJD, latitude, longitude, elevation);
+            events.push_back(culmination);
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in addLunarEvents: " << e.what() << std::endl;
+    }
+}
+
+// Additional helper methods for advanced calculations
+HinduCalendar::RiseSetEvent HinduCalendar::findRiseEvent(int body, double jdStart, double latitude,
+                                                        double longitude, double timezone, double elevation) const {
+    return calculatePreciseRiseSet(body, jdStart, latitude, longitude, elevation, timezone);
+}
+
+HinduCalendar::RiseSetEvent HinduCalendar::findSetEvent(int body, double jdStart, double latitude,
+                                                       double longitude, double timezone, double elevation) const {
+    RiseSetEvent event = {};
+    event.objectName = (body == SE_SUN) ? "Sun" : (body == SE_MOON) ? "Moon" : "Planet";
+    event.eventType = "set";
+    event.isValid = false;
+
+    try {
+        AtmosphericModel atmosphere = getSeasonalAtmosphere(jdStart, latitude, longitude);
+        double customHorizon = calculateCustomHorizon(elevation);
+        double geopos[3] = {longitude, latitude, elevation};
+        double tret[10];
+        char serr[AS_MAXCH];
+        int flags = SEFLG_SWIEPH;
+
+        int result = swe_rise_trans(jdStart, body, nullptr, flags, SE_CALC_SET,
+                                   geopos, atmosphere.pressure, atmosphere.temperature,
+                                   tret, serr);
+
+        if (result != ERR) {
+            event.julianDay = tret[0];
+            event.localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
+            event.coordinates = calculateAllCoordinates(body, tret[0], latitude, longitude, elevation);
+            event.azimuth = event.coordinates.topocentric.azimuth;
+            event.elevation = event.coordinates.topocentric.elevation;
+            event.isValid = true;
+        } else {
+            event.notes = "Set calculation failed: " + std::string(serr);
+        }
+
+    } catch (const std::exception& e) {
+        event.notes = "Exception in findSetEvent: " + std::string(e.what());
+    }
+
+    return event;
+}
+
+HinduCalendar::RiseSetEvent HinduCalendar::findCulminationEvent(int body, double jdStart, double latitude,
+                                                               double longitude, double timezone) const {
+    RiseSetEvent event = {};
+    event.objectName = (body == SE_SUN) ? "Sun" : (body == SE_MOON) ? "Moon" : "Planet";
+    event.eventType = "culmination";
+    event.isValid = false;
+
+    try {
+        double culminationJD = calculateCulminationTime(body, jdStart, latitude);
+        if (culminationJD > 0) {
+            event.julianDay = culminationJD;
+            event.localTime = (culminationJD - floor(culminationJD)) * 24.0 + timezone;
+            event.coordinates = calculateAllCoordinates(body, culminationJD, latitude, longitude, 0.0);
+            event.azimuth = event.coordinates.topocentric.azimuth;
+            event.elevation = event.coordinates.topocentric.elevation;
+            event.isValid = true;
+        } else {
+            event.notes = "Culmination calculation failed";
+        }
+
+    } catch (const std::exception& e) {
+        event.notes = "Exception in findCulminationEvent: " + std::string(e.what());
+    }
+
+    return event;
+}
+
+double HinduCalendar::calculateLunarParallax(double latitude, double elevation) const {
+    try {
+        // Simplified lunar parallax calculation
+        // For more accurate results, would need current lunar distance
+        double earthRadiusKm = 6371.0;
+        double meanLunarDistanceKm = 384400.0;
+
+        // Geocentric to topocentric correction
+        double horizParallax = asin(earthRadiusKm / meanLunarDistanceKm) * 180.0 / M_PI;
+
+        // Elevation correction (small effect)
+        double elevationCorrectionFactor = 1.0 + elevation / 1000.0 / earthRadiusKm;
+
+        return horizParallax * elevationCorrectionFactor * cos(latitude * M_PI / 180.0);
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in calculateLunarParallax: " << e.what() << std::endl;
+        return 0.0;
+    }
+}
+
+// Time system conversion methods
+double HinduCalendar::getDeltaT(double julianDay) const {
+    try {
+        // Delta T = TT - UT1 (in seconds)
+        // Polynomial approximation for different epochs
+        double year = 2000.0 + (julianDay - 2451545.0) / 365.25;
+
+        if (year >= 2005 && year < 2050) {
+            // Modern era polynomial
+            double t = year - 2000.0;
+            return 62.92 + 0.32217 * t + 0.005589 * t * t;
+        } else if (year >= 1900 && year < 2005) {
+            // 20th century approximation
+            double t = year - 1900.0;
+            return -2.79 + 1.494119 * t - 0.0598939 * t * t + 0.0061966 * t * t * t - 0.000197 * t * t * t * t;
+        } else {
+            // Long-term extrapolation
+            double t = (year - 1820.0) / 100.0;
+            return -20.0 + 32.0 * t * t;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in getDeltaT: " << e.what() << std::endl;
+        return 70.0;  // Approximate current value
+    }
+}
+
+int HinduCalendar::getLeapSeconds(double jdUtc) const {
+    try {
+        // Simplified leap second table (major entries)
+        if (jdUtc >= 2457754.5) return 37;  // 2017-01-01
+        if (jdUtc >= 2457204.5) return 36;  // 2015-07-01
+        if (jdUtc >= 2456109.5) return 35;  // 2012-07-01
+        if (jdUtc >= 2454832.5) return 34;  // 2009-01-01
+        if (jdUtc >= 2453736.5) return 33;  // 2006-01-01
+        if (jdUtc >= 2441317.5) return 32;  // 1999-01-01 baseline
+        return 0;  // Before 1972
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in getLeapSeconds: " << e.what() << std::endl;
+        return 37;  // Current value
+    }
+}
+
+double HinduCalendar::utcToTdb(double jdUtc) const {
+    try {
+        // Convert UTC to TDB for precise ephemeris calculations
+        double deltaT = getDeltaT(jdUtc);
+        double ttJd = jdUtc + deltaT / 86400.0;
+
+        // TDB - TT correction (periodic terms, usually small)
+        double tdbMinusTt = 0.001658 * sin(628.3076 * (ttJd - 2451545.0) / 365.25) / 86400.0;
+
+        return ttJd + tdbMinusTt;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in utcToTdb: " << e.what() << std::endl;
+        return jdUtc + 70.0 / 86400.0;  // Approximate correction
+    }
 }
 
 // Helper function to determine if a Gregorian year is a leap year

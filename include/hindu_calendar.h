@@ -339,6 +339,16 @@ private:
     void calculateVarnaInformation(PanchangaData& panchanga) const;  // New method for Savarna calculation
     void identifyVrataUpavas(PanchangaData& panchanga) const;
 
+    // Swiss Ephemeris enhanced calculation support functions
+    void getSeasonalAtmosphericParams(int month, double latitude, double longitude,
+                                     double* pressure, double* temperature) const;
+    void handleCalculationError(int result, const char* errorString, PanchangaData& panchanga,
+                               const std::string& calculation, double latitude) const;
+    void handlePolarConditions(PanchangaData& panchanga, const std::string& calculation,
+                              double latitude) const;
+    void setReasonableFallback(PanchangaData& panchanga, const std::string& calculation) const;
+    void handleException(const std::exception& e, PanchangaData& panchanga) const;
+
     // Helper methods for time calculations
     double calculateBrahmaMuhurta(double sunriseTime, bool isStart) const;
     double calculateAbhijitMuhurta(double sunriseTime, double sunsetTime, bool isStart) const;
@@ -538,9 +548,120 @@ public:
                                                      const std::string& endDate, double latitude = 0.0,
                                                      double longitude = 0.0) const;
 
+    // Advanced astronomical calculation methods
+    struct CoordinateSet {
+        struct {
+            double rightAscension;     // RA in degrees
+            double declination;        // Dec in degrees
+            double distance;           // Distance in AU
+        } astrometric;
+
+        struct {
+            double rightAscension;     // Apparent RA
+            double declination;        // Apparent Dec
+            double eclipticLongitude;  // Ecliptic longitude
+            double eclipticLatitude;   // Ecliptic latitude
+        } apparent;
+
+        struct {
+            double rightAscension;     // Topocentric RA
+            double declination;        // Topocentric Dec
+            double azimuth;            // Azimuth (0°=N, 90°=E)
+            double elevation;          // Elevation above horizon
+            double hourAngle;          // Local hour angle
+        } topocentric;
+    };
+
+    struct AtmosphericModel {
+        double pressure;           // Atmospheric pressure (mbar)
+        double temperature;        // Temperature (Celsius)
+        double humidity;           // Relative humidity (0-1)
+        double wavelength;         // Light wavelength (micrometers)
+        double lapseRate;          // Temperature lapse rate
+    };
+
+    struct PolarConditions {
+        bool isPolarNight;         // Sun never rises
+        bool isPolarDay;           // Sun never sets
+        bool isExtendedTwilight;   // Extended twilight period
+        double continuousDays;     // Days of continuous condition
+        std::string description;   // Human-readable description
+    };
+
+    struct RiseSetEvent {
+        std::string objectName;
+        std::string eventType;    // "rise", "set", "culmination"
+        double julianDay;
+        double localTime;
+        double azimuth;
+        double elevation;
+        bool isValid;
+        CoordinateSet coordinates;
+        std::string notes;
+    };
+
+    struct HorizonData {
+        double geometricHorizon;   // Pure geometric horizon
+        double apparentHorizon;    // With refraction
+        double nauticalHorizon;    // Nautical definition
+        double astronomicalHorizon; // Astronomical definition
+    };
+
+    // Enhanced calculation methods
+    CoordinateSet calculateAllCoordinates(int body, double julianDay,
+                                        double latitude, double longitude,
+                                        double elevation = 0.0) const;
+
+    AtmosphericModel getSeasonalAtmosphere(double julianDay, double latitude, double longitude) const;
+
+    PolarConditions detectPolarConditions(double latitude, double declination, double julianDay) const;
+
+    std::vector<RiseSetEvent> calculateAllEvents(double jdStart, double latitude,
+                                               double longitude, double timezone,
+                                               double elevation = 0.0) const;
+
+    HorizonData calculateHorizon(double observerHeight, double temperature = 15.0,
+                               double pressure = 1013.25) const;
+
+    double calculateCustomHorizon(double observerElevation, double targetElevation = 0.0) const;
+
+    double calculateRefraction(double elevation, const AtmosphericModel& atm) const;
+
+    RiseSetEvent calculatePreciseRiseSet(int body, double jdStart,
+                                       double latitude, double longitude,
+                                       double elevation, double timezone) const;
+
+    double calculateCulminationTime(int body, double julianDay, double latitude) const;
+
+    void handlePolarRiseSet(PanchangaData& panchanga, double latitude,
+                          const PolarConditions& polar) const;
+
+    double getDeltaT(double julianDay) const;
+    int getLeapSeconds(double jdUtc) const;
+    double utcToTdb(double jdUtc) const;
+
 private:
     // Utility method for parsing dates
     bool parseDate(const std::string& dateStr, int& year, int& month, int& day) const;
+
+    // Advanced calculation helper methods
+    void addSolarEvents(std::vector<RiseSetEvent>& events, double jdStart,
+                       double latitude, double longitude, double timezone, double elevation) const;
+    void addLunarEvents(std::vector<RiseSetEvent>& events, double jdStart,
+                       double latitude, double longitude, double timezone, double elevation) const;
+    RiseSetEvent findRiseEvent(int body, double jdStart, double latitude,
+                              double longitude, double timezone, double elevation) const;
+    RiseSetEvent findSetEvent(int body, double jdStart, double latitude,
+                             double longitude, double timezone, double elevation) const;
+    RiseSetEvent findCulminationEvent(int body, double jdStart, double latitude,
+                                     double longitude, double timezone) const;
+
+    double calculateGeometricHorizon(double height) const;
+    double calculateRefractionCorrection(double temperature, double pressure) const;
+    double calculateLunarParallax(double latitude, double elevation) const;
+    double getCurrentDeclination(int body, double julianDay) const;
+    double calculatePolarDuration(double latitude, double declination, double julianDay) const;
+    void calculateWithExtendedSearch(PanchangaData& panchanga, double latitude, double searchHours) const;
 };
 
 // Utility functions

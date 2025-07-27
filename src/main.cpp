@@ -2322,7 +2322,8 @@ bool validateArgs(const CommandLineArgs& args) {
     }
 
     if (args.time.empty() && !args.showAstroCalendarMonthly &&
-        args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0) {
+        args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0 &&
+        !args.showPanchanga && !args.showPanchangaRange) {
         std::cerr << "Error: --time is required\n";
         return false;
     }
@@ -4096,7 +4097,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (!parseTime(args.time, birthData.hour, birthData.minute, birthData.second)) {
+    // Handle time parsing with defaults for panchanga
+    if (args.time.empty() && (args.showPanchanga || args.showPanchangaRange)) {
+        // For panchanga calculations, default to sunrise (6:00 AM local time)
+        birthData.hour = 6;
+        birthData.minute = 0;
+        birthData.second = 0;
+    } else if (!parseTime(args.time, birthData.hour, birthData.minute, birthData.second)) {
         std::cerr << "Error: Invalid time format. Use HH:MM:SS\n";
         return 1;
     }
