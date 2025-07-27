@@ -148,6 +148,9 @@ struct CommandLineArgs {
     int searchMonthEnd = -1;
     int searchTithi = -1;
     int searchTithiStart = -1;
+
+    // Drik Panchang Sunrise options
+    bool showDrikSunrise = false;
     int searchTithiEnd = -1;
     int searchWeekday = -1;
     bool searchExactMatch = true;
@@ -737,6 +740,15 @@ void printHelp() {
     std::cout << "    --hindu-search-sankranti Search for Sankranti days\n";
     std::cout << "    --hindu-search-nakshatra N Search for specific Nakshatra (1-27)\n";
     std::cout << "    --hindu-search-yoga N   Search for specific Yoga (1-27)\n\n";
+
+    std::cout << "DRIK PANCHANG SUNRISE OPTIONS ☀️🕉️\n";
+    std::cout << "    --drik-sunrise     Show Drik Panchang-style sunrise calculations\n";
+    std::cout << "                       • Shows all 4 calculation methods side-by-side\n";
+    std::cout << "                       • Upper Limb (recommended for Hindu astrology)\n";
+    std::cout << "                       • Middle Limb (geometric center)\n";
+    std::cout << "                       • With/without elevation correction\n";
+    std::cout << "                       • Follows Varahamira & Dharmashastra principles\n";
+    std::cout << "                       • Uses Swiss Ephemeris for precision\n\n";
 
     std::cout << "JULIAN DAY (JD) SEARCH OPTIONS 🔢📅\n";
     std::cout << "    --search-jd JD          🎯 SIMPLE: Search single day by Julian Day number\n";
@@ -1981,6 +1993,8 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             }
         } else if (arg == "--festivals-only") {
             args.showFestivalsOnly = true;
+        } else if (arg == "--drik-sunrise") {
+            args.showDrikSunrise = true;
 
         // Hindu Calendar Search options
         } else if (arg == "--hindu-search" && i + 2 < argc) {
@@ -2291,15 +2305,15 @@ bool validateArgs(const CommandLineArgs& args) {
     // Eclipse, ephemeris, panchanga, Myanmar calendar, and Hindu/Myanmar search features can work without full birth data
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
         args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch || args.showMyanmarSearch ||
-        args.showGrahaYuddha) {
+        args.showGrahaYuddha || args.showDrikSunrise) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
         if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() ||
              !args.myanmarCalendarFromDate.empty() || !args.searchStartDate.empty() || !args.myanmarSearchStartDate.empty() ||
-             !args.grahaYuddhaFromDate.empty()) &&
+             !args.grahaYuddhaFromDate.empty() || args.showDrikSunrise) &&
             args.locationName.empty() &&
             (args.latitude < -90.0 || args.latitude > 90.0 ||
              args.longitude < -180.0 || args.longitude > 180.0)) {
-            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar/Hindu/Myanmar search/Graha Yuddha\n";
+            std::cerr << "Error: Valid coordinates (--lat/--lon) or location (--location) required for eclipse/conjunction/panchanga/Myanmar calendar/Hindu/Myanmar search/Graha Yuddha/Drik Sunrise\n";
             return false;
         }
 
@@ -2323,7 +2337,7 @@ bool validateArgs(const CommandLineArgs& args) {
 
     if (args.time.empty() && !args.showAstroCalendarMonthly &&
         args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0 &&
-        !args.showPanchanga && !args.showPanchangaRange) {
+        !args.showPanchanga && !args.showPanchangaRange && !args.showDrikSunrise) {
         std::cerr << "Error: --time is required\n";
         return false;
     }
@@ -4097,9 +4111,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Handle time parsing with defaults for panchanga
-    if (args.time.empty() && (args.showPanchanga || args.showPanchangaRange)) {
-        // For panchanga calculations, default to sunrise (6:00 AM local time)
+    // Handle time parsing with defaults for panchanga and drik sunrise
+    if (args.time.empty() && (args.showPanchanga || args.showPanchangaRange || args.showDrikSunrise)) {
+        // For panchanga and sunrise calculations, default to sunrise (6:00 AM local time)
         birthData.hour = 6;
         birthData.minute = 0;
         birthData.second = 0;
@@ -4247,6 +4261,57 @@ int main(int argc, char* argv[]) {
         if (!args.showKPTable && args.outputFormat == "text" && args.chartStyle.empty()) {
             return 0;
         }
+    }
+
+    // Handle Drik Panchang Sunrise Calculations
+    if (args.showDrikSunrise) {
+        HinduCalendar hinduCalendar;
+        if (!hinduCalendar.initialize()) {
+            std::cerr << "Error: Failed to initialize Hindu Calendar system: " << hinduCalendar.getLastError() << std::endl;
+            return 1;
+        }
+
+        HinduCalendar::DrikSunriseResults drikResults = hinduCalendar.calculateDrikSunrise(
+            birthData.getJulianDay(), birthData.latitude, birthData.longitude, 0.0, birthData.timezone);
+
+        // Helper function to format decimal hours to HH:MM:SS
+        auto formatTime = [](double hours) -> std::string {
+            int h = static_cast<int>(hours);
+            double remaining = (hours - h) * 60.0;
+            int m = static_cast<int>(remaining);
+            int s = static_cast<int>((remaining - m) * 60.0);
+
+            std::stringstream ss;
+            ss << std::setfill('0') << std::setw(2) << h << ":"
+               << std::setfill('0') << std::setw(2) << m << ":"
+               << std::setfill('0') << std::setw(2) << s;
+            return ss.str();
+        };
+
+        std::cout << "\n╔═══════════════════════════════════════════════════════════════════╗\n";
+        std::cout << "║                    DRIK PANCHANG SUNRISE CALCULATIONS             ║\n";
+        std::cout << "╠═══════════════════════════════════════════════════════════════════╣\n";
+        std::cout << "║ Date: " << std::setw(58) << std::left << birthData.getDateTimeString() << "║\n";
+        std::cout << "║ Location: " << std::setw(54) << std::left << birthData.getLocationString() << "║\n";
+        std::cout << "╠═══════════════════════════════════════════════════════════════════╣\n";
+        std::cout << "║ METHOD                    │ SUNRISE TIME    │ SUNSET TIME     ║\n";
+        std::cout << "╠═══════════════════════════════════════════════════════════════════╣\n";
+        std::cout << "║ Upper Limb (recommended)  │ " << std::setw(15) << std::left << formatTime(drikResults.upperLimb.sunrise)
+                  << " │ " << std::setw(15) << std::left << formatTime(drikResults.upperLimb.sunset) << " ║\n";
+        std::cout << "║ Middle Limb (geometric)   │ " << std::setw(15) << std::left << formatTime(drikResults.middleLimb.sunrise)
+                  << " │ " << std::setw(15) << std::left << formatTime(drikResults.middleLimb.sunset) << " ║\n";
+        std::cout << "║ Upper Limb + Elevation    │ " << std::setw(15) << std::left << formatTime(drikResults.upperLimbElevated.sunrise)
+                  << " │ " << std::setw(15) << std::left << formatTime(drikResults.upperLimbElevated.sunset) << " ║\n";
+        std::cout << "║ Middle Limb + Elevation   │ " << std::setw(15) << std::left << formatTime(drikResults.middleLimbElevated.sunrise)
+                  << " │ " << std::setw(15) << std::left << formatTime(drikResults.middleLimbElevated.sunset) << " ║\n";
+        std::cout << "╠═══════════════════════════════════════════════════════════════════╣\n";
+        std::cout << "║ ☀️ Following Varahamira & Dharmashastra principles              ║\n";
+        std::cout << "║ 🔭 Upper Limb recommended for Hindu astrology                   ║\n";
+        std::cout << "║ 📐 Elevation correction accounts for observer height            ║\n";
+        std::cout << "║ 🌍 Swiss Ephemeris ensures precision                            ║\n";
+        std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n\n";
+
+        return 0;
     }
 
     // Handle Myanmar Calendar Range calculations

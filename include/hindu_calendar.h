@@ -588,6 +588,47 @@ public:
         std::string description;   // Human-readable description
     };
 
+    // Drik Panchang-style sunrise calculation methods
+    enum class SunriseCalculationMethod {
+        UPPER_LIMB,              // Upper edge of Sun (astronomical sunrise)
+        MIDDLE_LIMB,             // Center of Sun (geometric sunrise)
+        LOWER_LIMB               // Lower edge of Sun (first light)
+    };
+
+    enum class ElevationCorrection {
+        DISABLED,                // No elevation correction
+        ENABLED                  // Include observer elevation
+    };
+
+    struct DrikSunriseResults {
+        struct {
+            double sunrise;      // Upper limb without elevation
+            double sunset;       // Upper limb without elevation
+        } upperLimb;
+
+        struct {
+            double sunrise;      // Middle limb without elevation
+            double sunset;       // Middle limb without elevation
+        } middleLimb;
+
+        struct {
+            double sunrise;      // Upper limb with elevation
+            double sunset;       // Upper limb with elevation
+        } upperLimbElevated;
+
+        struct {
+            double sunrise;      // Middle limb with elevation
+            double sunset;       // Middle limb with elevation
+        } middleLimbElevated;
+
+        // Recommended values (matches Drik Panchang default)
+        double recommendedSunrise;  // Upper limb with elevation
+        double recommendedSunset;   // Upper limb with elevation
+
+        bool isValid;
+        std::string notes;
+    };
+
     struct RiseSetEvent {
         std::string objectName;
         std::string eventType;    // "rise", "set", "culmination"
@@ -637,6 +678,28 @@ public:
                           const PolarConditions& polar) const;
 
     double getDeltaT(double julianDay) const;
+
+    // Drik Panchang-style sunrise/sunset calculations
+    DrikSunriseResults calculateDrikSunrise(double julianDay, double latitude,
+                                          double longitude, double elevation = 0.0,
+                                          double timezone = 0.0) const;
+
+    double calculateSunriseByMethod(double julianDay, double latitude, double longitude,
+                                  SunriseCalculationMethod method,
+                                  ElevationCorrection elevationCorrection,
+                                  double elevation = 0.0, double timezone = 0.0) const;
+
+    double calculateSunsetByMethod(double julianDay, double latitude, double longitude,
+                                 SunriseCalculationMethod method,
+                                 ElevationCorrection elevationCorrection,
+                                 double elevation = 0.0, double timezone = 0.0) const;
+
+    // Enhanced atmospheric refraction following Drik Panchang methodology
+    double calculateDrikRefraction(double trueElevation, double temperature = 15.0,
+                                 double pressure = 1013.25, double humidity = 0.5) const;
+
+    // Solar limb corrections following Varahamira and Dharmashastra principles
+    double getSolarLimbCorrection(SunriseCalculationMethod method) const;
     int getLeapSeconds(double jdUtc) const;
     double utcToTdb(double jdUtc) const;
 
