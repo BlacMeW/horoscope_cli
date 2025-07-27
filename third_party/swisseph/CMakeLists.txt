@@ -29,3 +29,9 @@ set(SWISSEPH_HEADERS
 add_definitions(-DSWISSEPH)
 add_definitions(-DNO_JPL)
 add_definitions(-DNO_MOSHIER)
+
+# Add a library target for Swiss Ephemeris
+add_library(sweph STATIC ${SWISSEPH_SOURCES})
+
+# Specify include directories
+target_include_directories(sweph PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

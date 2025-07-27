@@ -37,6 +37,7 @@ bool HinduCalendar::initialize() {
     try {
         // Set the ayanamsa for Swiss Ephemeris
         swe_set_sid_mode(getSweAyanamsaId(), 0, 0);
+        swe_set_ephe_path("third_party/swisseph/ephe");
 
         initializeNakshatraData();
         initializeTithiData();
@@ -824,8 +825,13 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
             if (timezoneOffset > 14.0) timezoneOffset = 14.0;
         }
 
-        // Get the Julian Day for the start of the day (midnight UTC)
-        double julianDayStart = floor(panchanga.julianDay) + 0.5; // Start of day in UTC
+        // Calculate timezone offset based on longitude
+        // Calculate the Julian Day for local midnight (Bangkok local time)
+        // Drik Panchang uses local midnight as the start of the day
+        double localMidnightJD = floor(panchanga.julianDay - timezoneOffset / 24.0) + 0.5 + timezoneOffset / 24.0;
+
+        // Use localMidnightJD for all rise/set calculations
+        double julianDayStart = localMidnightJD;
 
         // Enhanced Swiss Ephemeris calculations with seasonal atmospheric corrections
         // Use topocentric calculations and location-specific atmospheric conditions
@@ -849,14 +855,10 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
                                    geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                    &riseSetTime, errorString);
         if (result >= 0) {
-            // Convert to local solar time
+            // Convert to local time (already using local midnight as base)
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-
-            // Apply timezone correction
-            panchanga.sunriseTime = hoursFromMidnight + timezoneOffset;
-
-            // Normalize to 0-24 range
+            panchanga.sunriseTime = hoursFromMidnight;
             while (panchanga.sunriseTime < 0) panchanga.sunriseTime += 24.0;
             while (panchanga.sunriseTime >= 24.0) panchanga.sunriseTime -= 24.0;
         } else {
@@ -872,9 +874,7 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         if (result >= 0) {
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-
-            panchanga.sunsetTime = hoursFromMidnight + timezoneOffset;
-
+            panchanga.sunsetTime = hoursFromMidnight;
             while (panchanga.sunsetTime < 0) panchanga.sunsetTime += 24.0;
             while (panchanga.sunsetTime >= 24.0) panchanga.sunsetTime -= 24.0;
         } else {
@@ -890,9 +890,7 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         if (result >= 0) {
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-
-            panchanga.moonriseTime = hoursFromMidnight + timezoneOffset;
-
+            panchanga.moonriseTime = hoursFromMidnight;
             while (panchanga.moonriseTime < 0) panchanga.moonriseTime += 24.0;
             while (panchanga.moonriseTime >= 24.0) panchanga.moonriseTime -= 24.0;
         } else {
@@ -908,9 +906,7 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         if (result >= 0) {
             double timeOffset = riseSetTime - julianDayStart;
             double hoursFromMidnight = timeOffset * 24.0;
-
-            panchanga.moonsetTime = hoursFromMidnight + timezoneOffset;
-
+            panchanga.moonsetTime = hoursFromMidnight;
             while (panchanga.moonsetTime < 0) panchanga.moonsetTime += 24.0;
             while (panchanga.moonsetTime >= 24.0) panchanga.moonsetTime -= 24.0;
         } else {
@@ -1088,8 +1084,6 @@ void HinduCalendar::handleException(const std::exception& e, PanchangaData& panc
     panchanga.sunsetTime = 18.0;
     panchanga.moonriseTime = 7.0;
     panchanga.moonsetTime = 19.0;
-    panchanga.dayLength = 12.0;
-    panchanga.nightLength = 12.0;
 }
 
 void HinduCalendar::calculateRahuKaal(PanchangaData& panchanga) const {
@@ -1999,6 +1993,9 @@ std::string HinduCalendar::generatePanchangaTableFormat(const std::vector<Pancha
         // Julian calendar is approximately 13 days behind Gregorian in current era
         int julYear = gregYear;
         int julMonth = gregMonth;
+        int julDay = gregDay - 13;
+
+        // Handle month/year rollover for negative days
         int julDay = gregDay - 13;
 
         // Handle month/year rollover for negative days
