@@ -959,8 +959,6 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         
         // SUNRISE CALCULATION - Using Swiss Ephemeris swe_rise_trans
         // Use the Julian Day directly - Swiss Ephemeris will find the next sunrise after this time
-        std::cout << "DEBUG: Hindu Panchanga Julian Day: " << panchanga.julianDay << std::endl;
-        std::cout << "DEBUG: Atmospheric - Pressure: " << atmosphere.pressure << " mbar, Temperature: " << atmosphere.temperature << "°C" << std::endl;
         int result = swe_rise_trans(panchanga.julianDay, SE_SUN, nullptr, flags, SE_CALC_RISE,
                                    geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
         if (result != ERR) {

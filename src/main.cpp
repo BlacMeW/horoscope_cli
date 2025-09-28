@@ -5,6 +5,7 @@
 #include "solar_system_drawer.h"
 #include "eclipse_calculator.h"
 #include "conjunction_calculator.h"
+#include "advanced_conjunction_finder.h"
 #include "ephemeris_table.h"
 #include "kp_system.h"
 #include "location_manager.h"
@@ -2598,14 +2599,14 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // Handle conjunction calculations
+        // Handle conjunction calculations with advanced algorithms
         if (args.showConjunctions || !args.conjunctionFromDate.empty()) {
-            ConjunctionCalculator conjCalc;
-            if (!conjCalc.initialize(args.ephemerisPath)) {
-                std::cerr << "Failed to initialize conjunction calculator" << std::endl;
+            auto advancedFinder = createConjunctionFinder(true);
+            if (!advancedFinder->initialize(args.ephemerisPath)) {
+                std::cerr << "Failed to initialize advanced conjunction finder: " 
+                         << advancedFinder->getLastError() << std::endl;
                 return 1;
             }
-            conjCalc.setMaximumOrb(args.conjunctionMaxOrb);
 
             std::string fromDate = args.conjunctionFromDate;
             std::string toDate = args.conjunctionToDate;
@@ -2636,16 +2637,18 @@ int main(int argc, char* argv[]) {
 
             std::vector<ConjunctionEvent> conjunctions;
 
-            // Check if latitude range filtering is requested
-            if (args.conjunctionMinLatitude != -90.0 || args.conjunctionMaxLatitude != 90.0) {
-                conjunctions = conjCalc.findConjunctionsWithLatitudeRange(
+            // Use advanced conjunction finder with progressive tolerance and Newton-Raphson refinement
+            try {
+                conjunctions = advancedFinder->findConjunctionsAdvanced(
                     parseDateStringToBirthData(fromDate),
                     parseDateStringToBirthData(toDate),
                     args.conjunctionMaxOrb,
-                    args.conjunctionMinLatitude,
-                    args.conjunctionMaxLatitude);
-            } else {
-                conjunctions = conjCalc.findConjunctions(fromDate, toDate, args.conjunctionMaxOrb);
+                    true,  // Use Newton-Raphson refinement
+                    true   // Use progressive tolerance levels
+                );
+            } catch (const std::exception& e) {
+                std::cerr << "Error finding conjunctions: " << e.what() << std::endl;
+                return 1;
             }
 
             if (args.conjunctionFormat == "table") {
@@ -2662,16 +2665,42 @@ int main(int argc, char* argv[]) {
                 table.setSubtitle(subtitle.str());
 
                 for (const auto& conjunction : conjunctions) {
-                    // Note: These fields would need to be extracted from ConjunctionEvent structure
-                    std::string date = "2024-01-01"; // Placeholder - would extract from conjunction.julianDay
-                    std::string time = "12:00"; // Placeholder
-                    std::string planet1 = "Mercury"; // Placeholder - conjunction.planet1
-                    std::string planet2 = "Venus"; // Placeholder - conjunction.planet2
-                    std::string separation = "2.5°"; // Placeholder - conjunction.separation
-                    std::string orb = std::to_string(args.conjunctionMaxOrb) + "°";
-                    std::string sign = "Gemini"; // Placeholder - would calculate from longitude
-                    std::string strength = "Strong"; // Placeholder - based on orb and planets
-                    std::string significance = "Communication enhanced"; // Placeholder
+                    // Extract real data from ConjunctionEvent structure
+                    std::string dateTime = conjunction.getDateString();
+                    std::string date = dateTime.substr(0, 10); // Extract date part (YYYY-MM-DD)
+                    std::string time = dateTime.substr(11, 8); // Extract time part (HH:MM:SS)
+                    
+                    std::string planetsStr = conjunction.getPlanetsString();
+                    std::string planet1, planet2;
+                    
+                    // Parse planets string (format: "Planet1 - Planet2")
+                    size_t dashPos = planetsStr.find(" - ");
+                    if (dashPos != std::string::npos) {
+                        planet1 = planetsStr.substr(0, dashPos);
+                        planet2 = planetsStr.substr(dashPos + 3);
+                    } else {
+                        planet1 = planetsStr;
+                        planet2 = "";
+                    }
+                    
+                    std::stringstream sepStream;
+                    sepStream << std::fixed << std::setprecision(2) << conjunction.orb << "°";
+                    std::string separation = sepStream.str();
+                    
+                    std::stringstream orbStream;
+                    orbStream << std::fixed << std::setprecision(1) << args.conjunctionMaxOrb << "°";
+                    std::string orb = orbStream.str();
+                    
+                    std::string sign = zodiacSignToString(conjunction.sign);
+                    
+                    // Determine strength based on orb
+                    std::string strength;
+                    if (conjunction.orb < 1.0) strength = "Very Strong";
+                    else if (conjunction.orb < 2.0) strength = "Strong";
+                    else if (conjunction.orb < 3.0) strength = "Moderate";
+                    else strength = "Weak";
+                    
+                    std::string significance = conjunction.getDescription();
 
                     addConjunctionEventRow(table, date, time, planet1, planet2, separation,
                                          orb, sign, strength, significance);
@@ -2683,11 +2712,35 @@ int main(int argc, char* argv[]) {
                     std::cout << "\nNo conjunctions found in the specified period.\n";
                 }
             } else if (args.conjunctionFormat == "csv") {
-                // CSV output
-                std::cout << "Date,Planet1,Planet2,Separation,Orb,Significance\n";
+                // CSV output with real data extraction
+                std::cout << "Date,Time,Planet1,Planet2,Separation,Orb,Sign,Strength,Significance\n";
                 for (const auto& conjunction : conjunctions) {
-                    std::cout << "2024-01-01,Mercury,Venus,2.5°," << args.conjunctionMaxOrb << "°,Strong conjunction\n";
-                    // Note: Would need actual data extraction from conjunction object
+                    std::string dateTime = conjunction.getDateString();
+                    std::string date = dateTime.substr(0, 10);
+                    std::string time = dateTime.substr(11, 8);
+                    
+                    std::string planetsStr = conjunction.getPlanetsString();
+                    std::string planet1, planet2;
+                    size_t dashPos = planetsStr.find(" - ");
+                    if (dashPos != std::string::npos) {
+                        planet1 = planetsStr.substr(0, dashPos);
+                        planet2 = planetsStr.substr(dashPos + 3);
+                    } else {
+                        planet1 = planetsStr;
+                        planet2 = "";
+                    }
+                    
+                    std::string separation = std::to_string(conjunction.orb) + "°";
+                    std::string orb = std::to_string(args.conjunctionMaxOrb) + "°";
+                    std::string sign = zodiacSignToString(conjunction.sign);
+                    std::string strength = (conjunction.orb < 1.0) ? "Very Strong" : 
+                                         (conjunction.orb < 2.0) ? "Strong" :
+                                         (conjunction.orb < 3.0) ? "Moderate" : "Weak";
+                    std::string significance = conjunction.getDescription();
+                    
+                    std::cout << date << "," << time << "," << planet1 << "," << planet2 << ","
+                              << separation << "," << orb << "," << sign << "," 
+                              << strength << "," << significance << "\n";
                 }
             } else if (args.conjunctionFormat == "json") {
                 // JSON output
@@ -2716,7 +2769,13 @@ int main(int argc, char* argv[]) {
                 std::cout << "\n" << std::string(80, '=') << std::endl;
 
                 for (const auto& conjunction : conjunctions) {
-                    conjCalc.printConjunctionEvent(conjunction);
+                    std::cout << "Date: " << conjunction.getDateString() << std::endl;
+                    std::cout << "Planets: " << conjunction.getPlanetsString() << std::endl;
+                    std::cout << "Separation: " << std::fixed << std::setprecision(2) 
+                              << conjunction.orb << "°" << std::endl;
+                    std::cout << "Sign: " << zodiacSignToString(conjunction.sign) << std::endl;
+                    std::cout << "Type: " << conjunction.getTypeString() << std::endl;
+                    std::cout << "Description: " << conjunction.getDescription() << std::endl;
                     std::cout << std::string(80, '-') << std::endl;
                 }
 
@@ -2728,9 +2787,10 @@ int main(int argc, char* argv[]) {
 
         // Handle Graha Yuddha (Planetary Wars) analysis
         if (args.showGrahaYuddha || !args.grahaYuddhaFromDate.empty()) {
-            ConjunctionCalculator conjCalc;
-            if (!conjCalc.initialize(args.ephemerisPath)) {
-                std::cerr << "Failed to initialize conjunction calculator for Graha Yuddha" << std::endl;
+            auto advancedFinder = createConjunctionFinder(true);
+            if (!advancedFinder->initialize(args.ephemerisPath)) {
+                std::cerr << "Failed to initialize advanced conjunction finder for Graha Yuddha: "
+                         << advancedFinder->getLastError() << std::endl;
                 return 1;
             }
 
@@ -2761,7 +2821,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            std::vector<ConjunctionEvent> wars = conjCalc.findGrahaYuddha(
+            std::vector<ConjunctionEvent> wars = advancedFinder->findGrahaYuddha(
                 parseDateStringToBirthData(fromDate),
                 parseDateStringToBirthData(toDate),
                 args.grahaYuddhaMaxOrb);
@@ -2854,8 +2914,22 @@ int main(int argc, char* argv[]) {
                 }
                 std::cout << "  ]\n}\n";
             } else {
-                // Default text format (original behavior)
-                std::cout << conjCalc.generateGrahaYuddhaReport(wars);
+                // Default text format
+                std::cout << "\n" << std::string(80, '=') << std::endl;
+                std::cout << "                  GRAHA YUDDHA REPORT" << std::endl;
+                std::cout << std::string(80, '=') << std::endl;
+                
+                for (const auto& war : wars) {
+                    std::cout << "Date: " << war.getDateString() << std::endl;
+                    std::cout << "Combatants: " << war.getPlanetsString() << std::endl;
+                    std::cout << "Separation: " << std::fixed << std::setprecision(3) 
+                              << war.orb << "°" << std::endl;
+                    if (!war.grahaYuddhaEffect.empty()) {
+                        std::cout << "Effects: " << war.grahaYuddhaEffect << std::endl;
+                    }
+                    std::cout << "Description: " << war.getDescription() << std::endl;
+                    std::cout << std::string(80, '-') << std::endl;
+                }
             }
         }
 
@@ -4254,10 +4328,6 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        std::cout << "DEBUG: BirthData - Year: " << birthData.year << ", Month: " << birthData.month << ", Day: " << birthData.day << std::endl;
-        std::cout << "DEBUG: BirthData - Hour: " << birthData.hour << ", Minute: " << birthData.minute << ", Second: " << birthData.second << std::endl;
-        std::cout << "DEBUG: BirthData - Timezone: " << birthData.timezone << std::endl;
-        std::cout << "DEBUG: BirthData Julian Day: " << birthData.getJulianDay() << std::endl;
         PanchangaData panchanga = hinduCalendar.calculatePanchanga(birthData);
 
         if (args.panchangaFormat == "json") {

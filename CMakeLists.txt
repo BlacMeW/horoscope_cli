@@ -34,6 +34,7 @@ set(SOURCES
     src/solar_system_drawer.cpp
     src/western_chart_drawer.cpp
     src/conjunction_calculator.cpp
+    src/advanced_conjunction_finder.cpp
     src/eclipse_calculator.cpp
     src/location_manager.cpp
     src/ephemeris_table.cpp
