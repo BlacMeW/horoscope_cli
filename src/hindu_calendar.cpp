@@ -12,7 +12,7 @@
 #include <ctime>
 
 extern "C" {
-#include "swephexp.h"
+#include "../third_party/swisseph/swephexp.h"
 }
 
 namespace Astro {
@@ -827,16 +827,29 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         // Calculate timezone offset based on longitude
         // ...existing code...
 
-        // Calculate the Julian Day for local midnight (Bangkok local time)
-        // Drik Panchang uses local midnight as the start of the day
-        double localMidnightJD = floor(panchanga.julianDay - timezoneOffset / 24.0) + 0.5 + timezoneOffset / 24.0;
-
-        // Use localMidnightJD for all rise/set calculations
+        // Calculate the Julian Day for local midnight (start of the day)
+        // Swiss Ephemeris swe_rise_trans expects a starting JD to search from
+        // We need to use local midnight of the target date as the search starting point
+        
+        // Convert input Julian Day to local date
+        int local_year, local_month, local_day;
+        double local_hour;
+        
+        // Get the date in local time by adding timezone offset
+        double local_jd = panchanga.julianDay + timezoneOffset / 24.0;
+        swe_revjul(local_jd, SE_GREG_CAL, &local_year, &local_month, &local_day, &local_hour);
+        
+        // Calculate local midnight JD for the date (start of day in local time)
+        double localMidnightJD = swe_julday(local_year, local_month, local_day, 0.0, SE_GREG_CAL);
+        
+        // Use localMidnightJD as starting point for rise/set search
         double julianDayStart = localMidnightJD;
 
         // Enhanced Swiss Ephemeris calculations with seasonal atmospheric corrections
         // Use topocentric calculations and location-specific atmospheric conditions
-        double geoposEnhanced[3] = {longitude, latitude, 0.0}; // Use actual altitude (sea level default)
+        // TODO: For future enhancement, add elevation parameter to BirthData structure
+        double elevation = 0.0; // Default sea level - should be parameterized in future
+        double geoposEnhanced[3] = {longitude, latitude, elevation};
 
         // Get seasonal atmospheric parameters based on Swiss Ephemeris documentation
         int year, month, day;
@@ -856,12 +869,21 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
                                    geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                    &riseSetTime, errorString);
         if (result >= 0) {
-            // Convert to local time (already using local midnight as base)
-            double timeOffset = riseSetTime - julianDayStart;
-            double hoursFromMidnight = timeOffset * 24.0;
-            panchanga.sunriseTime = hoursFromMidnight;
-            while (panchanga.sunriseTime < 0) panchanga.sunriseTime += 24.0;
-            while (panchanga.sunriseTime >= 24.0) panchanga.sunriseTime -= 24.0;
+            // Convert Swiss Ephemeris result (UTC JD) to local time
+            // riseSetTime is in UTC, so we add timezone offset to get local time
+            double localRiseTime = riseSetTime + timezoneOffset / 24.0;
+            
+            // Extract the time portion (hours since local midnight)
+            int rise_year, rise_month, rise_day;
+            double rise_hour;
+            swe_revjul(localRiseTime, SE_GREG_CAL, &rise_year, &rise_month, &rise_day, &rise_hour);
+            
+            // Store as hours from local midnight (0-24 range)
+            panchanga.sunriseTime = rise_hour;
+            
+            // Ensure valid time range
+            if (panchanga.sunriseTime < 0.0) panchanga.sunriseTime += 24.0;
+            if (panchanga.sunriseTime >= 24.0) panchanga.sunriseTime -= 24.0;
         } else {
             handleCalculationError(result, errorString, panchanga, "sunrise", latitude);
         }
@@ -873,11 +895,20 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
                                geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                &riseSetTime, errorString);
         if (result >= 0) {
-            double timeOffset = riseSetTime - julianDayStart;
-            double hoursFromMidnight = timeOffset * 24.0;
-            panchanga.sunsetTime = hoursFromMidnight;
-            while (panchanga.sunsetTime < 0) panchanga.sunsetTime += 24.0;
-            while (panchanga.sunsetTime >= 24.0) panchanga.sunsetTime -= 24.0;
+            // Convert Swiss Ephemeris result (UTC JD) to local time
+            double localSetTime = riseSetTime + timezoneOffset / 24.0;
+            
+            // Extract the time portion (hours since local midnight)
+            int set_year, set_month, set_day;
+            double set_hour;
+            swe_revjul(localSetTime, SE_GREG_CAL, &set_year, &set_month, &set_day, &set_hour);
+            
+            // Store as hours from local midnight (0-24 range)
+            panchanga.sunsetTime = set_hour;
+            
+            // Ensure valid time range
+            if (panchanga.sunsetTime < 0.0) panchanga.sunsetTime += 24.0;
+            if (panchanga.sunsetTime >= 24.0) panchanga.sunsetTime -= 24.0;
         } else {
             handleCalculationError(result, errorString, panchanga, "sunset", latitude);
         }
@@ -889,11 +920,20 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
                                geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                &riseSetTime, errorString);
         if (result >= 0) {
-            double timeOffset = riseSetTime - julianDayStart;
-            double hoursFromMidnight = timeOffset * 24.0;
-            panchanga.moonriseTime = hoursFromMidnight;
-            while (panchanga.moonriseTime < 0) panchanga.moonriseTime += 24.0;
-            while (panchanga.moonriseTime >= 24.0) panchanga.moonriseTime -= 24.0;
+            // Convert Swiss Ephemeris result (UTC JD) to local time
+            double localMoonriseTime = riseSetTime + timezoneOffset / 24.0;
+            
+            // Extract the time portion (hours since local midnight)
+            int moonrise_year, moonrise_month, moonrise_day;
+            double moonrise_hour;
+            swe_revjul(localMoonriseTime, SE_GREG_CAL, &moonrise_year, &moonrise_month, &moonrise_day, &moonrise_hour);
+            
+            // Store as hours from local midnight (0-24 range)
+            panchanga.moonriseTime = moonrise_hour;
+            
+            // Ensure valid time range
+            if (panchanga.moonriseTime < 0.0) panchanga.moonriseTime += 24.0;
+            if (panchanga.moonriseTime >= 24.0) panchanga.moonriseTime -= 24.0;
         } else {
             handleCalculationError(result, errorString, panchanga, "moonrise", latitude);
         }
@@ -905,11 +945,20 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
                                geoposEnhanced, pressure, temperature, // Seasonal atmospheric parameters
                                &riseSetTime, errorString);
         if (result >= 0) {
-            double timeOffset = riseSetTime - julianDayStart;
-            double hoursFromMidnight = timeOffset * 24.0;
-            panchanga.moonsetTime = hoursFromMidnight;
-            while (panchanga.moonsetTime < 0) panchanga.moonsetTime += 24.0;
-            while (panchanga.moonsetTime >= 24.0) panchanga.moonsetTime -= 24.0;
+            // Convert Swiss Ephemeris result (UTC JD) to local time
+            double localMoonsetTime = riseSetTime + timezoneOffset / 24.0;
+            
+            // Extract the time portion (hours since local midnight)
+            int moonset_year, moonset_month, moonset_day;
+            double moonset_hour;
+            swe_revjul(localMoonsetTime, SE_GREG_CAL, &moonset_year, &moonset_month, &moonset_day, &moonset_hour);
+            
+            // Store as hours from local midnight (0-24 range)  
+            panchanga.moonsetTime = moonset_hour;
+            
+            // Ensure valid time range
+            if (panchanga.moonsetTime < 0.0) panchanga.moonsetTime += 24.0;
+            if (panchanga.moonsetTime >= 24.0) panchanga.moonsetTime -= 24.0;
         } else {
             handleCalculationError(result, errorString, panchanga, "moonset", latitude);
         }
@@ -1003,6 +1052,11 @@ void HinduCalendar::getSeasonalAtmosphericParams(int month, double latitude, dou
         *pressure = 1013.25; // Standard sea level pressure
         *temperature = 10.0;  // Standard temperature
     }
+    
+    // Apply elevation correction for pressure if elevation is known
+    // Note: This function currently assumes sea level (0 meters)
+    // For future enhancement: adjust pressure by ~1.2 mbar per 100m elevation
+    // *pressure -= (elevation_meters / 100.0) * 1.2;
 }
 
 void HinduCalendar::handleCalculationError(int result, const char* errorString,

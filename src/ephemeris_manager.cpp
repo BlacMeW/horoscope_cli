@@ -49,7 +49,9 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
         return false;
     }
 
-    int32 ret = swe_calc_ut(julianDay, ipl, iflag, xx, serr);
+    // CRITICAL FIX: Use swe_calc instead of swe_calc_ut for consistent flag handling
+    // swe_calc_ut ignores SEFLG_SIDEREAL and only uses global sidereal mode
+    int32 ret = swe_calc(julianDay, ipl, iflag, xx, serr);
 
     if (ret < 0) {
         lastError = std::string("Swiss Ephemeris error: ") + serr;
@@ -65,9 +67,9 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
     position.house = 0; // Will be set by HouseCalculator
     position.housePosition = 0.0;
 
-    // Calculate equatorial coordinates (declination and right ascension)
+    // Calculate equatorial coordinates (declination and right ascension)  
     double xxEqu[6];
-    int32 ret2 = swe_calc_ut(julianDay, ipl, iflag | SEFLG_EQUATORIAL, xxEqu, serr);
+    int32 ret2 = swe_calc(julianDay, ipl, iflag | SEFLG_EQUATORIAL, xxEqu, serr);
     if (ret2 >= 0) {
         position.rightAscension = xxEqu[0];
         position.declination = xxEqu[1];
@@ -114,9 +116,14 @@ bool EphemerisManager::calculatePlanetPosition(double julianDay, Planet planet, 
     }
 
     // Set ayanamsa if using sidereal zodiac
+    // CRITICAL FIX: Swiss Ephemeris swe_set_sid_mode() sets global state that persists!
+    // We must explicitly manage tropical vs sidereal mode for each calculation
     if (zodiacMode == ZodiacMode::SIDEREAL) {
         swe_set_sid_mode(ayanamsaTypeToSwissEphId(ayanamsa), 0, 0);
     }
+    // For tropical mode: The key is using iflag without SEFLG_SIDEREAL
+    // Swiss Ephemeris will use tropical calculations when SEFLG_SIDEREAL is not set,
+    // regardless of the current sidereal mode setting
 
     int ret = swe_calc(julianDay, ipl, iflag, xx, serr);
 
@@ -174,7 +181,11 @@ bool EphemerisManager::calculateHouseCusps(double julianDay, double latitude, do
     double ascmc[10];
     char hsys = houseSystemToSwissEph(system);
 
-    int ret = swe_houses(julianDay, latitude, longitude, hsys, hcusps, ascmc);
+    // CRITICAL FIX: swe_houses() doesn't accept flags and only uses global sidereal mode
+    // Since this is the "simple" function without zodiac mode parameter, ensure tropical calculation
+    // We need to reset global state to ensure consistent results
+    // Use swe_houses_ex with explicit tropical flag instead for consistency
+    int ret = swe_houses_ex(julianDay, 0, latitude, longitude, hsys, hcusps, ascmc); // 0 = tropical
 
     if (ret < 0) {
         lastError = "Failed to calculate house cusps";
@@ -203,9 +214,11 @@ bool EphemerisManager::calculateHouseCusps(double julianDay, double latitude, do
     }
 
     // Set ayanamsa if using sidereal zodiac
+    // CRITICAL FIX: Manage sidereal mode state for house calculations too
     if (zodiacMode == ZodiacMode::SIDEREAL) {
         swe_set_sid_mode(ayanamsaTypeToSwissEphId(ayanamsa), 0, 0);
     }
+    // For tropical: iflag without SEFLG_SIDEREAL ensures tropical calculation
 
     double hcusps[13];
     double ascmc[10];

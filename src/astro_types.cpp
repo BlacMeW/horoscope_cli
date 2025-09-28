@@ -83,57 +83,72 @@ std::string Aspect::getDescription() const {
 }
 
 double BirthData::getJulianDay() const {
-    double jd;
-    int gregflag = SE_GREG_CAL; // Gregorian calendar
-
-    // Convert local time to UTC
-    double utcHour = hour - timezone;
-    double utcMinute = minute;
-    double utcSecond = second;
-
-    // Handle day overflow/underflow when adjusting for timezone
-    int utcDay = day;
-    int utcMonth = month;
+    // CRITICAL FIX: Convert to UTC time first, then calculate Julian Day
+    // This avoids the date boundary crossing issues with the original approach
+    
+    // Convert local time to decimal hours
+    double localTime = hour + minute/60.0 + second/3600.0;
+    
+    // Convert to UTC time
+    double utcTime = localTime - timezone;
+    
+    // Handle day rollback/forward due to timezone conversion
     int utcYear = year;
-
-    if (utcHour < 0) {
-        utcHour += 24;
-        utcDay--;
+    int utcMonth = month;  
+    int utcDay = day;
+    
+    // If UTC time is negative, we're in the previous day
+    if (utcTime < 0.0) {
+        utcTime += 24.0;
+        utcDay -= 1;
+        
         if (utcDay < 1) {
-            utcMonth--;
+            utcMonth -= 1;
             if (utcMonth < 1) {
                 utcMonth = 12;
-                utcYear--;
+                utcYear -= 1;
             }
-            // Get days in previous month (simplified)
+            
+            // Get days in the previous month
             if (utcMonth == 2) {
-                utcDay = (utcYear % 4 == 0 && (utcYear % 100 != 0 || utcYear % 400 == 0)) ? 29 : 28;
+                // February
+                bool isLeap = ((utcYear % 4 == 0) && (utcYear % 100 != 0)) || (utcYear % 400 == 0);
+                utcDay = isLeap ? 29 : 28;
             } else if (utcMonth == 4 || utcMonth == 6 || utcMonth == 9 || utcMonth == 11) {
                 utcDay = 30;
             } else {
                 utcDay = 31;
             }
         }
-    } else if (utcHour >= 24) {
-        utcHour -= 24;
-        utcDay++;
-        // Handle month overflow (simplified)
-        if ((utcMonth == 2 && utcDay > 28 + (utcYear % 4 == 0 ? 1 : 0)) ||
-            ((utcMonth == 4 || utcMonth == 6 || utcMonth == 9 || utcMonth == 11) && utcDay > 30) ||
-            (utcDay > 31)) {
+    }
+    // If UTC time is >= 24, we're in the next day
+    else if (utcTime >= 24.0) {
+        utcTime -= 24.0;
+        utcDay += 1;
+        
+        // Get days in current month for overflow check
+        int daysInMonth;
+        if (utcMonth == 2) {
+            bool isLeap = ((utcYear % 4 == 0) && (utcYear % 100 != 0)) || (utcYear % 400 == 0);
+            daysInMonth = isLeap ? 29 : 28;
+        } else if (utcMonth == 4 || utcMonth == 6 || utcMonth == 9 || utcMonth == 11) {
+            daysInMonth = 30;
+        } else {
+            daysInMonth = 31;
+        }
+        
+        if (utcDay > daysInMonth) {
             utcDay = 1;
-            utcMonth++;
+            utcMonth += 1;
             if (utcMonth > 12) {
                 utcMonth = 1;
-                utcYear++;
+                utcYear += 1;
             }
         }
     }
-
-    double utcTime = utcHour + utcMinute/60.0 + utcSecond/3600.0;
-    jd = swe_julday(utcYear, utcMonth, utcDay, utcTime, gregflag);
-
-    return jd;
+    
+    // Calculate Julian Day using correct UTC date and time
+    return swe_julday(utcYear, utcMonth, utcDay, utcTime, SE_GREG_CAL);
 }
 
 std::string BirthData::getLocationString() const {
@@ -165,24 +180,29 @@ int HouseCusps::getHouseForLongitude(double longitude) const {
     // Normalize longitude to 0-360 range
     longitude = normalizeAngle(longitude);
 
+    // Check each house to see if the longitude falls within its bounds
     for (int house = 1; house <= 12; house++) {
         double currentCusp = normalizeAngle(cusps[house]);
         double nextCusp = normalizeAngle(cusps[house == 12 ? 1 : house + 1]);
 
+        bool inThisHouse = false;
+        
         if (nextCusp > currentCusp) {
-            // Normal case: cusp doesn't cross 0°
-            if (longitude >= currentCusp && longitude < nextCusp) {
-                return house;
-            }
+            // Normal case: house doesn't cross 0° Aries
+            // House spans from currentCusp to nextCusp
+            inThisHouse = (longitude >= currentCusp && longitude < nextCusp);
         } else {
-            // Cusp crosses 0° Aries
-            if (longitude >= currentCusp || longitude < nextCusp) {
-                return house;
-            }
+            // House crosses 0° Aries
+            // House spans from currentCusp to 360° AND from 0° to nextCusp
+            inThisHouse = (longitude >= currentCusp) || (longitude < nextCusp);
+        }
+
+        if (inThisHouse) {
+            return house;
         }
     }
 
-    return 1; // Default to first house
+    return 1; // Default to first house if no match found
 }
 
 std::string zodiacSignToString(ZodiacSign sign) {
@@ -220,9 +240,8 @@ ZodiacSign longitudeToSign(double longitude) {
 }
 
 double normalizeAngle(double angle) {
-    while (angle < 0) angle += 360.0;
-    while (angle >= 360.0) angle -= 360.0;
-    return angle;
+    // Use safe mathematical normalization instead of potentially infinite loops
+    return angle - floor(angle / 360.0) * 360.0;
 }
 
 double calculateAspectOrb(double angle1, double angle2, AspectType aspect) {

@@ -73,6 +73,10 @@ double HouseCalculator::getHousePosition(const HouseCusps& cusps, double longitu
     }
 
     // Convert to 0-30 degree scale (as if each house were 30 degrees)
+    // CRITICAL FIX: Prevent division by zero if house size is 0 or very small
+    if (houseSize <= 0.0001) { // Guard against zero or near-zero house size
+        return 0.0; // Return beginning of house if invalid size
+    }
     return (positionInHouse / houseSize) * 30.0;
 }
 

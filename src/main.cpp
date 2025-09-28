@@ -2529,7 +2529,15 @@ int main(int argc, char* argv[]) {
                 for (const auto& eclipse : eclipses) {
                     std::string date = eclipse.getDateString();
                     std::string type = eclipse.getTypeString();
-                    std::string time = "12:00"; // Placeholder - would need time extraction from eclipse struct
+                    // Extract time from eclipse Julian Day
+                    double tjd_ut = eclipse.julianDay;
+                    int year, month, day, hour, minute;
+                    double second;
+                    swe_jdet_to_utc(tjd_ut, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
+                    
+                    std::ostringstream timeStream;
+                    timeStream << std::setfill('0') << std::setw(2) << hour << ":" << std::setw(2) << minute;
+                    std::string time = timeStream.str();
                     std::string magnitude = std::to_string(eclipse.magnitude).substr(0, 5);
                     std::string duration = std::to_string(eclipse.duration).substr(0, 6) + "min";
                     std::string visibility = eclipse.isVisible ? "Visible" : "Not Visible";
@@ -4167,10 +4175,14 @@ int main(int argc, char* argv[]) {
                 std::string planetName = getPlanetName(planet.planet);
                 std::string longitude = std::to_string(planet.longitude).substr(0, 8) + "°";
                 std::string sign = zodiacSignToString(longitudeToSign(planet.longitude));
-                std::string nakshatra = "Ashwini"; // Placeholder - would calculate from longitude
-                std::string subLord = "Venus"; // Placeholder - KP calculation needed
-                std::string subSub = "Mars"; // Placeholder
-                std::string subSubSub = "Jupiter"; // Placeholder
+                
+                // Calculate actual KP position
+                KPPosition kpPos = kpSystem.calculateKPPosition(planet.longitude);
+                
+                std::string nakshatra = kpPos.nakshatra.name;
+                std::string subLord = getPlanetName(kpPos.subLord);
+                std::string subSub = getPlanetName(kpPos.subSubLord);
+                std::string subSubSub = getPlanetName(kpPos.subSubSubLord);
                 std::string kpNotation = sign.substr(0,2) + "-" + nakshatra.substr(0,3) + "-" + subLord.substr(0,2);
                 std::string signification = "Career, Authority"; // Placeholder
 
@@ -4183,23 +4195,42 @@ int main(int argc, char* argv[]) {
             std::cout << "Planet,Longitude,Sign,Nakshatra,SubLord,SubSub,SubSubSub,KP_Notation,Signification\n";
             const auto& planetPositions = chart.getPlanetPositions();
             for (const auto& planet : planetPositions) {
+                // Calculate actual KP position
+                KPPosition kpPos = kpSystem.calculateKPPosition(planet.longitude);
+                
+                std::string sign = zodiacSignToString(longitudeToSign(planet.longitude));
+                std::string nakshatra = kpPos.nakshatra.name;
+                std::string subLord = getPlanetName(kpPos.subLord);
+                std::string subSub = getPlanetName(kpPos.subSubLord);
+                std::string subSubSub = getPlanetName(kpPos.subSubSubLord);
+                std::string kpNotation = sign.substr(0,2) + "-" + nakshatra.substr(0,3) + "-" + subLord.substr(0,2);
+                
                 std::cout << getPlanetName(planet.planet) << ","
                           << planet.longitude << ","
-                          << zodiacSignToString(longitudeToSign(planet.longitude)) << ","
-                          << "Ashwini,Venus,Mars,Jupiter,Ge-Ash-Ve,Career\n";
+                          << sign << ","
+                          << nakshatra << "," << subLord << "," << subSub << "," << subSubSub << ","
+                          << kpNotation << ",Career\n";
             }
         } else if (args.kpOutputFormat == "json") {
             std::cout << "{\n  \"kp_analysis\": [\n";
             const auto& planetPositions = chart.getPlanetPositions();
             for (size_t i = 0; i < planetPositions.size(); ++i) {
                 const auto& planet = planetPositions[i];
+                
+                // Calculate actual KP position
+                KPPosition kpPos = kpSystem.calculateKPPosition(planet.longitude);
+                
                 std::cout << "    {\n";
                 std::cout << "      \"planet\": \"" << getPlanetName(planet.planet) << "\",\n";
                 std::cout << "      \"longitude\": " << planet.longitude << ",\n";
                 std::cout << "      \"sign\": \"" << zodiacSignToString(longitudeToSign(planet.longitude)) << "\",\n";
-                std::cout << "      \"nakshatra\": \"Ashwini\",\n";
-                std::cout << "      \"sub_lord\": \"Venus\",\n";
-                std::cout << "      \"kp_notation\": \"Ge-Ash-Ve\"\n";
+                std::cout << "      \"nakshatra\": \"" << kpPos.nakshatra.name << "\",\n";
+                std::cout << "      \"sub_lord\": \"" << getPlanetName(kpPos.subLord) << "\",\n";
+                std::cout << "      \"sub_sub_lord\": \"" << getPlanetName(kpPos.subSubLord) << "\",\n";
+                std::cout << "      \"sub_sub_sub_lord\": \"" << getPlanetName(kpPos.subSubSubLord) << "\",\n";
+                std::string sign = zodiacSignToString(longitudeToSign(planet.longitude));
+                std::string kpNotation = sign.substr(0,2) + "-" + kpPos.nakshatra.name.substr(0,3) + "-" + getPlanetName(kpPos.subLord).substr(0,2);
+                std::cout << "      \"kp_notation\": \"" << kpNotation << "\"\n";
                 std::cout << "    }" << (i < planetPositions.size() - 1 ? "," : "") << "\n";
             }
             std::cout << "  ]\n}\n";
