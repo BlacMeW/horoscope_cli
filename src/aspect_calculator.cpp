@@ -122,28 +122,58 @@ bool AspectCalculator::calculateAspectBetweenPlanets(const PlanetPosition& pos1,
 bool AspectCalculator::isAspectApplying(const PlanetPosition& pos1,
                                       const PlanetPosition& pos2,
                                       AspectType aspect) const {
-    // Determine if the faster planet is moving toward the aspect
-    // This is a simplified calculation
-
+    // Determine if planets are moving toward (applying) or away from (separating) the exact aspect
+    
     double speed1 = pos1.speed;
     double speed2 = pos2.speed;
+    double relativeSpeed = speed1 - speed2;
 
-    // If speeds are very close, consider it stable
-    if (std::abs(speed1 - speed2) < 0.01) {
+    // If no relative motion, aspect is stable (neither applying nor separating)
+    if (std::abs(relativeSpeed) < 0.01) {
         return false;
     }
 
-    // The faster planet
-    Planet fasterPlanet = (speed1 > speed2) ? pos1.planet : pos2.planet;
-    double fasterLong = (speed1 > speed2) ? pos1.longitude : pos2.longitude;
-    double slowerLong = (speed1 > speed2) ? pos2.longitude : pos1.longitude;
-
+    double long1 = pos1.longitude;
+    double long2 = pos2.longitude;
+    
+    // Calculate current angular separation
+    double currentSeparation = long1 - long2;
+    if (currentSeparation > 180.0) currentSeparation -= 360.0;
+    if (currentSeparation < -180.0) currentSeparation += 360.0;
+    
     double targetAngle = static_cast<double>(aspect);
-    double currentAngle = std::abs(fasterLong - slowerLong);
-    if (currentAngle > 180.0) currentAngle = 360.0 - currentAngle;
-
-    // Simplified: if the current angle is less than target, it's applying
-    return currentAngle < targetAngle;
+    
+    // For aspects other than conjunction, need to consider both directions
+    double distanceToAspect;
+    if (aspect == AspectType::CONJUNCTION) {
+        distanceToAspect = std::abs(currentSeparation);
+    } else {
+        // Calculate shortest distance to aspect angle (considering both positive and negative directions)
+        double dist1 = std::abs(currentSeparation - targetAngle);
+        double dist2 = std::abs(currentSeparation + targetAngle);
+        double dist3 = std::abs(currentSeparation - (targetAngle - 360.0));
+        double dist4 = std::abs(currentSeparation + (targetAngle - 360.0));
+        distanceToAspect = std::min({dist1, dist2, dist3, dist4});
+    }
+    
+    // Calculate future separation after a small time increment (1 day)
+    double futureSeparation = currentSeparation + relativeSpeed;
+    if (futureSeparation > 180.0) futureSeparation -= 360.0;
+    if (futureSeparation < -180.0) futureSeparation += 360.0;
+    
+    double futureDistanceToAspect;
+    if (aspect == AspectType::CONJUNCTION) {
+        futureDistanceToAspect = std::abs(futureSeparation);
+    } else {
+        double dist1 = std::abs(futureSeparation - targetAngle);
+        double dist2 = std::abs(futureSeparation + targetAngle);
+        double dist3 = std::abs(futureSeparation - (targetAngle - 360.0));
+        double dist4 = std::abs(futureSeparation + (targetAngle - 360.0));
+        futureDistanceToAspect = std::min({dist1, dist2, dist3, dist4});
+    }
+    
+    // Aspect is applying if future distance is smaller than current distance
+    return futureDistanceToAspect < distanceToAspect;
 }
 
 } // namespace Astro

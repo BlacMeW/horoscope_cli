@@ -176,6 +176,13 @@ struct PanchangaData {
     bool isSankranti;          // Solar transition
     bool isNavratri;           // Navratri period
     bool isGandaMool;          // Ganda Mool Nakshatra
+
+    // Enhanced Sankranti information
+    std::string sankrantiName; // Name of the current Sankranti
+    double sankrantiTime;      // Exact time of Sankranti (hours from midnight)
+    bool isSankrantiToday;     // If Sankranti occurs today
+    std::string nextSankranti; // Next upcoming Sankranti name
+    double daysToNextSankranti;// Days until next Sankranti
     bool isPanchak;            // Panchak period
     bool isBhadra;             // Bhadra period
 
@@ -331,6 +338,16 @@ private:
     void calculateShoolDirections(PanchangaData& panchanga) const;
     void calculateVarnaInformation(PanchangaData& panchanga) const;  // New method for Savarna calculation
     void identifyVrataUpavas(PanchangaData& panchanga) const;
+
+    // Swiss Ephemeris enhanced calculation support functions
+    void getSeasonalAtmosphericParams(int month, double latitude, double longitude,
+                                     double* pressure, double* temperature) const;
+    void handleCalculationError(int result, const char* errorString, PanchangaData& panchanga,
+                               const std::string& calculation, double latitude) const;
+    void handlePolarConditions(PanchangaData& panchanga, const std::string& calculation,
+                              double latitude) const;
+    void setReasonableFallback(PanchangaData& panchanga, const std::string& calculation) const;
+    void handleException(const std::exception& e, PanchangaData& panchanga) const;
 
     // Helper methods for time calculations
     double calculateBrahmaMuhurta(double sunriseTime, bool isStart) const;
@@ -517,9 +534,197 @@ public:
     std::vector<SearchResult> searchVaishyaDays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
     std::vector<SearchResult> searchShudradays(const std::string& startDate, const std::string& endDate, double latitude, double longitude) const;
 
+    // Enhanced Sankranti calculation methods
+    double calculateSankrantiTime(double julianDay, Rashi currentRashi, Rashi nextRashi) const;
+    std::string calculateNextSankranti(double julianDay, double& daysUntil) const;
+    bool isSankrantiOccurringToday(double julianDay, double tolerance = 0.5) const;
+    std::vector<std::pair<double, std::string>> getSankrantiTimesForMonth(int year, int month) const;
+    std::vector<std::pair<double, std::string>> getSankrantiTimesForYear(int year) const;
+
+    // Sankranti search and analysis methods
+    std::vector<SearchResult> searchSankranti(const std::string& startDate, const std::string& endDate,
+                                             double latitude = 0.0, double longitude = 0.0) const;
+    std::vector<SearchResult> searchSpecificSankranti(Rashi rashi, const std::string& startDate,
+                                                     const std::string& endDate, double latitude = 0.0,
+                                                     double longitude = 0.0) const;
+
+    // Advanced astronomical calculation methods
+    struct CoordinateSet {
+        struct {
+            double rightAscension;     // RA in degrees
+            double declination;        // Dec in degrees
+            double distance;           // Distance in AU
+        } astrometric;
+
+        struct {
+            double rightAscension;     // Apparent RA
+            double declination;        // Apparent Dec
+            double eclipticLongitude;  // Ecliptic longitude
+            double eclipticLatitude;   // Ecliptic latitude
+        } apparent;
+
+        struct {
+            double rightAscension;     // Topocentric RA
+            double declination;        // Topocentric Dec
+            double azimuth;            // Azimuth (0°=N, 90°=E)
+            double elevation;          // Elevation above horizon
+            double hourAngle;          // Local hour angle
+        } topocentric;
+    };
+
+    struct AtmosphericModel {
+        double pressure;           // Atmospheric pressure (mbar)
+        double temperature;        // Temperature (Celsius)
+        double humidity;           // Relative humidity (0-1)
+        double wavelength;         // Light wavelength (micrometers)
+        double lapseRate;          // Temperature lapse rate
+    };
+
+    struct PolarConditions {
+        bool isPolarNight;         // Sun never rises
+        bool isPolarDay;           // Sun never sets
+        bool isExtendedTwilight;   // Extended twilight period
+        double continuousDays;     // Days of continuous condition
+        std::string description;   // Human-readable description
+    };
+
+    // Drik Panchang-style sunrise calculation methods
+    enum class SunriseCalculationMethod {
+        UPPER_LIMB,              // Upper edge of Sun (astronomical sunrise)
+        MIDDLE_LIMB,             // Center of Sun (geometric sunrise)
+        LOWER_LIMB               // Lower edge of Sun (first light)
+    };
+
+    enum class ElevationCorrection {
+        DISABLED,                // No elevation correction
+        ENABLED                  // Include observer elevation
+    };
+
+    struct DrikSunriseResults {
+        struct {
+            double sunrise;      // Upper limb without elevation
+            double sunset;       // Upper limb without elevation
+        } upperLimb;
+
+        struct {
+            double sunrise;      // Middle limb without elevation
+            double sunset;       // Middle limb without elevation
+        } middleLimb;
+
+        struct {
+            double sunrise;      // Upper limb with elevation
+            double sunset;       // Upper limb with elevation
+        } upperLimbElevated;
+
+        struct {
+            double sunrise;      // Middle limb with elevation
+            double sunset;       // Middle limb with elevation
+        } middleLimbElevated;
+
+        // Recommended values (matches Drik Panchang default)
+        double recommendedSunrise;  // Upper limb with elevation
+        double recommendedSunset;   // Upper limb with elevation
+
+        bool isValid;
+        std::string notes;
+    };
+
+    struct RiseSetEvent {
+        std::string objectName;
+        std::string eventType;    // "rise", "set", "culmination"
+        double julianDay;
+        double localTime;
+        double azimuth;
+        double elevation;
+        bool isValid;
+        CoordinateSet coordinates;
+        std::string notes;
+    };
+
+    struct HorizonData {
+        double geometricHorizon;   // Pure geometric horizon
+        double apparentHorizon;    // With refraction
+        double nauticalHorizon;    // Nautical definition
+        double astronomicalHorizon; // Astronomical definition
+    };
+
+    // Enhanced calculation methods
+    CoordinateSet calculateAllCoordinates(int body, double julianDay,
+                                        double latitude, double longitude,
+                                        double elevation = 0.0) const;
+
+    AtmosphericModel getSeasonalAtmosphere(double julianDay, double latitude, double longitude) const;
+
+    PolarConditions detectPolarConditions(double latitude, double declination, double julianDay) const;
+
+    std::vector<RiseSetEvent> calculateAllEvents(double jdStart, double latitude,
+                                               double longitude, double timezone,
+                                               double elevation = 0.0) const;
+
+    HorizonData calculateHorizon(double observerHeight, double temperature = 15.0,
+                               double pressure = 1013.25) const;
+
+    double calculateCustomHorizon(double observerElevation, double targetElevation = 0.0) const;
+
+    double calculateRefraction(double elevation, const AtmosphericModel& atm) const;
+
+    RiseSetEvent calculatePreciseRiseSet(int body, double jdStart,
+                                       double latitude, double longitude,
+                                       double elevation, double timezone) const;
+
+    double calculateCulminationTime(int body, double julianDay, double latitude) const;
+
+    void handlePolarRiseSet(PanchangaData& panchanga, double latitude,
+                          const PolarConditions& polar) const;
+
+    double getDeltaT(double julianDay) const;
+
+    // Drik Panchang-style sunrise/sunset calculations
+    DrikSunriseResults calculateDrikSunrise(double julianDay, double latitude,
+                                          double longitude, double elevation = 0.0,
+                                          double timezone = 0.0) const;
+
+    double calculateSunriseByMethod(double julianDay, double latitude, double longitude,
+                                  SunriseCalculationMethod method,
+                                  ElevationCorrection elevationCorrection,
+                                  double elevation = 0.0, double timezone = 0.0) const;
+
+    double calculateSunsetByMethod(double julianDay, double latitude, double longitude,
+                                 SunriseCalculationMethod method,
+                                 ElevationCorrection elevationCorrection,
+                                 double elevation = 0.0, double timezone = 0.0) const;
+
+    // Enhanced atmospheric refraction following Drik Panchang methodology
+    double calculateDrikRefraction(double trueElevation, double temperature = 15.0,
+                                 double pressure = 1013.25, double humidity = 0.5) const;
+
+    // Solar limb corrections following Varahamira and Dharmashastra principles
+    double getSolarLimbCorrection(SunriseCalculationMethod method) const;
+    int getLeapSeconds(double jdUtc) const;
+    double utcToTdb(double jdUtc) const;
+
 private:
     // Utility method for parsing dates
     bool parseDate(const std::string& dateStr, int& year, int& month, int& day) const;
+
+    // Advanced calculation helper methods
+    void addSolarEvents(std::vector<RiseSetEvent>& events, double jdStart,
+                       double latitude, double longitude, double timezone, double elevation) const;
+    void addLunarEvents(std::vector<RiseSetEvent>& events, double jdStart,
+                       double latitude, double longitude, double timezone, double elevation) const;
+    RiseSetEvent findRiseEvent(int body, double jdStart, double latitude,
+                              double longitude, double timezone, double elevation) const;
+    RiseSetEvent findSetEvent(int body, double jdStart, double latitude,
+                             double longitude, double timezone, double elevation) const;
+    RiseSetEvent findCulminationEvent(int body, double jdStart, double latitude,
+                                     double longitude, double timezone) const;
+
+    double calculateGeometricHorizon(double height) const;
+    double calculateRefractionCorrection(double temperature, double pressure) const;
+    double calculateLunarParallax(double latitude, double elevation) const;
+    double getCurrentDeclination(int body, double julianDay) const;
+    double calculatePolarDuration(double latitude, double declination, double julianDay) const;
+    void calculateWithExtendedSearch(PanchangaData& panchanga, double latitude, double searchHours) const;
 };
 
 // Utility functions

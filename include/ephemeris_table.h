@@ -150,6 +150,8 @@ private:
                               const std::vector<int>& widths) const;
     std::string format3LineTableRow(const EphemerisEntry& entry, const EphemerisConfig& config,
                                    const std::vector<int>& widths) const;
+    std::string format2LineTableRow(const EphemerisEntry& entry, const EphemerisConfig& config,
+                                   const std::vector<int>& widths) const;
 
     // Helper functions for specific calculations
     double calculateDeclination(const PlanetPosition& position) const;
