@@ -325,7 +325,7 @@ private:
 
     // Muhurta calculations
     void calculateMuhurta(PanchangaData& panchanga) const;
-    void calculateSunMoonTimes(PanchangaData& panchanga, double latitude, double longitude) const;
+    void calculateSunMoonTimes(PanchangaData& panchanga, double latitude, double longitude, double timezone = 0.0) const;
     void calculateRahuKaal(PanchangaData& panchanga) const;
     void calculateYamaganda(PanchangaData& panchanga) const;
     void calculateGulikai(PanchangaData& panchanga) const;
@@ -371,6 +371,7 @@ public:
     // Main calculation method
     PanchangaData calculatePanchanga(const BirthData& birthData) const;
     PanchangaData calculatePanchanga(double julianDay, double latitude, double longitude) const;
+    PanchangaData calculatePanchanga(double julianDay, double latitude, double longitude, double timezone) const;
 
     // Bulk calculations
     std::vector<PanchangaData> calculatePanchangaRange(const std::string& fromDate,

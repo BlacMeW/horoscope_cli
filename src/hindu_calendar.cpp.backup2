@@ -789,6 +789,159 @@ void HinduCalendar::calculateMuhurta(PanchangaData& panchanga) const {
     }
 }
 
+void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latitude, double longitude, double timezone) const {
+    try {
+        char errorString[256];
+        double riseSetTime;
+
+        // Use timezone parameter directly if provided, otherwise calculate from longitude
+        double timezoneOffset = timezone;
+
+        if (timezone == 0.0) {
+            // Fallback: More precise timezone adjustments based on longitude ranges and actual timezone boundaries
+            if (longitude >= 97.5 && longitude <= 106.0) {
+            // Thailand (Bangkok: 100.5°E), Laos, Cambodia, Vietnam
+            timezoneOffset = 7.0; // ICT (UTC+7)
+        } else if (longitude >= 68.0 && longitude <= 97.4) {
+            // India, Sri Lanka, Bangladesh
+            timezoneOffset = 5.5; // IST (UTC+5:30)
+        } else if (longitude >= 106.1 && longitude <= 120.0) {
+            // Malaysia, Singapore, Philippines, Brunei, parts of Indonesia
+            timezoneOffset = 8.0; // MYT/SGT/PHT (UTC+8)
+        } else if (longitude >= 120.1 && longitude <= 135.0) {
+            // China, Taiwan, Western Australia
+            timezoneOffset = 8.0; // CST/AWST (UTC+8)
+        } else if (longitude >= 135.1 && longitude <= 150.0) {
+            // Japan, Korea, Eastern Australia
+            timezoneOffset = 9.0; // JST/KST/AEST (UTC+9)
+        } else if (longitude >= 60.0 && longitude <= 67.9) {
+            // Afghanistan, parts of Pakistan
+            timezoneOffset = 4.5; // AFT (UTC+4:30)
+        } else if (longitude >= 45.0 && longitude <= 59.9) {
+            // Gulf states, parts of Russia
+            timezoneOffset = 4.0; // GST (UTC+4)
+        } else {
+            // Default calculation: longitude-based approximation
+            timezoneOffset = round(longitude / 15.0);
+            // Clamp to reasonable range
+            if (timezoneOffset < -12.0) timezoneOffset = -12.0;
+            if (timezoneOffset > 14.0) timezoneOffset = 14.0;
+            }
+        }
+
+        // Calculate timezone offset based on longitude
+        // ...existing code...
+
+        // Calculate the Julian Day for local midnight (start of the day)
+        // Swiss Ephemeris swe_rise_trans expects a starting JD to search from
+        // We need to use local midnight of the target date as the search starting point
+        
+        // Convert input Julian Day to local date
+        int local_year, local_month, local_day;
+        double local_hour;
+        
+        // Get the date in local time by adding timezone offset
+        double local_jd = panchanga.julianDay + timezoneOffset / 24.0;
+        swe_revjul(local_jd, SE_GREG_CAL, &local_year, &local_month, &local_day, &local_hour);
+        
+        // Calculate local midnight JD for the date (start of day in local time)
+        double localMidnightJD = swe_julday(local_year, local_month, local_day, 0.0, SE_GREG_CAL);
+        
+        // Use the original UTC Julian day as starting point for rise/set search
+        double julianDayStart = panchanga.julianDay;
+
+        // CLEAN IMPLEMENTATION: Use EXACT same method as working Drik sunrise calculation
+        AtmosphericModel atmosphere = getSeasonalAtmosphere(julianDayStart, latitude, longitude);
+        double geopos[3] = {longitude, latitude, 0.0}; // Sea level like Drik
+        double tret[10];  // Use same array as working Drik method
+        char serr[AS_MAXCH];
+        
+        // Calculate sunrise using EXACT working Drik method
+        int flags = SEFLG_SWIEPH | SEFLG_TOPOCTR;
+        int result = swe_rise_trans(julianDayStart, SE_SUN, nullptr, flags, SE_CALC_RISE,
+                                   geopos, atmosphere.pressure, atmosphere.temperature,
+                                   tret, serr);
+        if (result != ERR) {
+            // Use EXACT working timezone conversion from Drik calculation
+            double localTime = (tret[0] - floor(tret[0])) * 24.0 + timezoneOffset;
+            if (localTime >= 24.0) localTime -= 24.0;
+            if (localTime < 0.0) localTime += 24.0;
+            
+            panchanga.sunriseTime = localTime;
+        } else {
+            handleCalculationError(result, serr, panchanga, "sunrise", latitude);
+        }
+
+        // Calculate sunset using EXACT working Drik method
+        result = swe_rise_trans(julianDayStart, SE_SUN, nullptr, flags, SE_CALC_SET,
+                               geopos, atmosphere.pressure, atmosphere.temperature,
+                               tret, serr);
+        if (result != ERR) {
+            // Use EXACT working timezone conversion from Drik calculation
+            double localTime = (tret[0] - floor(tret[0])) * 24.0 + timezoneOffset;
+            if (localTime >= 24.0) localTime -= 24.0;
+            if (localTime < 0.0) localTime += 24.0;
+            
+            panchanga.sunsetTime = localTime;
+        } else {
+            handleCalculationError(result, serr, panchanga, "sunset", latitude);
+        }
+
+        // Calculate moonrise using same clean method
+        result = swe_rise_trans(julianDayStart, SE_MOON, nullptr, flags, 
+                               SE_CALC_RISE | SE_BIT_DISC_CENTER,
+                               geopos, atmosphere.pressure, atmosphere.temperature,
+                               tret, serr);
+        if (result != ERR) {
+            double localTime = (tret[0] - floor(tret[0])) * 24.0 + timezoneOffset;
+            if (localTime >= 24.0) localTime -= 24.0;
+            if (localTime < 0.0) localTime += 24.0;
+            panchanga.moonriseTime = localTime;
+        } else {
+            handleCalculationError(result, serr, panchanga, "moonrise", latitude);
+        }
+
+        // Calculate moonset using same clean method
+        result = swe_rise_trans(julianDayStart, SE_MOON, nullptr, flags,
+                               SE_CALC_SET | SE_BIT_DISC_CENTER,
+                               geopos, atmosphere.pressure, atmosphere.temperature,
+                               tret, serr);
+        if (result != ERR) {
+            double localTime = (tret[0] - floor(tret[0])) * 24.0 + timezoneOffset;
+            if (localTime >= 24.0) localTime -= 24.0;
+            if (localTime < 0.0) localTime += 24.0;
+            panchanga.moonsetTime = localTime;
+        } else {
+            handleCalculationError(result, serr, panchanga, "moonset", latitude);
+        }
+
+        // Calculate day and night lengths
+        panchanga.dayLength = panchanga.sunsetTime - panchanga.sunriseTime;
+        if (panchanga.dayLength < 0) panchanga.dayLength += 24.0;
+        panchanga.nightLength = 24.0 - panchanga.dayLength;
+
+        // Calculate Brahma Muhurta (1.5 hours before sunrise)
+        panchanga.brahmaMuhurtaStart = calculateBrahmaMuhurta(panchanga.sunriseTime, true);
+        panchanga.brahmaMuhurtaEnd = calculateBrahmaMuhurta(panchanga.sunriseTime, false);
+
+        // Calculate Abhijit Muhurta (middle of the day)
+        panchanga.abhijitStart = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, true);
+        panchanga.abhijitEnd = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, false);
+
+        // Calculate Godhuli Bela (evening twilight)
+        panchanga.godhuliBelStart = calculateGodhuliBela(panchanga.sunsetTime, true);
+        panchanga.godhuliBelEnd = calculateGodhuliBela(panchanga.sunsetTime, false);
+
+        // Calculate Nishita Muhurta (midnight)
+        double nextSunrise = panchanga.sunriseTime + 24.0; // Next day sunrise
+        panchanga.nishitaMuhurtaStart = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, true);
+        panchanga.nishitaMuhurtaEnd = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, false);
+
+    } catch (const std::exception& e) {
+        // Set default values in case of error
+        handleException(e, panchanga);
+    }
+}
 
 void HinduCalendar::getSeasonalAtmosphericParams(int month, double latitude, double longitude,
                                                 double* pressure, double* temperature) const {
@@ -940,201 +1093,6 @@ void HinduCalendar::handleException(const std::exception& e, PanchangaData& panc
     panchanga.moonsetTime = 19.0;
     panchanga.dayLength = 12.0;
     panchanga.nightLength = 12.0;
-}
-
-void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latitude, double longitude, double timezone) const {
-    // BRAND NEW CLEAN IMPLEMENTATION USING SWISS EPHEMERIS RISE/SET FUNCTIONS
-    try {
-        // Setup Swiss Ephemeris parameters - using exact same approach as working Drik sunrise
-        AtmosphericModel atmosphere = getSeasonalAtmosphere(panchanga.julianDay, latitude, longitude);
-        double geopos[3] = {longitude, latitude, 0.0}; // Sea level
-        double tret[10];  // Swiss Ephemeris result array
-        char serr[AS_MAXCH]; // Error string
-        int flags = SEFLG_SWIEPH | SEFLG_TOPOCTR; // Same flags as Drik
-        
-        // Use provided timezone or calculate from longitude
-        double timezoneOffset = (timezone != 0.0) ? timezone : round(longitude / 15.0);
-        
-        // SUNRISE CALCULATION - Using Swiss Ephemeris swe_rise_trans
-        // Use the Julian Day directly - Swiss Ephemeris will find the next sunrise after this time
-        int result = swe_rise_trans(panchanga.julianDay, SE_SUN, nullptr, flags, SE_CALC_RISE,
-                                   geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
-        if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
-            int year, month, day, hour, min;
-            double sec;
-            swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
-            
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.sunriseTime = hour + min / 60.0 + sec / 3600.0;
-        } else {
-            panchanga.sunriseTime = 6.0; // Default fallback
-        }
-
-        // SUNSET CALCULATION - Using Swiss Ephemeris swe_rise_trans
-        result = swe_rise_trans(panchanga.julianDay, SE_SUN, nullptr, flags, SE_CALC_SET,
-                               geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
-        if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
-            int year, month, day, hour, min;
-            double sec;
-            swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
-            
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.sunsetTime = hour + min / 60.0 + sec / 3600.0;
-        } else {
-            panchanga.sunsetTime = 18.0; // Default fallback
-        }
-
-        // MOONRISE CALCULATION - Using Swiss Ephemeris swe_rise_trans
-        result = swe_rise_trans(panchanga.julianDay, SE_MOON, nullptr, flags, SE_CALC_RISE,
-                               geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
-        if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
-            int year, month, day, hour, min;
-            double sec;
-            swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
-            
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.moonriseTime = hour + min / 60.0 + sec / 3600.0;
-        } else {
-            panchanga.moonriseTime = 7.0; // Default fallback
-        }
-
-        // MOONSET CALCULATION - Using Swiss Ephemeris swe_rise_trans
-        result = swe_rise_trans(panchanga.julianDay, SE_MOON, nullptr, flags, SE_CALC_SET,
-                               geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
-        if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
-            int year, month, day, hour, min;
-            double sec;
-            swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
-            
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.moonsetTime = hour + min / 60.0 + sec / 3600.0;
-        } else {
-            panchanga.moonsetTime = 19.0; // Default fallback
-        }
-
-        // Calculate derived time periods
-        panchanga.dayLength = panchanga.sunsetTime - panchanga.sunriseTime;
-        if (panchanga.dayLength < 0) panchanga.dayLength += 24.0;
-        panchanga.nightLength = 24.0 - panchanga.dayLength;
-
-        // Calculate muhurta times
-        panchanga.brahmaMuhurtaStart = calculateBrahmaMuhurta(panchanga.sunriseTime, true);
-        panchanga.brahmaMuhurtaEnd = calculateBrahmaMuhurta(panchanga.sunriseTime, false);
-        panchanga.abhijitStart = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, true);
-        panchanga.abhijitEnd = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, false);
-        double nextSunrise = panchanga.sunriseTime + 24.0;
-        panchanga.nishitaMuhurtaStart = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, true);
-        panchanga.nishitaMuhurtaEnd = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, false);
-
-    } catch (const std::exception& e) {
-        // Set safe default values in case of any error
-        panchanga.sunriseTime = 6.0;
-        panchanga.sunsetTime = 18.0;
-        panchanga.moonriseTime = 7.0;
-        panchanga.moonsetTime = 19.0;
-        panchanga.dayLength = 12.0;
-        panchanga.nightLength = 12.0;
-    }
 }
 
 void HinduCalendar::calculateRahuKaal(PanchangaData& panchanga) const {
