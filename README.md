@@ -40,7 +40,11 @@ A powerful C++ command-line astrology tool featuring comprehensive horoscope cal
 - 📐 **Aspect Calculator** - Major and minor planetary aspects with orbs
 - 🌍 **Location Manager** - Global coordinate support with timezone handling
 - 🎯 **KP System Support** - Krishnamurti Paddhati calculations
-- ⚡ **Conjunction Analysis** - Precise planetary conjunction timing
+- ⚡ **Advanced Conjunction Analysis** - Revolutionary birthfinder algorithms with Newton-Raphson refinement
+  - 🎯 **Sub-Arcsecond Precision** - Up to ±0.000001° accuracy with derivative calculations
+  - 🧮 **Progressive Tolerance Search** - Multi-level refinement from 5.0° to 0.01° precision
+  - 🌌 **Multi-Planet Detection** - Automatic triple and grand conjunction identification
+  - ⚔️ **Graha Yuddha Analysis** - Planetary wars with winner determination and effects
 
 ### 💾 **Developer-Friendly Output**
 - 📋 **Multiple Formats** - Text, JSON, CSV for easy integration
