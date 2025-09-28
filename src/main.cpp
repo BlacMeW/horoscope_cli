@@ -4254,6 +4254,10 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
+        std::cout << "DEBUG: BirthData - Year: " << birthData.year << ", Month: " << birthData.month << ", Day: " << birthData.day << std::endl;
+        std::cout << "DEBUG: BirthData - Hour: " << birthData.hour << ", Minute: " << birthData.minute << ", Second: " << birthData.second << std::endl;
+        std::cout << "DEBUG: BirthData - Timezone: " << birthData.timezone << std::endl;
+        std::cout << "DEBUG: BirthData Julian Day: " << birthData.getJulianDay() << std::endl;
         PanchangaData panchanga = hinduCalendar.calculatePanchanga(birthData);
 
         if (args.panchangaFormat == "json") {

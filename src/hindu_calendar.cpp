@@ -346,6 +346,9 @@ PanchangaData HinduCalendar::calculatePanchanga(double julianDay, double latitud
         identifyFestivals(panchanga);
         identifySpecialEvents(panchanga);
 
+        // Set Julian Day FIRST - needed by calculateSunMoonTimes
+        panchanga.julianDay = julianDay;
+        
         // Calculate enhanced timing information
         calculateSunMoonTimes(panchanga, latitude, longitude, timezone);
         calculateRahuKaal(panchanga);
@@ -363,7 +366,6 @@ PanchangaData HinduCalendar::calculatePanchanga(double julianDay, double latitud
 
         // Set additional astronomical data
         panchanga.ayanamsaValue = getAyanamsaValue(julianDay);
-        panchanga.julianDay = julianDay;
         panchanga.kaliyugaYear = calculateKaliYear(julianDay);
         panchanga.shakaYear = calculateShakaYear(julianDay);
         panchanga.vikramYear = calculateVikramYear(julianDay);
@@ -957,6 +959,8 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         
         // SUNRISE CALCULATION - Using Swiss Ephemeris swe_rise_trans
         // Use the Julian Day directly - Swiss Ephemeris will find the next sunrise after this time
+        std::cout << "DEBUG: Hindu Panchanga Julian Day: " << panchanga.julianDay << std::endl;
+        std::cout << "DEBUG: Atmospheric - Pressure: " << atmosphere.pressure << " mbar, Temperature: " << atmosphere.temperature << "°C" << std::endl;
         int result = swe_rise_trans(panchanga.julianDay, SE_SUN, nullptr, flags, SE_CALC_RISE,
                                    geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
         if (result != ERR) {
@@ -1122,6 +1126,8 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         panchanga.brahmaMuhurtaEnd = calculateBrahmaMuhurta(panchanga.sunriseTime, false);
         panchanga.abhijitStart = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, true);
         panchanga.abhijitEnd = calculateAbhijitMuhurta(panchanga.sunriseTime, panchanga.sunsetTime, false);
+        panchanga.godhuliBelStart = calculateGodhuliBela(panchanga.sunsetTime, true);
+        panchanga.godhuliBelEnd = calculateGodhuliBela(panchanga.sunsetTime, false);
         double nextSunrise = panchanga.sunriseTime + 24.0;
         panchanga.nishitaMuhurtaStart = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, true);
         panchanga.nishitaMuhurtaEnd = calculateNishitaMuhurta(panchanga.sunsetTime, nextSunrise, false);
