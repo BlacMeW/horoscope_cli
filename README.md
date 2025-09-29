@@ -1,6 +1,6 @@
 # 🌟 Horoscope CLI ✨
 
-A powerful C++ command-line astrology tool featuring comprehensive horoscope calculations, traditional Vedic chart systems, and authentic Hindu Panchanga calendar with Swiss Ephemeris precision.
+A powerful C++ command-line astrology tool featuring comprehensive horoscope calculations, traditional Vedic chart systems, authentic Hindu Panchanga calendar, and complete Chinese calendar system with Swiss Ephemeris precision.
 
 ## 🎯 Best Features
 
@@ -35,6 +35,17 @@ A powerful C++ command-line astrology tool featuring comprehensive horoscope cal
 - 🎉 **Festival Calendar** - Automatic detection of Hindu festivals and observances
 - ⏰ **Muhurta Analysis** - Auspicious timing calculations for important events
 - 📊 **Multiple Formats** - Detailed view, table, CSV, and JSON outputs
+
+### 🐉 **Chinese Calendar System (NEW!)**
+- 🎭 **60-Year Sexagenary Cycle** - Traditional Gan-Zhi (干支) stem-branch combinations with astronomical precision
+- 🐲 **12-Year Zodiac Animals** - Complete zodiac system with 5-element associations (生肖)
+- 🌿 **Wu Xing Five Elements** - Traditional Wood-Fire-Earth-Metal-Water theory with generating/overcoming cycles
+- 🌙 **24 Solar Terms** - Precise seasonal markers based on sun longitude (節氣)
+- 🌚 **Lunar Calendar** - Traditional Chinese lunar months with leap month detection
+- 🎊 **Festival Calendar** - Spring Festival, Mid-Autumn, Dragon Boat, and traditional observances
+- 🔮 **Four Pillars of Destiny** - Complete BaZi (八字) astrological analysis system
+- 🌏 **Multi-language Support** - Traditional Chinese characters, English names, and Pinyin romanization
+- ⚡ **Swiss Ephemeris Integration** - Astronomical precision for all calculations
 
 ### 🌐 **Professional Astrology Tools**
 - 📐 **Aspect Calculator** - Major and minor planetary aspects with orbs
@@ -240,6 +251,60 @@ The Hindu calendar system provides complete traditional Panchanga calculations:
 🕐 MUHURTA ASSESSMENT:
    Status: ✅ Shubha (Auspicious)
    Note: Generally auspicious time for most activities
+```
+
+### Chinese Calendar System (NEW!) 🐉
+
+Complete traditional Chinese calendar with astronomical precision:
+
+```bash
+# Basic Chinese calendar for current date
+./horoscope_cli --chinese-calendar
+
+# Chinese calendar for specific date
+./horoscope_cli --chinese-calendar --date 2024-02-12
+
+# Your Chinese zodiac animal
+./horoscope_cli --chinese-zodiac --date 1990-08-15
+
+# Complete Four Pillars analysis (BaZi)
+./horoscope_cli --chinese-bazi --date 1985-03-15 --time 14:30 --lat 39.9042 --lon 116.4074 --timezone 8
+
+# Chinese monthly calendar
+./horoscope_cli --chinese-monthly --month 2024-02
+
+# Multi-language output (Chinese/English/Pinyin)
+./horoscope_cli --chinese-calendar --date 2024-12-25 --chinese-lang zh
+```
+
+**Features:**
+- 🎭 **60-Year Sexagenary Cycle** (Gan-Zhi 干支) - Traditional stem-branch combinations
+- 🐲 **12-Year Zodiac Animals** (生肖) - Complete zodiac with element associations  
+- 🌿 **5-Element Theory** (Wu Xing 五行) - Wood, Fire, Earth, Metal, Water cycles
+- 🌙 **24 Solar Terms** (Jie Qi 節氣) - Precise seasonal transitions
+- 🌚 **Lunar Calendar** - New moon calculations with leap month detection
+- 🎊 **Traditional Festivals** - Spring Festival, Mid-Autumn, Dragon Boat, etc.
+- 🔮 **Four Pillars of Destiny** (BaZi 八字) - Complete astrological analysis
+- 🌏 **Multi-language Support** - Chinese characters, English names, Pinyin romanization
+
+**Sample Chinese Calendar Output:**
+```
+🐉 Chinese Calendar Data
+=======================
+Chinese Date: 4721/11/23
+Gan-Zhi Year: 甲辰 (Jia-Chen) - Wood Dragon
+Zodiac Animal: 龍 Dragon (Wood Element)
+Solar Term: 冬至 Winter Solstice
+Current Festival: Winter Solstice Festival
+
+60-Year Cycle Position: 41
+├── Year Stem: 甲 Jia (Wood, Yang)
+├── Year Branch: 辰 Chen (Earth, Yang)  
+├── Month Stem: 丙 Bing (Fire, Yang)
+└── Day Stem: 戊 Wu (Earth, Yang)
+
+Auspicious: ✅ Yes
+Lucky Elements: Wood, Water
 ```
 
 ## Compare Traditional Systems
