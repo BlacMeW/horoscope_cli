@@ -13,6 +13,7 @@
 #include "myanmar_calendar.h"
 #include "myanmar_monthly_calendar.h"
 #include "hindu_monthly_calendar.h"
+#include "chinese_calendar.h"
 #include "astro_calendar.h"
 #include "professional_table.h"
 #include "swephexp.h"
@@ -147,6 +148,18 @@ struct CommandLineArgs {
     int searchMonth = -1;
     int searchMonthStart = -1;
     int searchMonthEnd = -1;
+
+    // Chinese Calendar options
+    bool showChineseCalendar = false;
+    bool showChineseRange = false;
+    std::string chineseFromDate;
+    std::string chineseToDate;
+    std::string chineseFormat = "table";
+    bool showChineseFestivals = false;
+    bool showSolarTerms = false;
+    bool showBaZi = false;
+    int chineseYear = -1;
+    int chineseMonth = -1;
     int searchTithi = -1;
     int searchTithiStart = -1;
 
@@ -705,6 +718,37 @@ void printHelp() {
     std::cout << "                            • Example: --search-month 5 (May)\n\n";
 
     std::cout << "    --search-month-range START END  Search for month range (1-12)\n";
+
+    std::cout << "\nCHINESE CALENDAR OPTIONS 🐉📅\n";
+    std::cout << "    --chinese          Show Chinese calendar for specified date\n";
+    std::cout << "                       • Displays Gan-Zhi (60-year cycle)\n";
+    std::cout << "                       • Shows zodiac animal and element\n";
+    std::cout << "                       • Includes lunar month and solar terms\n\n";
+
+    std::cout << "    --chinese-range FROM TO\n";
+    std::cout << "                       Generate Chinese calendar for date range\n";
+    std::cout << "                       • Format: YYYY-MM-DD YYYY-MM-DD\n";
+    std::cout << "                       • Shows daily Chinese calendar elements\n";
+    std::cout << "                       • Includes festivals and solar terms\n\n";
+
+    std::cout << "    --chinese-format FORMAT\n";
+    std::cout << "                       Chinese calendar output format\n";
+    std::cout << "                       table = Detailed ASCII table (default)\n";
+    std::cout << "                       compact = Traditional format\n";
+    std::cout << "                       csv   = Comma-separated values\n";
+    std::cout << "                       json  = JSON structure\n\n";
+
+    std::cout << "    --solar-terms      Show 24 solar terms for the year\n";
+    std::cout << "                       • Shows precise timing of seasonal markers\n";
+    std::cout << "                       • Includes Chinese and English names\n\n";
+
+    std::cout << "    --chinese-festivals Show traditional Chinese festivals\n";
+    std::cout << "                       • Spring Festival, Mid-Autumn Festival\n";
+    std::cout << "                       • Dragon Boat Festival, etc.\n\n";
+
+    std::cout << "    --bazi             Show Four Pillars of Destiny (BaZi) analysis\n";
+    std::cout << "                       • Year, Month, Day, Hour pillars\n";
+    std::cout << "                       • Element interactions and balance\n\n";
     std::cout << "                                     • Example: --search-month-range 4 6\n\n";
 
     std::cout << "    --search-tithi TITHI    Search for specific tithi (1-30)\n";
@@ -2014,6 +2058,27 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
             args.searchMonthEnd = std::stoi(argv[++i]);
         } else if (arg == "--search-tithi" && i + 1 < argc) {
             args.searchTithi = std::stoi(argv[++i]);
+
+        // Chinese Calendar options
+        } else if (arg == "--chinese") {
+            args.showChineseCalendar = true;
+        } else if (arg == "--chinese-range" && i + 2 < argc) {
+            args.chineseFromDate = argv[++i];
+            args.chineseToDate = argv[++i];
+            args.showChineseRange = true;
+        } else if (arg == "--chinese-format" && i + 1 < argc) {
+            args.chineseFormat = argv[++i];
+            if (args.chineseFormat != "table" && args.chineseFormat != "compact" &&
+                args.chineseFormat != "csv" && args.chineseFormat != "json") {
+                std::cerr << "Error: Chinese calendar format must be 'table', 'compact', 'csv', or 'json'\n";
+                return false;
+            }
+        } else if (arg == "--solar-terms") {
+            args.showSolarTerms = true;
+        } else if (arg == "--chinese-festivals") {
+            args.showChineseFestivals = true;
+        } else if (arg == "--bazi") {
+            args.showBaZi = true;
         } else if (arg == "--search-tithi-range" && i + 2 < argc) {
             args.searchTithiStart = std::stoi(argv[++i]);
             args.searchTithiEnd = std::stoi(argv[++i]);
@@ -2303,10 +2368,10 @@ bool validateArgs(const CommandLineArgs& args) {
         return true;
     }
 
-    // Eclipse, ephemeris, panchanga, Myanmar calendar, and Hindu/Myanmar search features can work without full birth data
+    // Eclipse, ephemeris, panchanga, Myanmar calendar, Chinese calendar, and Hindu/Myanmar search features can work without full birth data
     if (args.showEclipses || args.showConjunctions || args.showEphemerisTable || args.showKPTransitions ||
-        args.showPanchangaRange || args.showMyanmarCalendarRange || args.showHinduSearch || args.showMyanmarSearch ||
-        args.showGrahaYuddha || args.showDrikSunrise) {
+        args.showPanchangaRange || args.showMyanmarCalendarRange || args.showChineseRange || args.showHinduSearch || args.showMyanmarSearch ||
+        args.showGrahaYuddha || args.showDrikSunrise || args.showChineseCalendar || args.showSolarTerms || args.showChineseFestivals || args.showBaZi) {
         // For eclipse and conjunction range queries, we need coordinates (can come from location)
         if ((!args.eclipseFromDate.empty() || !args.conjunctionFromDate.empty() || !args.panchangaFromDate.empty() ||
              !args.myanmarCalendarFromDate.empty() || !args.searchStartDate.empty() || !args.myanmarSearchStartDate.empty() ||
@@ -2338,7 +2403,8 @@ bool validateArgs(const CommandLineArgs& args) {
 
     if (args.time.empty() && !args.showAstroCalendarMonthly &&
         args.searchJdOnly <= 0 && args.searchJdMyanmarOnly <= 0 && args.searchJdBirthChartOnly <= 0 &&
-        !args.showPanchanga && !args.showPanchangaRange && !args.showDrikSunrise) {
+        !args.showPanchanga && !args.showPanchangaRange && !args.showDrikSunrise &&
+        !args.showChineseCalendar && !args.showChineseRange && !args.showSolarTerms && !args.showChineseFestivals && !args.showBaZi) {
         std::cerr << "Error: --time is required\n";
         return false;
     }
@@ -4460,6 +4526,61 @@ int main(int argc, char* argv[]) {
         }
 
         return 0; // Exit after Myanmar calendar range
+    }
+
+    // Chinese Calendar processing
+    if (args.showChineseCalendar || args.showSolarTerms || args.showChineseFestivals || args.showBaZi) {
+        try {
+            ChineseCalendar chineseCalendar;
+            if (!chineseCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Chinese Calendar system: " << chineseCalendar.getLastError() << std::endl;
+                return 1;
+            }
+
+            // Parse date and time to get Julian day
+            double julianDay = 0.0;
+            {
+                int year, month, day;
+                double hour = 12.0; // Default noon
+                
+                // Parse date
+                sscanf(args.date.c_str(), "%d-%d-%d", &year, &month, &day);
+                
+                // Parse time if provided
+                if (!args.time.empty()) {
+                    int h, m, s = 0;
+                    if (sscanf(args.time.c_str(), "%d:%d:%d", &h, &m, &s) >= 2) {
+                        hour = h + m/60.0 + s/3600.0;
+                    }
+                }
+                
+                julianDay = chineseCalendar.gregorianToJulian(year, month, day, hour);
+            }
+            
+            ChineseCalendarData chineseData = chineseCalendar.calculateChineseCalendar(julianDay);
+
+            if (args.showChineseCalendar) {
+                std::cout << chineseCalendar.generateTable(chineseData) << std::endl;
+            }
+
+            if (args.showSolarTerms) {
+                std::cout << "Solar Terms feature is under development" << std::endl;
+            }
+
+            if (args.showChineseFestivals) {
+                std::cout << "Chinese Festivals feature is under development" << std::endl;
+            }
+
+            if (args.showBaZi) {
+                std::cout << "Four Pillars (BaZi) feature is under development" << std::endl;
+            }
+
+        } catch (const std::exception& e) {
+            std::cerr << "Error calculating Chinese calendar: " << e.what() << std::endl;
+            return 1;
+        }
+
+        return 0; // Exit after Chinese calendar
     }
 
     // Handle AstroCalendar single-day calculations
