@@ -18,7 +18,7 @@
 ║ ██                                                                  ██     ║
 ║██            📊 Swiss Ephemeris Integration 📊                      ██    ║
 ║██            🎯 Birth Charts & Vedic Astrology 🎯                   ██    ║
-║██            📅 Hindu & Myanmar Calendars 📅                       ██    ║
+║██            📅 Hindu, Myanmar & Chinese Calendars 📅              ██    ║
 ║██            🌚 Eclipse & Conjunction Analysis 🌚                   ██    ║
 ║██            🔢 KP System & Ephemeris Tables 🔢                     ██    ║
 ║ ██                                                                  ██     ║
@@ -29,7 +29,7 @@
 ║      ██            📖 Complete Feature Documentation 📖         ██          ║
 ║       ██      🚀 From Beginner to Expert Level 🚀              ██           ║
 ║        ██                                                      ██            ║
-║         ██         VERSION 2.1.0 • SEPTEMBER 2025            ██             ║
+║         ██         VERSION 2.2.0 • SEPTEMBER 2025            ██             ║
 ║          ██                                                  ██              ║
 ║           ████████████████████████████████████████████████████               ║
 ║                                                                                  ║
@@ -42,7 +42,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/BlacMeW/horoscope_cli)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/BlacMeW/horoscope_cli)
 [![Swiss Ephemeris](https://img.shields.io/badge/powered%20by-Swiss%20Ephemeris-orange.svg)](https://www.astro.com/swisseph/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#installation)
@@ -63,8 +63,8 @@
 |:--:|:--:|:--:|:--:|
 | [Quick Start](#-quick-start) | [Birth Charts](#-birth-chart-generation) | [Hindu Calendar](#%EF%B8%8F-hindu-calendar-panchanga) | [Eclipse Analysis](#-eclipse-analysis) |
 | [Installation](#-installation) | [Chart Styles](#-chart-styles) | [Myanmar Calendar](#-myanmar-calendar) | [Conjunctions](#-planetary-conjunctions) |
-| [Basic Usage](#-basic-usage) | [House Systems](#-house-systems) | [Monthly Calendars](#-monthly-calendars) | [KP System](#%EF%B8%8F-kp-system) |
-| [Parameters](#-required-parameters) | [Planetary Data](#-planetary-positions) | [Calendar Search](#-calendar-search) | [Ephemeris Tables](#-ephemeris-tables) |
+| [Basic Usage](#-basic-usage) | [House Systems](#-house-systems) | [**Chinese Calendar**](#-chinese-calendar-system) | [KP System](#%EF%B8%8F-kp-system) |
+| [Parameters](#-required-parameters) | [Planetary Data](#-planetary-positions) | [Monthly Calendars](#-monthly-calendars) | [Ephemeris Tables](#-ephemeris-tables) |
 
 </div>
 
@@ -101,6 +101,34 @@ mkdir build && cd build && cmake .. && make    # CMake build
 ./bin/horoscope_cli --panchanga \
                     --lat 28.6139 --lon 77.2090 --timezone 5.5 \
                     --date $(date +%Y-%m-%d) --time 12:00:00
+
+# NEW! Chinese calendar with zodiac
+./bin/horoscope_cli --chinese-calendar --date 2024-02-12
+```
+
+---
+
+## 🚀 NEW IN VERSION 2.2 - CHINESE CALENDAR SYSTEM
+
+### 🐉 Complete Chinese Calendar Implementation
+
+**✨ NEW FEATURES:**
+- **60-Year Sexagenary Cycle** (Gan-Zhi 干支) calculations
+- **12-Year Zodiac Animals** with element associations  
+- **24 Solar Terms** with astronomical precision
+- **Four Pillars of Destiny** (BaZi 八字) analysis
+- **Traditional Festivals** and auspicious day detection
+- **Multi-language support** (Chinese/English/Pinyin)
+
+```bash
+# Your Chinese zodiac animal
+./bin/horoscope_cli --chinese-zodiac --date 1990-08-15
+
+# Complete Chinese date analysis  
+./bin/horoscope_cli --chinese-calendar --date 2024-02-12 --chinese-detailed
+
+# Four Pillars fortune analysis
+./bin/horoscope_cli --chinese-bazi --date 1985-03-15 --time 14:30
 ```
 
 ---
@@ -679,6 +707,309 @@ Day Format: [GG][T##][P][V] = Gregorian / Hindu Tithi+Paksha / Varna
 # JSON for API integration
 ./bin/horoscope_cli --myanmar-search 2025-07-01 2025-07-31 \
                     --myanmar-search-sabbath --myanmar-search-format json
+```
+
+---
+
+## 🐉 CHINESE CALENDAR SYSTEM
+
+<div align="center">
+
+**✨ FEATURES:**
+- 🎭 **60-Year Sexagenary Cycle** (Gan-Zhi 干支)  
+- 🐲 **12-Year Zodiac Animals** (生肖)  
+- 🌿 **5-Element Theory** (Wu Xing 五行)  
+- 🌙 **24 Solar Terms** (Jie Qi 節氣)  
+- 🌚 **Lunar Calendar** with leap month detection  
+- 🎊 **Traditional Festivals** & auspicious days  
+- 🔮 **Four Pillars of Destiny** (BaZi 八字)  
+- 🌏 **Multi-language** (Chinese/English/Pinyin)  
+
+</div>
+
+The Chinese calendar system provides comprehensive traditional Chinese date calculations with astronomical precision using Swiss Ephemeris.
+
+### 🐲 Basic Chinese Calendar
+
+```bash
+# Current Chinese date
+./bin/horoscope_cli --chinese-calendar
+
+# Specific date
+./bin/horoscope_cli --chinese-calendar --date 2024-02-12
+
+# With location for precise solar terms
+./bin/horoscope_cli --chinese-calendar --date 2024-06-21 \
+                    --location "Beijing" --timezone +8
+
+# Detailed output with all elements
+./bin/horoscope_cli --chinese-calendar --date 2024-12-25 \
+                    --chinese-detailed
+```
+
+**Example Output:**
+```
+🐉 Chinese Calendar Data
+=======================
+Chinese Date: 4721/11/23
+Gan-Zhi Year: 甲辰 (Jia-Chen) - Wood Dragon
+Zodiac Animal: 龍 Dragon (Wood Element)
+Solar Term: 冬至 Winter Solstice
+Lunar Phase: Waning Gibbous
+
+60-Year Cycle Position: 41
+├── Year Stem: 甲 Jia (Wood, Yang)
+├── Year Branch: 辰 Chen (Earth, Yang)
+├── Month Stem: 丙 Bing (Fire, Yang) 
+├── Month Branch: 子 Zi (Water, Yang)
+├── Day Stem: 戊 Wu (Earth, Yang)
+└── Day Branch: 午 Wu (Fire, Yang)
+
+Auspicious: ✅ Yes
+Festivals: Winter Solstice Festival
+```
+
+### 🎭 Sexagenary Cycle (60-Year Gan-Zhi)
+
+The Chinese calendar uses a 60-year cycle combining 10 Heavenly Stems (天干) and 12 Earthly Branches (地支).
+
+```bash
+# Show current year's Gan-Zhi
+./bin/horoscope_cli --chinese-ganzhi
+
+# Historical Gan-Zhi lookup
+./bin/horoscope_cli --chinese-ganzhi --date 1976-06-11
+
+# Full cycle calculation
+./bin/horoscope_cli --chinese-ganzhi --date 2024-01-01 \
+                    --chinese-show-cycle
+
+# Four Pillars (BaZi) calculation
+./bin/horoscope_cli --chinese-bazi --date 1985-03-15 --time 14:30
+```
+
+**Heavenly Stems (天干):**
+```
+1. 甲 Jia (Wood+)    6. 己 Ji (Earth-)
+2. 乙 Yi (Wood-)     7. 庚 Geng (Metal+)  
+3. 丙 Bing (Fire+)   8. 辛 Xin (Metal-)
+4. 丁 Ding (Fire-)   9. 壬 Ren (Water+)
+5. 戊 Wu (Earth+)   10. 癸 Gui (Water-)
+```
+
+**Earthly Branches (地支) & Animals:**
+```
+1. 子 Zi - 鼠 Rat        7. 午 Wu - 馬 Horse
+2. 丑 Chou - 牛 Ox       8. 未 Wei - 羊 Goat  
+3. 寅 Yin - 虎 Tiger     9. 申 Shen - 猴 Monkey
+4. 卯 Mao - 兔 Rabbit   10. 酉 You - 雞 Rooster
+5. 辰 Chen - 龍 Dragon  11. 戌 Xu - 狗 Dog
+6. 巳 Si - 蛇 Snake     12. 亥 Hai - 豬 Pig
+```
+
+### 🌿 Five Elements (Wu Xing 五行)
+
+```bash
+# Element analysis for date
+./bin/horoscope_cli --chinese-elements --date 2024-03-15
+
+# Element interactions
+./bin/horoscope_cli --chinese-elements --date 1990-08-20 \
+                    --chinese-element-analysis
+
+# Lucky elements for year
+./bin/horoscope_cli --chinese-lucky-elements --chinese-year 4721
+```
+
+**Element Cycles:**
+```
+🌿 Wood (木) → 🔥 Fire (火) → 🌍 Earth (土) → 🔨 Metal (金) → 💧 Water (水)
+   Generating Cycle (相生)
+
+🌿 Wood → 🌍 Earth → 💧 Water → 🔥 Fire → 🔨 Metal → 🌿 Wood
+   Overcoming Cycle (相克)
+```
+
+### 🌙 24 Solar Terms (二十四節氣)
+
+Solar terms mark seasonal transitions and agricultural timing.
+
+```bash
+# Current solar term
+./bin/horoscope_cli --chinese-solar-terms
+
+# Solar terms for year
+./bin/horoscope_cli --chinese-solar-terms --year 2024
+
+# Next solar term timing
+./bin/horoscope_cli --chinese-next-solar-term
+
+# Solar term calendar
+./bin/horoscope_cli --chinese-solar-term-calendar --year 2025
+```
+
+**24 Solar Terms:**
+```
+🌸 SPRING          🌞 SUMMER           🍂 AUTUMN          ❄️ WINTER
+立春 Li Chun       立夏 Li Xia         立秋 Li Qiu        立冬 Li Dong
+雨水 Yu Shui       小滿 Xiao Man       處暑 Chu Shu       小雪 Xiao Xue
+驚蟄 Jing Zhe      芒種 Mang Zhong     白露 Bai Lu        大雪 Da Xue
+春分 Chun Fen      夏至 Xia Zhi        秋分 Qiu Fen       冬至 Dong Zhi
+清明 Qing Ming     小暑 Xiao Shu       寒露 Han Lu        小寒 Xiao Han
+穀雨 Gu Yu         大暑 Da Shu         霜降 Shuang Jiang  大寒 Da Han
+```
+
+### 🎊 Traditional Festivals
+
+```bash
+# Festivals for current month
+./bin/horoscope_cli --chinese-festivals
+
+# Festivals for specific year
+./bin/horoscope_cli --chinese-festivals --chinese-year 4722
+
+# Festival calendar
+./bin/horoscope_cli --chinese-festival-calendar --year 2025
+
+# Auspicious days
+./bin/horoscope_cli --chinese-auspicious-days --month 2025-02
+```
+
+**Major Festivals:**
+```
+🧧 春節 Spring Festival (Chinese New Year) - 1st day of 1st month
+🏮 元宵節 Lantern Festival - 15th day of 1st month  
+🐲 端午節 Dragon Boat Festival - 5th day of 5th month
+💕 七夕 Qixi Festival - 7th day of 7th month
+🌕 中秋節 Mid-Autumn Festival - 15th day of 8th month
+🍂 重陽節 Double Ninth Festival - 9th day of 9th month
+```
+
+### 🔮 Four Pillars of Destiny (八字 BaZi)
+
+BaZi provides comprehensive fortune analysis using birth year, month, day, and hour.
+
+```bash
+# Complete BaZi analysis
+./bin/horoscope_cli --chinese-bazi \
+                    --date 1985-03-15 --time 14:30 \
+                    --location "Shanghai" --timezone +8
+
+# Element strength analysis
+./bin/horoscope_cli --chinese-bazi-elements \
+                    --date 1990-12-25 --time 09:15
+
+# Fortune periods (大運)
+./bin/horoscope_cli --chinese-dayun \
+                    --date 1988-07-20 --time 16:45 \
+                    --chinese-fortune-years 10
+
+# Annual fortune (流年)
+./bin/horoscope_cli --chinese-liunian \
+                    --date 1975-11-30 --time 11:20 \
+                    --chinese-target-year 2025
+```
+
+### 📅 Chinese Monthly Calendar
+
+```bash
+# Current month Chinese calendar
+./bin/horoscope_cli --chinese-monthly
+
+# Specific month
+./bin/horoscope_cli --chinese-monthly --month 2024-02
+
+# Combined calendars (Gregorian + Chinese)
+./bin/horoscope_cli --combined-calendar --month 2025-03 \
+                    --calendars gregorian,chinese
+
+# Multi-calendar view
+./bin/horoscope_cli --multi-calendar --month 2024-12 \
+                    --calendars gregorian,hindu,myanmar,chinese
+```
+
+### 🔍 Chinese Calendar Search
+
+```bash
+# Dragon years in range
+./bin/horoscope_cli --chinese-search --year-range 2020-2030 \
+                    --chinese-search-animal dragon
+
+# Specific elements
+./bin/horoscope_cli --chinese-search --year-range 2020-2025 \
+                    --chinese-search-element wood
+
+# Solar term dates
+./bin/horoscope_cli --chinese-search --year 2025 \
+                    --chinese-search-solar-term "spring-equinox"
+
+# Festival dates
+./bin/horoscope_cli --chinese-search --year 2025 \
+                    --chinese-search-festival "spring-festival"
+
+# Auspicious days
+./bin/horoscope_cli --chinese-search --month 2025-06 \
+                    --chinese-search-auspicious
+
+# Gan-Zhi combinations
+./bin/horoscope_cli --chinese-search --year-range 2020-2040 \
+                    --chinese-search-ganzhi "jia-chen"
+```
+
+### 🌏 Multi-Language Support
+
+```bash
+# Traditional Chinese output
+./bin/horoscope_cli --chinese-calendar --chinese-lang zh
+
+# English output
+./bin/horoscope_cli --chinese-calendar --chinese-lang en
+
+# Pinyin romanization
+./bin/horoscope_cli --chinese-calendar --chinese-lang pinyin
+
+# Combined Chinese + English
+./bin/horoscope_cli --chinese-calendar --chinese-lang zh-en
+```
+
+### 🎯 Practical Examples
+
+```bash
+# Find your Chinese zodiac animal
+./bin/horoscope_cli --chinese-zodiac --date 1990-08-15
+
+# Check if year is leap year
+./bin/horoscope_cli --chinese-leap-year --chinese-year 4722
+
+# Calculate age in Chinese calendar
+./bin/horoscope_cli --chinese-age --birthdate 1985-06-20
+
+# Find Chinese New Year date
+./bin/horoscope_cli --chinese-new-year --year 2025
+
+# Solar term for farming
+./bin/horoscope_cli --chinese-solar-terms --location "Beijing" \
+                    --agricultural-info
+
+# Wedding date selection
+./bin/horoscope_cli --chinese-auspicious-wedding \
+                    --month 2025-05 --location "Hong Kong"
+```
+
+### 📊 Output Formats
+
+```bash
+# Table format
+./bin/horoscope_cli --chinese-calendar --format table
+
+# JSON format
+./bin/horoscope_cli --chinese-calendar --format json
+
+# CSV for spreadsheets
+./bin/horoscope_cli --chinese-monthly --format csv
+
+# XML format
+./bin/horoscope_cli --chinese-bazi --format xml
 ```
 
 ---
