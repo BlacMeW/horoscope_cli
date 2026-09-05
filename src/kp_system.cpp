@@ -205,35 +205,57 @@ Nakshatra KPSystem::findNakshatra(double longitude) const {
     return nakshatras.back();
 }
 
+struct KPSubDivisionResult {
+    Planet lord;
+    double startDeg;
+    double endDeg;
+};
+
+static KPSubDivisionResult findNextSubDivision(double longitude, double parentStart, double parentEnd, Planet parentLord) {
+    int lordIdx = getVimshottariIndex(parentLord);
+    double parentSpan = parentEnd - parentStart;
+    double curStart = parentStart;
+
+    for (int i = 0; i < 9; ++i) {
+        int idx = (lordIdx + i) % 9;
+        double span = parentSpan * (VIMSHOTTARI_CYCLE[idx].years / 120.0);
+        double curEnd = (i == 8) ? parentEnd : (curStart + span);
+        if (longitude >= curStart && (longitude < curEnd || (i == 8 && longitude <= parentEnd + 1e-9))) {
+            return {VIMSHOTTARI_CYCLE[idx].planet, curStart, curEnd};
+        }
+        curStart = curEnd;
+    }
+    return {parentLord, parentStart, parentEnd};
+}
+
 Planet KPSystem::findSubLord(double longitude, const Nakshatra& nakshatra, int level) const {
     longitude = normalizeKPLongitude(longitude);
 
-    int nakIdx = nakshatra.number - 1;
-    if (nakIdx < 0 || nakIdx >= static_cast<int>(subDivisions.size())) {
-        return nakshatra.lord;
-    }
+    auto sub1 = findNextSubDivision(longitude, nakshatra.startDegree, nakshatra.endDegree, nakshatra.lord);
+    if (level == 3 || level == static_cast<int>(KPLevel::SUB)) return sub1.lord;
 
-    // Find appropriate subdivision
-    Planet lastFound = nakshatra.lord;
-    for (const auto& div : subDivisions[nakIdx]) {
-        if (div.level == level) {
-            lastFound = div.lord;
-            if (longitude >= div.startDegree && (longitude < div.endDegree || (div.endDegree >= nakshatra.endDegree - 1e-7 && longitude <= nakshatra.endDegree + 1e-7))) {
-                return div.lord;
-            }
-        }
-    }
+    auto sub2 = findNextSubDivision(longitude, sub1.startDeg, sub1.endDeg, sub1.lord);
+    if (level == 4 || level == static_cast<int>(KPLevel::SUB_SUB)) return sub2.lord;
 
-    return lastFound;
+    auto sub3 = findNextSubDivision(longitude, sub2.startDeg, sub2.endDeg, sub2.lord);
+    if (level == 5 || level == static_cast<int>(KPLevel::SUB_SUB_SUB)) return sub3.lord;
+
+    auto sub4 = findNextSubDivision(longitude, sub3.startDeg, sub3.endDeg, sub3.lord);
+    if (level == 6 || level == static_cast<int>(KPLevel::SUB_4)) return sub4.lord;
+
+    auto sub5 = findNextSubDivision(longitude, sub4.startDeg, sub4.endDeg, sub4.lord);
+    if (level == 7 || level == static_cast<int>(KPLevel::SUB_5)) return sub5.lord;
+
+    return sub1.lord;
 }
 
 KPPosition KPSystem::calculateKPPosition(double longitude) const {
     if (!isInitialized) {
-        KPPosition empty;
+        KPPosition empty{};
         return empty;
     }
 
-    KPPosition pos;
+    KPPosition pos{};
     pos.longitude = longitude;
 
     // Level 1: Sign
@@ -243,14 +265,25 @@ KPPosition KPSystem::calculateKPPosition(double longitude) const {
     // Level 2: Nakshatra
     pos.nakshatra = findNakshatra(longitude);
 
-    // Level 3: Sub
-    pos.subLord = findSubLord(longitude, pos.nakshatra, 3);
+    // Sub-L1
+    auto sub1 = findNextSubDivision(longitude, pos.nakshatra.startDegree, pos.nakshatra.endDegree, pos.nakshatra.lord);
+    pos.subLord = sub1.lord;
 
-    // Level 4: Sub-Sub
-    pos.subSubLord = findSubLord(longitude, pos.nakshatra, 4);
+    // Sub-L2
+    auto sub2 = findNextSubDivision(longitude, sub1.startDeg, sub1.endDeg, sub1.lord);
+    pos.subSubLord = sub2.lord;
 
-    // Level 5: Sub-Sub-Sub
-    pos.subSubSubLord = findSubLord(longitude, pos.nakshatra, 5);
+    // Sub-L3
+    auto sub3 = findNextSubDivision(longitude, sub2.startDeg, sub2.endDeg, sub2.lord);
+    pos.subSubSubLord = sub3.lord;
+
+    // Sub-L4
+    auto sub4 = findNextSubDivision(longitude, sub3.startDeg, sub3.endDeg, sub3.lord);
+    pos.sub4Lord = sub4.lord;
+
+    // Sub-L5
+    auto sub5 = findNextSubDivision(longitude, sub4.startDeg, sub4.endDeg, sub4.lord);
+    pos.sub5Lord = sub5.lord;
 
     return pos;
 }
@@ -272,7 +305,9 @@ std::string KPPosition::getFormattedPosition() const {
         << nakshatra.name << " "
         << planetToString(subLord) << " "
         << planetToString(subSubLord) << " "
-        << planetToString(subSubSubLord);
+        << planetToString(subSubSubLord) << " "
+        << planetToString(sub4Lord) << " "
+        << planetToString(sub5Lord);
     return oss.str();
 }
 
@@ -282,7 +317,9 @@ std::string KPPosition::getKPNotation() const {
     oss << signNum << "-" << nakshatra.number << "-"
         << planetToShortString(subLord) << "-"
         << planetToShortString(subSubLord) << "-"
-        << planetToShortString(subSubSubLord);
+        << planetToShortString(subSubSubLord) << "-"
+        << planetToShortString(sub4Lord) << "-"
+        << planetToShortString(sub5Lord);
     return oss.str();
 }
 
@@ -305,10 +342,12 @@ std::string KPSystem::generateKPTable(const std::vector<PlanetPosition>& planets
           << std::setw(8)  << "Sub-L1"
           << std::setw(8)  << "Sub-L2"
           << std::setw(8)  << "Sub-L3"
-          << std::setw(16) << "KP Notation"
+          << std::setw(8)  << "Sub-L4"
+          << std::setw(8)  << "Sub-L5"
+          << std::setw(26) << "KP Notation"
           << "Longitude\n";
 
-    table << std::string(98, '-') << "\n";
+    table << std::string(118, '-') << "\n";
 
     // Planet data
     for (size_t i = 0; i < planets.size() && i < kpPositions.size(); i++) {
@@ -325,13 +364,15 @@ std::string KPSystem::generateKPTable(const std::vector<PlanetPosition>& planets
               << std::setw(8)  << planetToShortString(kpPos.subLord)
               << std::setw(8)  << planetToShortString(kpPos.subSubLord)
               << std::setw(8)  << planetToShortString(kpPos.subSubSubLord)
-              << std::setw(16) << kpPos.getKPNotation()
+              << std::setw(8)  << planetToShortString(kpPos.sub4Lord)
+              << std::setw(8)  << planetToShortString(kpPos.sub5Lord)
+              << std::setw(26) << kpPos.getKPNotation()
               << lonStream.str() << "\n";
     }
 
-    table << std::string(98, '-') << "\n";
-    table << "Legend: L1=Sub, L2=Sub-Sub, L3=Sub-Sub-Sub levels\n";
-    table << "KP Notation: Sign-Nakshatra-SubL1-SubL2-SubL3\n";
+    table << std::string(118, '-') << "\n";
+    table << "Legend: L1=Sub, L2=Sub-Sub, L3=Sub-3, L4=Sub-4, L5=Sub-5 levels\n";
+    table << "KP Notation: Sign-Nakshatra-SubL1-SubL2-SubL3-SubL4-SubL5\n";
 
     return table.str();
 }
@@ -500,9 +541,11 @@ std::string kpLevelToString(KPLevel level) {
     switch (level) {
         case KPLevel::SIGN: return "Sign";
         case KPLevel::STAR: return "Star";
-        case KPLevel::SUB: return "Sub";
-        case KPLevel::SUB_SUB: return "Sub-Sub";
-        case KPLevel::SUB_SUB_SUB: return "Sub³";
+        case KPLevel::SUB: return "Sub-L1";
+        case KPLevel::SUB_SUB: return "Sub-L2";
+        case KPLevel::SUB_SUB_SUB: return "Sub-L3";
+        case KPLevel::SUB_4: return "Sub-L4";
+        case KPLevel::SUB_5: return "Sub-L5";
         default: return "Unknown";
     }
 }
@@ -510,9 +553,11 @@ std::string kpLevelToString(KPLevel level) {
 KPLevel stringToKPLevel(const std::string& levelStr) {
     if (levelStr == "sign" || levelStr == "Sign" || levelStr == "1") return KPLevel::SIGN;
     if (levelStr == "star" || levelStr == "Star" || levelStr == "2") return KPLevel::STAR;
-    if (levelStr == "sub" || levelStr == "Sub" || levelStr == "3") return KPLevel::SUB;
-    if (levelStr == "sub-sub" || levelStr == "Sub-Sub" || levelStr == "4") return KPLevel::SUB_SUB;
-    if (levelStr == "sub³" || levelStr == "Sub³" || levelStr == "5") return KPLevel::SUB_SUB_SUB;
+    if (levelStr == "sub" || levelStr == "Sub" || levelStr == "sub-l1" || levelStr == "Sub-L1" || levelStr == "3") return KPLevel::SUB;
+    if (levelStr == "sub-sub" || levelStr == "Sub-Sub" || levelStr == "sub-l2" || levelStr == "Sub-L2" || levelStr == "4") return KPLevel::SUB_SUB;
+    if (levelStr == "sub³" || levelStr == "Sub³" || levelStr == "sub-l3" || levelStr == "Sub-L3" || levelStr == "5") return KPLevel::SUB_SUB_SUB;
+    if (levelStr == "sub-l4" || levelStr == "Sub-L4" || levelStr == "sub4" || levelStr == "6") return KPLevel::SUB_4;
+    if (levelStr == "sub-l5" || levelStr == "Sub-L5" || levelStr == "sub5" || levelStr == "7") return KPLevel::SUB_5;
     return KPLevel::SUB; // Default
 }
 

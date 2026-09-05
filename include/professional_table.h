@@ -274,6 +274,19 @@ void addKPSystemRow(ProfessionalTable& table,
                    const std::string& kpNotation,
                    const std::string& signification);
 
+void addKPSystemRow(ProfessionalTable& table,
+                   const std::string& planet,
+                   const std::string& longitude,
+                   const std::string& sign,
+                   const std::string& nakshatra,
+                   const std::string& subLord,
+                   const std::string& subSub,
+                   const std::string& subSubSub,
+                   const std::string& sub4,
+                   const std::string& sub5,
+                   const std::string& kpNotation,
+                   const std::string& signification);
+
 // Utility functions for Graha Yuddha Events
 void addGrahaYuddhaRow(ProfessionalTable& table,
                       const std::string& date,

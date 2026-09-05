@@ -8,11 +8,13 @@ namespace Astro {
 
 // KP Sub Lord Levels
 enum class KPLevel {
-    SIGN = 1,      // Rashi Level
-    STAR = 2,      // Nakshatra Level
-    SUB = 3,       // Sub Level
-    SUB_SUB = 4,   // Sub-Sub Level
-    SUB_SUB_SUB = 5 // Sub-Sub-Sub Level
+    SIGN = 1,          // Rashi Level
+    STAR = 2,          // Nakshatra Level
+    SUB = 3,           // Sub Level (Sub-L1)
+    SUB_SUB = 4,       // Sub-Sub Level (Sub-L2)
+    SUB_SUB_SUB = 5,   // Sub-Sub-Sub Level (Sub-L3)
+    SUB_4 = 6,         // Sub-4 Level (Sub-L4)
+    SUB_5 = 7          // Sub-5 Level (Sub-L5)
 };
 
 // Nakshatra (Star) information
@@ -32,7 +34,7 @@ struct KPSubDivision {
     int level;          // Sub level (1-5)
 };
 
-// Complete KP Position with 5 levels
+// Complete KP Position with 5 sub levels
 struct KPPosition {
     // Level 1: Sign
     ZodiacSign sign;
@@ -41,14 +43,12 @@ struct KPPosition {
     // Level 2: Nakshatra (Star)
     Nakshatra nakshatra;
 
-    // Level 3: Sub
-    Planet subLord;
-
-    // Level 4: Sub-Sub
-    Planet subSubLord;
-
-    // Level 5: Sub-Sub-Sub
-    Planet subSubSubLord;
+    // Sub Levels 1 to 5:
+    Planet subLord;         // Sub-L1
+    Planet subSubLord;      // Sub-L2
+    Planet subSubSubLord;   // Sub-L3
+    Planet sub4Lord;        // Sub-L4
+    Planet sub5Lord;        // Sub-L5
 
     // Original longitude
     double longitude;

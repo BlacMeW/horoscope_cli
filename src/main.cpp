@@ -4447,16 +4447,18 @@ int main(int argc, char* argv[]) {
                 std::string subLord = getPlanetName(kpPos.subLord);
                 std::string subSub = getPlanetName(kpPos.subSubLord);
                 std::string subSubSub = getPlanetName(kpPos.subSubSubLord);
-                std::string kpNotation = sign.substr(0,2) + "-" + nakshatra.substr(0,3) + "-" + subLord.substr(0,2);
+                std::string sub4 = getPlanetName(kpPos.sub4Lord);
+                std::string sub5 = getPlanetName(kpPos.sub5Lord);
+                std::string kpNotation = kpPos.getKPNotation();
                 std::string signification = "Career, Authority"; // Placeholder
 
                 addKPSystemRow(table, planetName, longitude, sign, nakshatra, subLord,
-                              subSub, subSubSub, kpNotation, signification);
+                              subSub, subSubSub, sub4, sub5, kpNotation, signification);
             }
 
             std::cout << "\n" << table.toString() << std::endl;
         } else if (args.kpOutputFormat == "csv") {
-            std::cout << "Planet,Longitude,Sign,Nakshatra,SubLord,SubSub,SubSubSub,KP_Notation,Signification\n";
+            std::cout << "Planet,Longitude,Sign,Nakshatra,SubLord,SubSub,SubSubSub,Sub4,Sub5,KP_Notation,Signification\n";
             const auto& planetPositions = chart.getPlanetPositions();
             for (const auto& planet : planetPositions) {
                 // Calculate actual KP position
@@ -4467,12 +4469,15 @@ int main(int argc, char* argv[]) {
                 std::string subLord = getPlanetName(kpPos.subLord);
                 std::string subSub = getPlanetName(kpPos.subSubLord);
                 std::string subSubSub = getPlanetName(kpPos.subSubSubLord);
-                std::string kpNotation = sign.substr(0,2) + "-" + nakshatra.substr(0,3) + "-" + subLord.substr(0,2);
+                std::string sub4 = getPlanetName(kpPos.sub4Lord);
+                std::string sub5 = getPlanetName(kpPos.sub5Lord);
+                std::string kpNotation = kpPos.getKPNotation();
                 
                 std::cout << getPlanetName(planet.planet) << ","
                           << planet.longitude << ","
                           << sign << ","
                           << nakshatra << "," << subLord << "," << subSub << "," << subSubSub << ","
+                          << sub4 << "," << sub5 << ","
                           << kpNotation << ",Career\n";
             }
         } else if (args.kpOutputFormat == "json") {
@@ -4492,9 +4497,9 @@ int main(int argc, char* argv[]) {
                 std::cout << "      \"sub_lord\": \"" << getPlanetName(kpPos.subLord) << "\",\n";
                 std::cout << "      \"sub_sub_lord\": \"" << getPlanetName(kpPos.subSubLord) << "\",\n";
                 std::cout << "      \"sub_sub_sub_lord\": \"" << getPlanetName(kpPos.subSubSubLord) << "\",\n";
-                std::string sign = zodiacSignToString(longitudeToSign(planet.longitude));
-                std::string kpNotation = sign.substr(0,2) + "-" + kpPos.nakshatra.name.substr(0,3) + "-" + getPlanetName(kpPos.subLord).substr(0,2);
-                std::cout << "      \"kp_notation\": \"" << kpNotation << "\"\n";
+                std::cout << "      \"sub_4_lord\": \"" << getPlanetName(kpPos.sub4Lord) << "\",\n";
+                std::cout << "      \"sub_5_lord\": \"" << getPlanetName(kpPos.sub5Lord) << "\",\n";
+                std::cout << "      \"kp_notation\": \"" << kpPos.getKPNotation() << "\"\n";
                 std::cout << "    }" << (i < planetPositions.size() - 1 ? "," : "") << "\n";
             }
             std::cout << "  ]\n}\n";

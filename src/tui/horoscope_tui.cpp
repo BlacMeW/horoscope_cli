@@ -24,17 +24,17 @@
 namespace AstroTui {
 
 // 135-byte theme palettes for Turbo Vision
-// 1. Turbo C++ 3.0 IDE Classic: Authentic Borland Deep Blue editor & desktop, light gray menu/status
+// 1. Turbo C++ 3.0 IDE Classic: Authentic Borland Deep Dark Navy Blue (ရိုးရိုး အပြာရင့်) editor & desktop, light gray menu/status
 static const char cpTurboCpp[] =
-    "\x17\x70\x78\x74\x1F\x18\x1E\x17\x1F\x1E\x13\x1B\x1F\x10\x1F" /* 1-15: Desktop, StatusLine, MenuBar, BlueWindow */
-    "\x17\x1F\x1E\x13\x13\x10\x1F\x1F\x70\x7F\x7E\x13\x13\x70\x7F\x7E" /* 16-31: Win2 (Deep Blue), GrayWin */
-    "\x70\x7F\x74\x13\x13\x70\x70\x7F\x74\x1F\x1E\x1E\x70\x1F\x74\x70" /* 32-47: Dialogs & Buttons */
-    "\x1F\x1E\x0F\x1F\x1B\x70\x74\x70\x70\x70\x1F\x1E\x70\x13\x78\x00" /* 48-63: Controls, InputLines */
+    "\x11\x70\x78\x74\x1F\x18\x1E\x17\x1F\x1E\x1F\x17\x1F\x10\x1F" /* 1-15: Desktop (solid dark blue), StatusLine, MenuBar, BlueWindow */
+    "\x17\x1F\x1E\x1F\x1F\x10\x1F\x1F\x70\x7F\x7E\x1F\x1F\x70\x7F\x7E" /* 16-31: Win2 (Deep Blue), GrayWin */
+    "\x70\x7F\x74\x1F\x1F\x70\x70\x7F\x74\x1F\x1E\x1E\x70\x1F\x74\x70" /* 32-47: Dialogs & Buttons */
+    "\x1F\x1E\x0F\x1F\x1F\x70\x74\x70\x70\x70\x1F\x1E\x70\x1F\x78\x00" /* 48-63: Controls, InputLines */
     "\x17\x1F\x1E\x71\x71\x1E\x17\x1F\x1E\x1F\x1E\x1F\x78\x1E\x10\x10" /* 64-79 */
-    "\x1F\x1E\x70\x1F\x7A\x70\x12\x70\x70\x70\x1F\x1E\x70\x13\x78\x00" /* 80-95 */
-    "\x17\x1F\x1A\x13\x13\x1E\x10\x1F\x1E\x1F\x1E\x1F\x78\x1E\x10\x70" /* 96-111 */
-    "\x7F\x7E\x1F\x1F\x1A\x70\x12\x70\x71\x70\x1F\x7E\x71\x13\x78\x00" /* 112-127 */
-    "\x17\x1F\x1A\x13\x13\x10\x1E\x1E";                                 /* 128-135 */
+    "\x1F\x1E\x70\x1F\x7A\x70\x12\x70\x70\x70\x1F\x1E\x70\x1F\x78\x00" /* 80-95 */
+    "\x17\x1F\x1A\x1F\x1F\x1E\x10\x1F\x1E\x1F\x1E\x1F\x78\x1E\x10\x70" /* 96-111 */
+    "\x7F\x7E\x1F\x1F\x1A\x70\x12\x70\x71\x70\x1F\x7E\x71\x1F\x78\x00" /* 112-127 */
+    "\x17\x1F\x1A\x1F\x1F\x10\x1E\x1E";                                 /* 128-135 */
 
 // 2. Modern Dark Slate: High contrast dark theme, zero muddy colors
 static const char cpModernDark[] =
@@ -1346,8 +1346,66 @@ void HoroscopeTuiApp::setTheme(int themeId) {
     redraw();
 }
 
+static TPalette createTurboCppPalette() {
+    TColorAttr attrs[sizeof(cpTurboCpp) - 1];
+    // Authentic Borland Deep Dark Navy Blue (ရိုးရိုး အပြာရင့်)
+    const TColorRGB darkNavyBlue(0x00, 0x1A, 0x70);       // Rich Deep Dark Navy Blue (#001A70)
+    const TColorRGB desktopNavyBlue(0x00, 0x10, 0x48);    // Deep solid dark blue for desktop (#001048)
+    const TColorRGB brightWhite(0xFF, 0xFF, 0xFF);        // Crisp High Contrast White
+    const TColorRGB borlandYellow(0xFF, 0xFF, 0x55);      // Borland Title / hotkey yellow
+    const TColorRGB borlandLightGray(0xC0, 0xC0, 0xC0);   // Menu & status bar light gray
+    const TColorRGB borlandDarkGray(0x55, 0x55, 0x55);    // Inactive / border dark gray
+    const TColorRGB borlandGreen(0x55, 0xFF, 0x55);       // Window control green
+    const TColorRGB borlandRed(0xFF, 0x55, 0x55);         // Alert / shortcut red
+
+    for (size_t i = 0; i < sizeof(cpTurboCpp) - 1; ++i) {
+        uchar b = (uchar)cpTurboCpp[i];
+        uchar fgIdx = b & 0x0F;
+        uchar bgIdx = (b >> 4) & 0x0F;
+
+        // Map background: index 1 is Blue -> map to darkNavyBlue (or desktopNavyBlue for desktop)
+        TColor bg;
+        if (bgIdx == 1) {
+            bg = (i == 0) ? TColor(desktopNavyBlue) : TColor(darkNavyBlue);
+        } else if (bgIdx == 7) {
+            bg = TColor(borlandLightGray);
+        } else if (bgIdx == 0) {
+            bg = TColor(TColorRGB(0x00, 0x00, 0x00));
+        } else {
+            bg = TColor((char)bgIdx);
+        }
+
+        // Map foreground: replace any cyan/light blue (3, B) with bright white or yellow
+        TColor fg;
+        if (fgIdx == 0xF) {
+            fg = TColor(brightWhite);
+        } else if (fgIdx == 0xE) {
+            fg = TColor(borlandYellow);
+        } else if (fgIdx == 0x7) {
+            fg = TColor(borlandLightGray);
+        } else if (fgIdx == 0x8) {
+            fg = TColor(borlandDarkGray);
+        } else if (fgIdx == 0x4 || fgIdx == 0xC) {
+            fg = TColor(borlandRed);
+        } else if (fgIdx == 0x2 || fgIdx == 0xA) {
+            fg = TColor(borlandGreen);
+        } else if (fgIdx == 0x0) {
+            fg = TColor(TColorRGB(0x00, 0x00, 0x00));
+        } else if (fgIdx == 0x1) {
+            fg = TColor(desktopNavyBlue);
+        } else if (fgIdx == 0x3 || fgIdx == 0xB) {
+            fg = TColor(brightWhite);
+        } else {
+            fg = TColor((char)fgIdx);
+        }
+
+        attrs[i] = TColorAttr(fg, bg);
+    }
+    return TPalette(attrs, sizeof(cpTurboCpp) - 1);
+}
+
 TPalette& HoroscopeTuiApp::getPalette() const {
-    static TPalette turboPal(cpTurboCpp, sizeof(cpTurboCpp) - 1);
+    static TPalette turboPal = createTurboCppPalette();
     static TPalette darkPal(cpModernDark, sizeof(cpModernDark) - 1);
     static TPalette bwPal(cpAppBlackWhite, sizeof(cpAppBlackWhite) - 1);
 

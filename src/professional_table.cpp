@@ -829,7 +829,24 @@ void addKPSystemRow(ProfessionalTable& table,
                    const std::string& kpNotation,
                    const std::string& signification) {
     std::vector<std::string> rowData = {planet, longitude, sign, nakshatra, subLord,
-                                       subSub, subSubSub, kpNotation, signification};
+                                        subSub, subSubSub, kpNotation, signification};
+    table.addRow(rowData);
+}
+
+void addKPSystemRow(ProfessionalTable& table,
+                   const std::string& planet,
+                   const std::string& longitude,
+                   const std::string& sign,
+                   const std::string& nakshatra,
+                   const std::string& subLord,
+                   const std::string& subSub,
+                   const std::string& subSubSub,
+                   const std::string& sub4,
+                   const std::string& sub5,
+                   const std::string& kpNotation,
+                   const std::string& signification) {
+    std::vector<std::string> rowData = {planet, longitude, sign, nakshatra, subLord,
+                                        subSub, subSubSub, sub4, sub5, kpNotation, signification};
     table.addRow(rowData);
 }
 
@@ -844,7 +861,7 @@ void addGrahaYuddhaRow(ProfessionalTable& table,
                       const std::string& effects,
                       const std::string& significance) {
     std::vector<std::string> rowData = {date, time, combatants, separation, winner,
-                                       loser, victoryMargin, effects, significance};
+                                        loser, victoryMargin, effects, significance};
     table.addRow(rowData);
 }
 
@@ -885,12 +902,12 @@ ProfessionalTable createKPSystemTable() {
     ProfessionalTable table;
     table.setBorderStyle(BorderStyle::ASCII)
          .setGlobalFormat(CellFormat().align(FontAlign::LEFT))
-         .setTitle("KP System - Sub Lord Analysis");
+         .setTitle("KP System - 5-Levels Sub Lord Analysis");
 
     // Add headers
     std::vector<std::string> headers = {
-        "PLANET", "LONGITUDE", "SIGN", "NAKSHATRA", "SUB LORD",
-        "SUB-SUB", "SUB³", "KP NOTATION", "SIGNIFICATION"
+        "PLANET", "LONGITUDE", "SIGN", "NAKSHATRA", "SUB-L1",
+        "SUB-L2", "SUB-L3", "SUB-L4", "SUB-L5", "KP NOTATION", "SIGNIFICATION"
     };
     table.addRow(headers);
 
