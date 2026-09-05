@@ -3340,8 +3340,8 @@ int main(int argc, char* argv[]) {
                     oss << "═══════════════════════════════════════════════════════════════════\n\n";
 
                     // Header
-                    oss << "Date       | Tithi        | Vara       | Nakshatra          | Yoga         | Karana       | Festivals\n";
-                    oss << "-----------|--------------|------------|--------------------|--------------|--------------|---------\n";
+                    oss << "Date       | Tithi            | Vara       | Nakshatra          | Yoga         | Karana       | Festivals\n";
+                    oss << "-----------|------------------|------------|--------------------|--------------|--------------|---------\n";
 
                     // Parse start date to calculate actual dates for each entry
                     int startYear = std::stoi(fromDate.substr(0, 4));
@@ -3363,11 +3363,11 @@ int main(int argc, char* argv[]) {
 
                         // Format table row with actual date
                         oss << std::setw(10) << std::left << std::string(dateBuffer) << " | ";
-                        oss << std::setw(12) << hinduCalendar.getTithiName(panchanga.tithi) << " | ";
-                        oss << std::setw(10) << hinduCalendar.getVaraName(panchanga.vara) << " | ";
-                        oss << std::setw(18) << hinduCalendar.getNakshatraName(panchanga.nakshatra) << " | ";
-                        oss << std::setw(12) << hinduCalendar.getYogaName(panchanga.yoga) << " | ";
-                        oss << std::setw(12) << hinduCalendar.getKaranaName(panchanga.karana) << " | ";
+                        oss << std::setw(16) << std::left << hinduCalendar.getTithiName(panchanga.tithi) << " | ";
+                        oss << std::setw(10) << std::left << hinduCalendar.getVaraName(panchanga.vara) << " | ";
+                        oss << std::setw(18) << std::left << hinduCalendar.getNakshatraName(panchanga.nakshatra) << " | ";
+                        oss << std::setw(12) << std::left << hinduCalendar.getYogaName(panchanga.yoga) << " | ";
+                        oss << std::setw(12) << std::left << hinduCalendar.getKaranaName(panchanga.karana) << " | ";
 
                         if (!panchanga.festivals.empty()) {
                             oss << panchanga.festivals[0];

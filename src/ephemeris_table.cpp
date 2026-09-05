@@ -136,39 +136,25 @@ std::string EphemerisTable::generateTransitTable(const BirthData& natalData, con
     std::vector<EphemerisEntry> entries = generateEntries(config);
 
     // Format with natal comparisons
-    ss << "Date        ";
+    ss << std::left << std::setw(14) << "Date";
     for (Planet planet : config.planets) {
-        ss << std::left << std::setw(12) << planetToString(planet);
+        ss << std::left << std::setw(14) << planetToString(planet);
     }
     ss << "\n";
-    ss << "────────────";
-    for (size_t i = 0; i < config.planets.size(); i++) {
-        ss << "────────────";
-    }
+    ss << std::string(14 + config.planets.size() * 14, '-');
     ss << "\n";
 
     for (const auto& entry : entries) {
-        ss << entry.getDateString() << " ";
+        ss << std::left << std::setw(14) << entry.getDateString();
 
         for (Planet planet : config.planets) {
             auto it = std::find_if(entry.positions.begin(), entry.positions.end(),
                                  [planet](const PlanetPosition& pos) { return pos.planet == planet; });
 
             if (it != entry.positions.end()) {
-                // Find natal position for comparison
-                auto natalIt = std::find_if(natalPositions.begin(), natalPositions.end(),
-                                          [planet](const PlanetPosition& pos) { return pos.planet == planet; });
-
-                if (natalIt != natalPositions.end()) {
-                    double aspect = std::abs(it->longitude - natalIt->longitude);
-                    if (aspect > 180.0) aspect = 360.0 - aspect;
-
-                    ss << std::left << std::setw(12) << formatDegreeWithSign(it->longitude);
-                } else {
-                    ss << std::left << std::setw(12) << formatDegreeWithSign(it->longitude);
-                }
+                ss << std::left << std::setw(14) << formatDegreeWithSign(it->longitude);
             } else {
-                ss << std::left << std::setw(12) << "---";
+                ss << std::left << std::setw(14) << "---";
             }
         }
         ss << "\n";
@@ -1411,18 +1397,44 @@ EphemerisConfig EphemerisTable::createTropicalConfig() {
     return config;
 }
 
-// Helper function to calculate visual width excluding ANSI codes
+// Helper function to calculate visual width excluding ANSI codes and accounting for UTF-8
 size_t EphemerisTable::getVisualWidth(const std::string& text) const {
     size_t visualWidth = 0;
     bool inEscapeSequence = false;
 
-    for (size_t i = 0; i < text.length(); i++) {
+    for (size_t i = 0; i < text.length(); ) {
         if (text[i] == '\033') {
             inEscapeSequence = true;
-        } else if (inEscapeSequence && text[i] == 'm') {
-            inEscapeSequence = false;
-        } else if (!inEscapeSequence) {
-            visualWidth++;
+            i++;
+        } else if (inEscapeSequence) {
+            if (text[i] == 'm') {
+                inEscapeSequence = false;
+            }
+            i++;
+        } else {
+            unsigned char c = text[i];
+            if ((c & 0x80) == 0) { // 1-byte ASCII
+                visualWidth++;
+                i++;
+            } else if ((c & 0xE0) == 0xC0) { // 2-byte UTF-8 (e.g. °)
+                visualWidth++;
+                i += 2;
+            } else if ((c & 0xF0) == 0xE0) { // 3-byte UTF-8 (e.g. zodiac signs, symbols)
+                // Check for variation selector (U+FE0F: EF B8 8F)
+                if (c == 0xEF && i + 2 < text.length() &&
+                    static_cast<unsigned char>(text[i+1]) == 0xB8 &&
+                    static_cast<unsigned char>(text[i+2]) == 0x8F) {
+                    i += 3;
+                } else {
+                    visualWidth++;
+                    i += 3;
+                }
+            } else if ((c & 0xF8) == 0xF0) { // 4-byte UTF-8 (emojis)
+                visualWidth += 2;
+                i += 4;
+            } else {
+                i++;
+            }
         }
     }
 

@@ -1526,10 +1526,17 @@ void MyanmarMonthlyCalendar::calculateMultiCalendarStatistics(MyanmarMonthlyData
 std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonthlyData& monthData) const {
     std::stringstream ss;
 
-    // Header with consistent formatting
-    ss << "╔══════════════════════════════════════════════════════════════════════════════════╗\n";
-    ss << "║                        🌍 MULTI-CALENDAR VIEW 🌍                                 ║\n";
-    ss << "╠══════════════════════════════════════════════════════════════════════════════════╣\n";
+    auto repeatStr = [](const std::string& s, size_t count) -> std::string {
+        std::string res;
+        res.reserve(s.length() * count);
+        for (size_t i = 0; i < count; ++i) res += s;
+        return res;
+    };
+
+    // Header with consistent formatting matching the 118-column table below
+    ss << "╔" << repeatStr("═", 116) << "╗\n";
+    ss << "║" << std::string(45, ' ') << "🌍 MULTI-CALENDAR VIEW 🌍" << std::string(46, ' ') << "║\n";
+    ss << "╠" << repeatStr("═", 116) << "╣\n";
     ss << "║  " << monthData.gregorianMonthName << " " << monthData.gregorianYear << " CE";
     ss << " | " << monthData.myanmarMonthName << " " << monthData.myanmarYear << " ME";
 
@@ -1538,7 +1545,7 @@ std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonth
         ss << " | " << monthData.days[0].hindu.hinduMonthName << " " << monthData.days[0].hindu.hinduYear;
     }
 
-    // Pad to consistent width
+    // Pad to consistent width matching table (116 inner width)
     std::string headerContent = monthData.gregorianMonthName + " " + std::to_string(monthData.gregorianYear) + " CE | " +
                                monthData.myanmarMonthName + " " + std::to_string(monthData.myanmarYear) + " ME";
     if (monthData.includeHindu && !monthData.days.empty() &&
@@ -1546,14 +1553,14 @@ std::string MyanmarMonthlyCalendar::generateMultiCalendarView(const MyanmarMonth
         headerContent += " | " + monthData.days[0].hindu.hinduMonthName + " " + std::to_string(monthData.days[0].hindu.hinduYear);
     }
 
-    size_t targetLength = 80; // Target width inside borders
+    size_t targetLength = 112; // 116 inner width - 4 spaces (2 left, 2 right)
     if (headerContent.length() < targetLength) {
         for (size_t i = headerContent.length(); i < targetLength; i++) {
             ss << " ";
         }
     }
-    ss << "║\n";
-    ss << "╚══════════════════════════════════════════════════════════════════════════════════╝\n\n";
+    ss << "  ║\n";
+    ss << "╚" << repeatStr("═", 116) << "╝\n\n";
 
     // Create fixed-width table with wider columns for better data display
     ss << "┌────┬───────────────┬───────────────┬───────────────┬───────────────┬───────────────┬───────────────┬───────────────┐\n";

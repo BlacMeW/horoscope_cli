@@ -24,17 +24,17 @@
 namespace AstroTui {
 
 // 135-byte theme palettes for Turbo Vision
-// 1. Turbo C++ 3.0 IDE Classic: Authentic Borland Blue editor, light gray menu/status, blue desktop
+// 1. Turbo C++ 3.0 IDE Classic: Authentic Borland Deep Blue editor & desktop, light gray menu/status
 static const char cpTurboCpp[] =
-    "\x17\x70\x78\x74\x1F\x18\x1E\x17\x1F\x1E\x13\x1B\x1F\x30\x1F" /* 1-15: Desktop, StatusLine, MenuBar, BlueWindow */
-    "\x37\x3F\x3E\x13\x13\x30\x3F\x3F\x70\x7F\x7E\x13\x13\x70\x7F\x7E" /* 16-31: CyanWin, GrayWin */
+    "\x17\x70\x78\x74\x1F\x18\x1E\x17\x1F\x1E\x13\x1B\x1F\x10\x1F" /* 1-15: Desktop, StatusLine, MenuBar, BlueWindow */
+    "\x17\x1F\x1E\x13\x13\x10\x1F\x1F\x70\x7F\x7E\x13\x13\x70\x7F\x7E" /* 16-31: Win2 (Deep Blue), GrayWin */
     "\x70\x7F\x74\x13\x13\x70\x70\x7F\x74\x1F\x1E\x1E\x70\x1F\x74\x70" /* 32-47: Dialogs & Buttons */
     "\x1F\x1E\x0F\x1F\x1B\x70\x74\x70\x70\x70\x1F\x1E\x70\x13\x78\x00" /* 48-63: Controls, InputLines */
-    "\x17\x1F\x1E\x71\x71\x1E\x17\x1F\x1E\x1F\x1E\x1F\x78\x1E\x10\x30" /* 64-79 */
-    "\x3F\x3E\x70\x1F\x7A\x70\x12\x70\x70\x70\x1F\x1E\x70\x13\x78\x00" /* 80-95 */
-    "\x37\x3F\x3A\x13\x13\x3E\x30\x3F\x3E\x1F\x1E\x1F\x78\x1E\x30\x70" /* 96-111 */
+    "\x17\x1F\x1E\x71\x71\x1E\x17\x1F\x1E\x1F\x1E\x1F\x78\x1E\x10\x10" /* 64-79 */
+    "\x1F\x1E\x70\x1F\x7A\x70\x12\x70\x70\x70\x1F\x1E\x70\x13\x78\x00" /* 80-95 */
+    "\x17\x1F\x1A\x13\x13\x1E\x10\x1F\x1E\x1F\x1E\x1F\x78\x1E\x10\x70" /* 96-111 */
     "\x7F\x7E\x1F\x1F\x1A\x70\x12\x70\x71\x70\x1F\x7E\x71\x13\x78\x00" /* 112-127 */
-    "\x37\x3F\x3A\x13\x13\x30\x3E\x1E";                                 /* 128-135 */
+    "\x17\x1F\x1A\x13\x13\x10\x1E\x1E";                                 /* 128-135 */
 
 // 2. Modern Dark Slate: High contrast dark theme, zero muddy colors
 static const char cpModernDark[] =
@@ -1247,7 +1247,7 @@ void HoroscopeTuiApp::showAstroCalendarDay() {
         astro.setIncludeAllFestivals(true);
         astro.setIncludeKPTransitions(true);
         Astro::AstroCalendarDay dayData = astro.calculateAstroCalendarDay(currentBirthData);
-        std::string text = astro.generateDayCalendar(dayData, "professional");
+        std::string text = astro.generateDayCalendar(dayData, "calendar");
         openWindow("Unified Astro-Calendar (Daily) - " + currentCityName, text);
     } else {
         messageBox(mfError | mfOKButton, "Failed to initialize Astro Calendar.");
@@ -1264,7 +1264,7 @@ void HoroscopeTuiApp::showAstroCalendarMonth() {
         astro.setIncludePlanetaryTransitions(true);
         astro.setIncludeAllFestivals(true);
         Astro::AstroCalendarMonth monthData = astro.calculateAstroCalendarMonth(currentBirthData.year, currentBirthData.month);
-        std::string text = astro.generateMonthlyCalendar(monthData, "professional");
+        std::string text = astro.generateMonthlyCalendar(monthData, "calendar");
         std::ostringstream title;
         title << "Unified Monthly Astro-Calendar (" << y << "-" << std::setw(2) << std::setfill('0') << m << ") - " << currentCityName;
         openWindow(title.str(), text);

@@ -1523,93 +1523,132 @@ std::string HinduCalendar::generatePanchangaTable(const PanchangaData& panchanga
     oss << "                          🕉️  COMPLETE HINDU PANCHANGA  🕉️\n";
     oss << "══════════════════════════════════════════════════════════════════════════════════\n\n";
 
+    auto padField = [](const std::string& label, const std::string& val, size_t targetWidth) -> std::string {
+        std::string fullText = label + val;
+        size_t visualWidth = 0;
+        for (size_t i = 0; i < fullText.length(); ) {
+            unsigned char c = fullText[i];
+            if ((c & 0x80) == 0) {
+                visualWidth++;
+                i++;
+            } else if ((c & 0xE0) == 0xC0) {
+                visualWidth++;
+                i += 2;
+            } else if ((c & 0xF0) == 0xE0) {
+                visualWidth++;
+                i += 3;
+            } else if ((c & 0xF8) == 0xF0) {
+                visualWidth += 2;
+                i += 4;
+            } else {
+                i++;
+            }
+        }
+        std::string res = " " + fullText;
+        if (visualWidth + 1 < targetWidth) {
+            res.append(targetWidth - (visualWidth + 1), ' ');
+        }
+        return res;
+    };
+
+    auto centerField = [](const std::string& title, size_t targetWidth) -> std::string {
+        size_t visualWidth = 0;
+        for (size_t i = 0; i < title.length(); ) {
+            unsigned char c = title[i];
+            if ((c & 0x80) == 0) {
+                visualWidth++;
+                i++;
+            } else if ((c & 0xE0) == 0xC0) {
+                visualWidth++;
+                i += 2;
+            } else if ((c & 0xF0) == 0xE0) {
+                visualWidth++;
+                i += 3;
+            } else if ((c & 0xF8) == 0xF0) {
+                visualWidth += 2;
+                i += 4;
+            } else {
+                i++;
+            }
+        }
+        size_t leftPad = (targetWidth > visualWidth) ? (targetWidth - visualWidth) / 2 : 0;
+        size_t rightPad = (targetWidth > visualWidth + leftPad) ? targetWidth - visualWidth - leftPad : 0;
+        return std::string(leftPad, ' ') + title + std::string(rightPad, ' ');
+    };
+
+    std::string sep123 = "+" + std::string(60, '-') + "+" + std::string(60, '-') + "+\n";
+
     // Two-column layout for basic information
-    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n";
-    oss << "|                        📊 CALCULATION                       |                         📅 DATE INFO                       |\n";
-    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n";
+    oss << sep123;
+    oss << "|" << centerField("CALCULATION", 60) << "|" << centerField("DATE INFO", 60) << "|\n";
+    oss << sep123;
 
     std::string ayanamsaName = getAyanamsaName();
     if (ayanamsaName.length() > 46) ayanamsaName = ayanamsaName.substr(0, 46);
-    oss << "│ Ayanamsa: " << std::left << std::setw(48) << ayanamsaName
-        << "│ Vikram Samvat: " << std::left << std::setw(42) << panchanga.vikramYear << "│\n";
+    oss << "|" << padField("Ayanamsa: ", ayanamsaName, 60)
+        << "|" << padField("Vikram Samvat: ", std::to_string(panchanga.vikramYear), 60) << "|\n";
 
     std::string methodName = getCalculationMethodName();
-    if (methodName.length() > 50) methodName = methodName.substr(0, 50);
-    oss << "│ Method: " << std::left << std::setw(50) << methodName
-        << "│ Shaka Samvat: " << std::left << std::setw(43) << panchanga.shakaYear << "│\n";
+    if (methodName.length() > 48) methodName = methodName.substr(0, 48);
+    oss << "|" << padField("Method: ", methodName, 60)
+        << "|" << padField("Shaka Samvat: ", std::to_string(panchanga.shakaYear), 60) << "|\n";
 
     std::string systemName = (calendarSystem == CalendarSystem::LUNAR_BASED ? "Lunar-based" :
                              calendarSystem == CalendarSystem::SOLAR_BASED ? "Solar-based" : "Luni-Solar");
-    oss << "│ System: " << std::left << std::setw(50) << systemName
-        << "│ Kali Yuga: " << std::left << std::setw(46) << panchanga.kaliyugaYear << "│\n";
+    oss << "|" << padField("System: ", systemName, 60)
+        << "|" << padField("Kali Yuga: ", std::to_string(panchanga.kaliyugaYear), 60) << "|\n";
 
-    oss << "│ Julian Day: " << std::left << std::setw(47) << std::fixed << std::setprecision(1) << panchanga.julianDay
-        << "│ Hindu Month: " << std::left << std::setw(44) << getHinduMonthName(panchanga.month) << "│\n";
+    std::ostringstream jdStream;
+    jdStream << std::fixed << std::setprecision(1) << panchanga.julianDay;
+    oss << "|" << padField("Julian Day: ", jdStream.str(), 60)
+        << "|" << padField("Hindu Month: ", getHinduMonthName(panchanga.month), 60) << "|\n";
 
-    std::string ayanamsaVal = std::to_string(panchanga.ayanamsaValue).substr(0, 7) + "°";
+    std::ostringstream ayanValStream;
+    ayanValStream << std::fixed << std::setprecision(4) << panchanga.ayanamsaValue << "°";
     std::string pakshaStr = (panchanga.isShukla ? "Shukla (Bright)" : "Krishna (Dark)");
-    oss << "│ Ayanamsa: " << std::left << std::setw(48) << ayanamsaVal
-        << "│ Paksha: " << std::left << std::setw(49) << pakshaStr << "│\n";
+    oss << "|" << padField("Ayanamsa Val: ", ayanValStream.str(), 60)
+        << "|" << padField("Paksha: ", pakshaStr, 60) << "|\n";
 
-    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n\n";
+    oss << sep123 << "\n";
 
     // Two-column layout for Panchanga elements and Sun/Moon info
-    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n";
-    oss << "|                     🌟 PANCHANGAM (FIVE)                    |                    ☀️ SUN & MOON INFO                    |\n";
-    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n";
+    oss << sep123;
+    oss << "|" << centerField("PANCHANGAM (FIVE)", 60) << "|" << centerField("SUN & MOON INFO", 60) << "|\n";
+    oss << sep123;
 
-    std::string tithiStr = "1. Tithi: " + getTithiName(panchanga.tithi);
-    if (tithiStr.length() > 58) tithiStr = tithiStr.substr(0, 58);
-    std::string sunriseStr = "Sunrise: " + panchanga.getTimeString(panchanga.sunriseTime);
-    oss << "| " << std::left << std::setw(59) << tithiStr
-        << "| " << std::left << std::setw(59) << sunriseStr << "|\n";
+    oss << "|" << padField("1. Tithi: ", getTithiName(panchanga.tithi), 60)
+        << "|" << padField("Sunrise: ", panchanga.getTimeString(panchanga.sunriseTime), 60) << "|\n";
 
-    std::string tithiEndStr = "   (ends: " + panchanga.getTimeString(panchanga.tithiEndTime) + ")";
-    std::string sunsetStr = "Sunset: " + panchanga.getTimeString(panchanga.sunsetTime);
-    oss << "| " << std::left << std::setw(59) << tithiEndStr
-        << "| " << std::left << std::setw(59) << sunsetStr << "|\n";
+    oss << "|" << padField("   (ends: ", panchanga.getTimeString(panchanga.tithiEndTime) + ")", 60)
+        << "|" << padField("Sunset: ", panchanga.getTimeString(panchanga.sunsetTime), 60) << "|\n";
 
-    std::string varaStr = "2. Vara: " + getVaraName(panchanga.vara);
-    std::string moonriseStr = "Moonrise: " + panchanga.getTimeString(panchanga.moonriseTime);
-    oss << "| " << std::left << std::setw(59) << varaStr
-        << "| " << std::left << std::setw(59) << moonriseStr << "|\n";
+    oss << "|" << padField("2. Vara: ", getVaraName(panchanga.vara), 60)
+        << "|" << padField("Moonrise: ", panchanga.getTimeString(panchanga.moonriseTime), 60) << "|\n";
 
-    std::string nakStr = "3. Nakshatra: " + getNakshatraName(panchanga.nakshatra);
-    if (nakStr.length() > 58) nakStr = nakStr.substr(0, 58);
-    std::string moonsetStr = "Moonset: " + panchanga.getTimeString(panchanga.moonsetTime);
-    oss << "| " << std::left << std::setw(59) << nakStr
-        << "| " << std::left << std::setw(59) << moonsetStr << "|\n";
+    oss << "|" << padField("3. Nakshatra: ", getNakshatraName(panchanga.nakshatra), 60)
+        << "|" << padField("Moonset: ", panchanga.getTimeString(panchanga.moonsetTime), 60) << "|\n";
 
-    std::string nakEndStr = "   (Pada " + std::to_string(panchanga.nakshatraPada) + ", ends: " +
-                           panchanga.getTimeString(panchanga.nakshatraEndTime) + ")";
-    if (nakEndStr.length() > 58) nakEndStr = nakEndStr.substr(0, 58);
-    std::string dayLenStr = "Day Length: " + std::to_string(static_cast<int>(panchanga.dayLength)) + "." +
-                           std::to_string(static_cast<int>((panchanga.dayLength - static_cast<int>(panchanga.dayLength)) * 10)) + " hours";
-    oss << "| " << std::left << std::setw(59) << nakEndStr
-        << "| " << std::left << std::setw(59) << dayLenStr << "|\n";
+    std::string padaStr = "Pada " + std::to_string(panchanga.nakshatraPada) + ", ends: " + panchanga.getTimeString(panchanga.nakshatraEndTime);
+    std::ostringstream dayLenStream;
+    dayLenStream << std::fixed << std::setprecision(1) << panchanga.dayLength << " hours";
+    oss << "|" << padField("   (" + padaStr + ")", "", 60)
+        << "|" << padField("Day Length: ", dayLenStream.str(), 60) << "|\n";
 
-    std::string yogaStr = "4. Yoga: " + getYogaName(panchanga.yoga);
-    if (yogaStr.length() > 58) yogaStr = yogaStr.substr(0, 58);
-    std::string nightLenStr = "Night Length: " + std::to_string(static_cast<int>(panchanga.nightLength)) + "." +
-                             std::to_string(static_cast<int>((panchanga.nightLength - static_cast<int>(panchanga.nightLength)) * 10)) + " hours";
-    oss << "| " << std::left << std::setw(59) << yogaStr
-        << "| " << std::left << std::setw(59) << nightLenStr << "|\n";
+    std::ostringstream nightLenStream;
+    nightLenStream << std::fixed << std::setprecision(1) << panchanga.nightLength << " hours";
+    oss << "|" << padField("4. Yoga: ", getYogaName(panchanga.yoga), 60)
+        << "|" << padField("Night Length: ", nightLenStream.str(), 60) << "|\n";
 
-    std::string yogaEndStr = "   (ends: " + panchanga.getTimeString(panchanga.yogaEndTime) + ")";
-    std::string emptyStr = "";
-    oss << "| " << std::left << std::setw(59) << yogaEndStr
-        << "| " << std::left << std::setw(59) << emptyStr << "|\n";
+    oss << "|" << padField("   (ends: ", panchanga.getTimeString(panchanga.yogaEndTime) + ")", 60)
+        << "|" << padField("", "", 60) << "|\n";
 
-    std::string karanaStr = "5. Karana: " + getKaranaName(panchanga.karana);
-    if (karanaStr.length() > 58) karanaStr = karanaStr.substr(0, 58);
-    oss << "| " << std::left << std::setw(59) << karanaStr
-        << "| " << std::left << std::setw(59) << emptyStr << "|\n";
+    oss << "|" << padField("5. Karana: ", getKaranaName(panchanga.karana), 60)
+        << "|" << padField("", "", 60) << "|\n";
 
-    std::string karanaEndStr = "   (ends: " + panchanga.getTimeString(panchanga.karanaEndTime) + ")";
-    oss << "| " << std::left << std::setw(59) << karanaEndStr
-        << "| " << std::left << std::setw(59) << emptyStr << "|\n";
+    oss << "|" << padField("   (ends: ", panchanga.getTimeString(panchanga.karanaEndTime) + ")", 60)
+        << "|" << padField("", "", 60) << "|\n";
 
-    oss << "+------------------------------------------------------------+------------------------------------------------------------+\n\n";
+    oss << sep123 << "\n";
 
     // Celestial positions section
     oss << "🌞 CELESTIAL POSITIONS:\n";
@@ -1904,17 +1943,17 @@ std::string HinduCalendar::generatePanchangaTable(const std::vector<PanchangaDat
     oss << "═══════════════════════════════════════════════════════════════════\n\n";
 
     // Header
-    oss << "Date       | Tithi      | Vara      | Nakshatra    | Yoga       | Karana    | Festivals\n";
-    oss << "-----------|------------|-----------|--------------|------------|-----------|----------\n";
+    oss << "Date       | Tithi            | Vara       | Nakshatra          | Yoga           | Karana       | Festivals\n";
+    oss << "-----------|------------------|------------|--------------------|----------------|--------------|----------\n";
 
     for (const auto& panchanga : panchangaList) {
         // Format date from Julian day (would need date calculation)
-        oss << "Date       | ";
-        oss << std::setw(10) << getTithiName(panchanga.tithi) << " | ";
-        oss << std::setw(9) << getVaraName(panchanga.vara) << " | ";
-        oss << std::setw(12) << getNakshatraName(panchanga.nakshatra) << " | ";
-        oss << std::setw(10) << getYogaName(panchanga.yoga) << " | ";
-        oss << std::setw(9) << getKaranaName(panchanga.karana) << " | ";
+        oss << std::left << std::setw(10) << "Date" << " | ";
+        oss << std::left << std::setw(16) << getTithiName(panchanga.tithi) << " | ";
+        oss << std::left << std::setw(10) << getVaraName(panchanga.vara) << " | ";
+        oss << std::left << std::setw(18) << getNakshatraName(panchanga.nakshatra) << " | ";
+        oss << std::left << std::setw(14) << getYogaName(panchanga.yoga) << " | ";
+        oss << std::left << std::setw(12) << getKaranaName(panchanga.karana) << " | ";
 
         if (!panchanga.festivals.empty()) {
             oss << panchanga.festivals[0];

@@ -783,17 +783,17 @@ std::string AstroCalendar::generateCalendarLayout(const AstroCalendarMonth& mont
 
     ss << monthData.getMonthSummary() << "\n\n";
 
-    // Calendar header
-    ss << " Sun    Mon    Tue    Wed    Thu    Fri    Sat\n";
-    ss << "─────  ─────  ─────  ─────  ─────  ─────  ─────\n";
+    // Calendar header (each column: 8 chars + 3 space gap = 11 chars)
+    ss << "   Sun        Mon        Tue        Wed        Thu        Fri        Sat   \n";
+    ss << "────────   ────────   ────────   ────────   ────────   ────────   ────────\n";
 
     // Find first day of month and day of week
     double firstDayJD = gregorianToJulianDay(monthData.year, monthData.month, 1);
     int firstDayOfWeek = (static_cast<int>(firstDayJD + 1.5)) % 7; // 0=Sunday
 
-    // Print leading spaces for first week
+    // Print leading spaces for first week (11 spaces per column)
     for (int i = 0; i < firstDayOfWeek; ++i) {
-        ss << "       ";
+        ss << "           ";
     }
 
     // Print calendar days
@@ -801,27 +801,27 @@ std::string AstroCalendar::generateCalendarLayout(const AstroCalendarMonth& mont
         const auto& day = monthData.days[dayIdx];
         int dayOfWeek = (firstDayOfWeek + dayIdx) % 7;
 
-        // Day number
+        // Day number (2 chars)
         ss << std::setw(2) << day.gregorianDay;
 
-        // Quality indicator
+        // Quality indicator (2 visual cells)
         if (day.isAuspicious) ss << "✅";
         else if (day.isInauspicious) ss << "⚠️";
         else ss << "  ";
 
-        // Festival indicator
+        // Festival indicator (2 visual cells)
         if (!day.allFestivals.empty()) ss << "🎊";
-        else ss << " ";
+        else ss << "  ";
 
-        // Planetary event indicator
+        // Planetary event indicator (2 visual cells)
         if (!day.planetaryTransitions.empty()) ss << "🪐";
-        else ss << " ";
+        else ss << "  ";
 
         // End of week - new line
         if (dayOfWeek == 6) {
             ss << "\n";
         } else {
-            ss << " ";
+            ss << "   ";
         }
     }
 
@@ -1066,9 +1066,9 @@ std::string AstroCalendar::generateProfessionalAstroCalendar(const AstroCalendar
 
     // Calendar grid with enhanced box drawing borders
     ss << "📅 MONTHLY CALENDAR GRID\n";
-    ss << "┌─────────────────────────────────────────────────────────────────────────────────────────┐\n";
-    ss << "│ Sun        Mon        Tue        Wed        Thu        Fri        Sat                 │\n";
-    ss << "├──────────┬──────────┬──────────┬──────────┬──────────┬──────────┬──────────┤\n";
+    ss << "┌──────────┬──────────┬──────────┬──────────┬──────────┬──────────┬──────────┐\n";
+    ss << "│   Sun    │   Mon    │   Tue    │   Wed    │   Thu    │   Fri    │   Sat    │\n";
+    ss << "├──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────┤\n";
 
     // Find first day of month
     double firstDayJD = gregorianToJulianDay(monthData.year, monthData.month, 1);
@@ -1120,7 +1120,7 @@ std::string AstroCalendar::generateProfessionalAstroCalendar(const AstroCalendar
     // Legend and symbols explanation
     ss << "🔍 SYMBOLS & ABBREVIATIONS\n";
     ss << "═══════════════════════════════════════════════════════════════════════════════════════════\n";
-    ss << "Quality: ⭐Excellent 🌟Good ✨Fair ⚪Neutral ⚠️Caution 🚫Avoid\n";
+    ss << "Quality: *Excellent +Good .Fair !Caution\n";
     ss << "Hindu: T=Tithi E=Ekadashi P=Purnima A=Amavasya N=Nakshatra\n";
     ss << "Myanmar: ME=Myanmar Era S=Sabbath P=Pyathada Y=Yatyaza\n";
     ss << "Planets: ☉Sun ☽Moon ♂Mars ☿Mercury ♃Jupiter ♀Venus ♄Saturn\n";
@@ -1147,40 +1147,33 @@ std::string AstroCalendar::generateProfessionalAstroCalendar(const AstroCalendar
 
 // Enhanced formatting helper methods
 std::string AstroCalendar::generateProfessionalDayCell(const AstroCalendarDay& day) const {
-    std::stringstream ss;
+    std::string qualitySymbol = " ";
+    if (day.auspiciousScore >= 8) qualitySymbol = "*";      // Excellent
+    else if (day.auspiciousScore >= 6) qualitySymbol = "+"; // Good
+    else if (day.auspiciousScore >= 4) qualitySymbol = "."; // Fair
+    else if (day.isInauspicious) qualitySymbol = "!";       // Caution
+    else qualitySymbol = " ";
 
-    // Day number with quality indicator (fixed width: 3-4 chars)
-    ss << std::setw(2) << day.gregorianDay;
-    if (day.auspiciousScore >= 8) ss << "⭐";
-    else if (day.auspiciousScore >= 6) ss << "🌟";
-    else if (day.auspiciousScore >= 4) ss << "✨";
-    else if (day.auspiciousScore >= 2) ss << "⚪";
-    else if (day.isInauspicious) ss << "⚠️";
-    else ss << "⚪";
+    std::string dayNum = (day.gregorianDay < 10 ? " " : "") + std::to_string(day.gregorianDay);
+    std::string prefix = " " + dayNum + qualitySymbol + " "; // 5 chars
 
-    // Hindu calendar info (compact)
+    std::string info;
     if (day.hasPanchangaData) {
-        ss << " T" << static_cast<int>(day.panchangaData.tithi);
-        if (day.panchangaData.isEkadashi) ss << "E";
-        if (day.panchangaData.isPurnima) ss << "P";
-        if (day.panchangaData.isAmavasya) ss << "A";
+        info = "T" + std::to_string(static_cast<int>(day.panchangaData.tithi));
+        if (day.panchangaData.isEkadashi) info += "E";
+        else if (day.panchangaData.isPurnima) info += "P";
+        else if (day.panchangaData.isAmavasya) info += "A";
+    } else if (day.hasMyanmarData) {
+        info = "M" + std::to_string(day.myanmarData.dayOfMonth);
+        if (day.myanmarData.isSabbath) info += "S";
+        else if (day.myanmarData.isPyathada) info += "P";
+        else if (day.myanmarData.isYatyaza) info += "Y";
     }
 
-    // Myanmar calendar info (very compact)
-    if (day.hasMyanmarData) {
-        ss << " " << (day.myanmarData.myanmarYear % 100);
-        if (day.myanmarData.isSabbath) ss << "S";
-        if (day.myanmarData.isPyathada) ss << "P";
-        if (day.myanmarData.isYatyaza) ss << "Y";
-    }
-
-    // Ensure cell doesn't exceed 10 characters to fit grid
-    std::string cellContent = ss.str();
+    std::string cellContent = prefix + info;
     if (cellContent.length() > 10) {
         cellContent = cellContent.substr(0, 10);
     }
-
-    // Pad to exactly 10 characters for consistent grid alignment
     while (cellContent.length() < 10) {
         cellContent += " ";
     }

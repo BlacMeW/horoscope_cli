@@ -297,34 +297,39 @@ std::string KPSystem::generateKPTable(const std::vector<PlanetPosition>& planets
     table << "\n=== KP SUB LORD 5 LEVELS SYSTEM ===\n";
     table << "Based on Krishnamurti Paddhati with Vimshottari Dasha proportions\n\n";
 
-    // Header
-    table << std::left << std::setw(10) << "Planet"
-          << std::setw(8) << "Sign"
-          << std::setw(15) << "Nakshatra"
-          << std::setw(8) << "Sub-L1"
-          << std::setw(8) << "Sub-L2"
-          << std::setw(8) << "Sub-L3"
-          << std::setw(15) << "KP Notation"
-          << std::setw(12) << "Longitude\n";
+    // Header with proper column widths to avoid text collision
+    table << std::left
+          << std::setw(12) << "Planet"
+          << std::setw(14) << "Sign"
+          << std::setw(20) << "Nakshatra"
+          << std::setw(8)  << "Sub-L1"
+          << std::setw(8)  << "Sub-L2"
+          << std::setw(8)  << "Sub-L3"
+          << std::setw(16) << "KP Notation"
+          << "Longitude\n";
 
-    table << std::string(90, '-') << "\n";
+    table << std::string(98, '-') << "\n";
 
     // Planet data
     for (size_t i = 0; i < planets.size() && i < kpPositions.size(); i++) {
         const auto& planet = planets[i];
         const auto& kpPos = kpPositions[i];
 
-        table << std::left << std::setw(10) << planetToString(planet.planet)
-              << std::setw(8) << zodiacSignToString(kpPos.sign)
-              << std::setw(15) << kpPos.nakshatra.name
-              << std::setw(8) << planetToShortString(kpPos.subLord)
-              << std::setw(8) << planetToShortString(kpPos.subSubLord)
-              << std::setw(8) << planetToShortString(kpPos.subSubSubLord)
-              << std::setw(15) << kpPos.getKPNotation()
-              << std::setw(12) << std::fixed << std::setprecision(4) << planet.longitude << "°\n";
+        std::ostringstream lonStream;
+        lonStream << std::fixed << std::setprecision(4) << planet.longitude << "°";
+
+        table << std::left
+              << std::setw(12) << planetToString(planet.planet)
+              << std::setw(14) << zodiacSignToString(kpPos.sign)
+              << std::setw(20) << kpPos.nakshatra.name
+              << std::setw(8)  << planetToShortString(kpPos.subLord)
+              << std::setw(8)  << planetToShortString(kpPos.subSubLord)
+              << std::setw(8)  << planetToShortString(kpPos.subSubSubLord)
+              << std::setw(16) << kpPos.getKPNotation()
+              << lonStream.str() << "\n";
     }
 
-    table << std::string(90, '-') << "\n";
+    table << std::string(98, '-') << "\n";
     table << "Legend: L1=Sub, L2=Sub-Sub, L3=Sub-Sub-Sub levels\n";
     table << "KP Notation: Sign-Nakshatra-SubL1-SubL2-SubL3\n";
 
@@ -444,26 +449,28 @@ std::string KPSystem::generateTransitionTable(const std::vector<KPTransition>& t
     }
 
     // Header
-    table << std::left << std::setw(20) << "Date & Time"
-          << std::setw(10) << "Planet"
-          << std::setw(8) << "Level"
-          << std::setw(12) << "From Lord"
-          << std::setw(12) << "To Lord"
+    table << std::left
+          << std::setw(18) << "Date & Time"
+          << std::setw(14) << "Planet"
+          << std::setw(10) << "Level"
+          << std::setw(14) << "From Lord"
+          << std::setw(14) << "To Lord"
           << "Description\n";
 
-    table << std::string(80, '-') << "\n";
+    table << std::string(90, '-') << "\n";
 
     // Transition data
     for (const auto& trans : transitions) {
-        table << std::left << std::setw(20) << trans.getDateString()
-              << std::setw(10) << planetToString(trans.planet)
-              << std::setw(8) << kpLevelToString(trans.level)
-              << std::setw(12) << planetToString(trans.fromLord)
-              << std::setw(12) << planetToString(trans.toLord)
+        table << std::left
+              << std::setw(18) << trans.getDateString()
+              << std::setw(14) << planetToString(trans.planet)
+              << std::setw(10) << kpLevelToString(trans.level)
+              << std::setw(14) << planetToString(trans.fromLord)
+              << std::setw(14) << planetToString(trans.toLord)
               << trans.description << "\n";
     }
 
-    table << std::string(80, '-') << "\n";
+    table << std::string(90, '-') << "\n";
     table << "Total transitions found: " << transitions.size() << "\n";
 
     return table.str();

@@ -381,10 +381,18 @@ std::string HinduMonthlyCalendar::formatMonthSummary(const MonthlyData& monthDat
 std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyData& monthData) const {
     std::stringstream ss;
 
-    // Header with consistent formatting inspired by Myanmar multi-calendar
-    ss << "╔══════════════════════════════════════════════════════════════════════════════════╗\n";
-    ss << "║                        🕉️ ENHANCED HINDU CALENDAR 🕉️                               ║\n";
-    ss << "╠══════════════════════════════════════════════════════════════════════════════════╣\n";
+    auto repeatStr = [](const std::string& s, size_t count) -> std::string {
+        std::string res;
+        res.reserve(s.length() * count);
+        for (size_t i = 0; i < count; ++i) res += s;
+        return res;
+    };
+
+    // Header with consistent formatting matching the 118-column table below
+    ss << "╔" << repeatStr("═", 116) << "╗\n";
+    // Title centered in 116 width (title visual width: 29)
+    ss << "║" << std::string(43, ' ') << "🕉️ ENHANCED HINDU CALENDAR 🕉️" << std::string(44, ' ') << "║\n";
+    ss << "╠" << repeatStr("═", 116) << "╣\n";
     ss << "║  " << monthData.monthName << " " << (monthData.isBCYear ? abs(monthData.year) : monthData.year);
 
     if (monthData.isBCYear) {
@@ -396,20 +404,20 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
     ss << " | " << monthData.hinduMonthName << " " << monthData.hinduYear << " VS";
     ss << " | " << monthData.currentRitu << " (" << monthData.currentAyana << ")";
 
-    // Pad to consistent width
+    // Pad to consistent width matching table (116 inner width)
     std::string headerContent = monthData.monthName + " " + std::to_string(monthData.isBCYear ? abs(monthData.year) : monthData.year) +
                                (monthData.isBCYear ? " BC" : " CE") + " | " +
                                monthData.hinduMonthName + " " + std::to_string(monthData.hinduYear) + " VS | " +
                                monthData.currentRitu + " (" + monthData.currentAyana + ")";
 
-    size_t targetLength = 80; // Target width inside borders
+    size_t targetLength = 112; // 116 inner width - 4 spaces (2 left, 2 right)
     if (headerContent.length() < targetLength) {
         for (size_t i = headerContent.length(); i < targetLength; i++) {
             ss << " ";
         }
     }
-    ss << "║\n";
-    ss << "╚══════════════════════════════════════════════════════════════════════════════════╝\n\n";
+    ss << "  ║\n";
+    ss << "╚" << repeatStr("═", 116) << "╝\n\n";
 
     // Create fixed-width table with wider columns for better Panchanga data display
     ss << "┌────┬───────────────┬───────────────┬───────────────┬───────────────┬───────────────┬───────────────┬───────────────┐\n";
@@ -567,7 +575,7 @@ std::string HinduMonthlyCalendar::generateEnhancedHinduCalendar(const MonthlyDat
         ss << "\n🌌 NAKSHATRA DISTRIBUTION:\n";
         for (const auto& [nakshatra, count] : monthData.nakshatraCount) {
             if (count > 0) {
-                ss << "   " << static_cast<int>(nakshatra) << ": " << count << " day(s)\n";
+                ss << "   " << getNakshatraName(nakshatra) << ": " << count << " day(s)\n";
             }
         }
     }
