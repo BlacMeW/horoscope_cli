@@ -15,6 +15,25 @@ TTextScroller::TTextScroller(const TRect& bounds,
     setText(text);
 }
 
+static std::string stripAnsi(const std::string& str) {
+    std::string clean;
+    clean.reserve(str.size());
+    bool inEscape = false;
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (str[i] == '\033' && i + 1 < str.size() && str[i + 1] == '[') {
+            inEscape = true;
+            ++i;
+        } else if (inEscape) {
+            if ((str[i] >= 'A' && str[i] <= 'Z') || (str[i] >= 'a' && str[i] <= 'z')) {
+                inEscape = false;
+            }
+        } else {
+            clean += str[i];
+        }
+    }
+    return clean;
+}
+
 void TTextScroller::setText(const std::string& text) {
     lines.clear();
     std::stringstream ss(text);
@@ -22,6 +41,7 @@ void TTextScroller::setText(const std::string& text) {
     int maxLen = 0;
     while (std::getline(ss, line)) {
         if (!line.empty() && line.back() == '\r') line.pop_back();
+        line = stripAnsi(line);
         maxLen = std::max(maxLen, static_cast<int>(line.length()));
         lines.push_back(line);
     }

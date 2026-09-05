@@ -34,12 +34,7 @@ namespace AstroTui {
 const ushort cmNewChart        = 200;
 const ushort cmCityPreset      = 201;
 const ushort cmExportFile      = 202;
-const ushort cmWesternWheel    = 210;
-const ushort cmWesternRect     = 211;
-const ushort cmVedicNorth      = 212;
-const ushort cmVedicSouth      = 213;
-const ushort cmVedicEast       = 214;
-const ushort cmSolarSystem     = 215;
+const ushort cmPlanetPositions  = 216;
 const ushort cmHinduPanchang   = 220;
 const ushort cmHinduMonth      = 221;
 const ushort cmMyanmarCalendar = 222;
@@ -51,11 +46,25 @@ const ushort cmEclipses        = 232;
 const ushort cmKPTable         = 233;
 const ushort cmKPTransitions   = 234;
 const ushort cmEphemerisTable  = 235;
+const ushort cmAstroCoordinates = 236;
+const ushort cmEphemerisMonthly = 237;
+const ushort cmEphemerisYearly  = 238;
+const ushort cmEphemerisTransits= 239;
 const ushort cmTileWindows     = 240;
 const ushort cmCascadeWindows  = 241;
+const ushort cmAstroCalendarDay = 242;
+const ushort cmAstroCalendarMonth = 243;
 const ushort cmHelpAbout       = 250;
 const ushort cmHelpLegend      = 251;
 const ushort cmHelpShortcuts   = 252;
+const ushort cmThemeDialog      = 260;
+const ushort cmThemeTurboCpp     = 261;
+const ushort cmThemeDark        = 262;
+const ushort cmThemeBW          = 263;
+const ushort cmEphemerisDialog  = 270;
+const ushort cmCalendarDialog   = 271;
+const ushort cmMonthlyDialog    = 272;
+const ushort cmTransitDialog    = 273;
 
 class HoroscopeTuiApp : public TApplication {
 public:
@@ -64,26 +73,34 @@ public:
     Astro::ZodiacMode currentZodiacMode;
     Astro::AyanamsaType currentAyanamsa;
     Astro::HouseSystem currentHouseSystem;
+    int currentTheme;
 
-    HoroscopeTuiApp();
+    HoroscopeTuiApp(int initialTheme = 0);
     virtual ~HoroscopeTuiApp();
 
     virtual void handleEvent(TEvent& event) override;
+    virtual TPalette& getPalette() const override;
     static TMenuBar* initMenuBar(TRect r);
     static TStatusLine* initStatusLine(TRect r);
+
+    // Theme methods
+    void setTheme(int themeId);
+    void showThemeDialog();
 
     // Interactive Dialogs
     void showNewChartDialog();
     void showCityPresetDialog();
     void showExportDialog();
+    void showEphemerisDialog();
+    void showMonthlyDialog();
+    void showCalendarQueryDialog();
+    void showTransitDialog();
+    bool promptDateLocation(const char* title, Astro::BirthData& data, std::string& cityName, bool showTime = true);
+    bool promptYearMonth(const char* title, int& year, int& month);
+    bool promptDateRange(const char* title, Astro::BirthData& start, int& days);
 
-    // Chart & Table Views
-    void showWesternWheel();
-    void showWesternRect();
-    void showVedicNorth();
-    void showVedicSouth();
-    void showVedicEast();
-    void showSolarSystem();
+    // Ephemeris, Calendar & Table Views
+    void showPlanetaryPositions();
     void showHinduPanchang();
     void showHinduMonth();
     void showMyanmarCalendar();
@@ -95,6 +112,12 @@ public:
     void showKPTable();
     void showKPTransitions();
     void showEphemerisTable();
+    void showAstroCoordinates();
+    void showEphemerisMonthly();
+    void showEphemerisYearly();
+    void showEphemerisTransits();
+    void showAstroCalendarDay();
+    void showAstroCalendarMonth();
 
     // Help Dialogs
     void showHelpAbout();
@@ -111,6 +134,6 @@ private:
 };
 
 // Global launcher function
-int runTuiApplication();
+int runTuiApplication(int initialTheme = 0);
 
 } // namespace AstroTui

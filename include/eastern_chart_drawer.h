@@ -44,7 +44,8 @@ private:
     // South Indian chart specific functions
     std::string drawSouthIndianFrame() const;
     void fillSouthIndianHouses(std::vector<std::string>& lines,
-                              const std::vector<PlanetPosition>& positions) const;
+                              const std::vector<PlanetPosition>& positions,
+                              double ascendantLongitude = 0.0) const;
 
     // East Indian chart specific functions
     std::string drawEastIndianFrame() const;

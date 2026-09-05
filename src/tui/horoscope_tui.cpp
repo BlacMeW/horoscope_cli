@@ -3,8 +3,6 @@
 #include "birth_chart.h"
 #include "horoscope_calculator.h"
 #include "western_chart_drawer.h"
-#include "eastern_chart_drawer.h"
-#include "solar_system_drawer.h"
 #include "hindu_calendar.h"
 #include "hindu_monthly_calendar.h"
 #include "myanmar_calendar.h"
@@ -14,7 +12,9 @@
 #include "conjunction_calculator.h"
 #include "eclipse_calculator.h"
 #include "ephemeris_table.h"
+#include "astro_calendar.h"
 #include "location_manager.h"
+#include "swephexp.h"
 
 #include <sstream>
 #include <fstream>
@@ -23,7 +23,32 @@
 
 namespace AstroTui {
 
-HoroscopeTuiApp::HoroscopeTuiApp() :
+// 135-byte theme palettes for Turbo Vision
+// 1. Turbo C++ 3.0 IDE Classic: Authentic Borland Blue editor, light gray menu/status, blue desktop
+static const char cpTurboCpp[] =
+    "\x17\x70\x78\x74\x1F\x18\x1E\x17\x1F\x1E\x13\x1B\x1F\x30\x1F" /* 1-15: Desktop, StatusLine, MenuBar, BlueWindow */
+    "\x37\x3F\x3E\x13\x13\x30\x3F\x3F\x70\x7F\x7E\x13\x13\x70\x7F\x7E" /* 16-31: CyanWin, GrayWin */
+    "\x70\x7F\x74\x13\x13\x70\x70\x7F\x74\x1F\x1E\x1E\x70\x1F\x74\x70" /* 32-47: Dialogs & Buttons */
+    "\x1F\x1E\x0F\x1F\x1B\x70\x74\x70\x70\x70\x1F\x1E\x70\x13\x78\x00" /* 48-63: Controls, InputLines */
+    "\x17\x1F\x1E\x71\x71\x1E\x17\x1F\x1E\x1F\x1E\x1F\x78\x1E\x10\x30" /* 64-79 */
+    "\x3F\x3E\x70\x1F\x7A\x70\x12\x70\x70\x70\x1F\x1E\x70\x13\x78\x00" /* 80-95 */
+    "\x37\x3F\x3A\x13\x13\x3E\x30\x3F\x3E\x1F\x1E\x1F\x78\x1E\x30\x70" /* 96-111 */
+    "\x7F\x7E\x1F\x1F\x1A\x70\x12\x70\x71\x70\x1F\x7E\x71\x13\x78\x00" /* 112-127 */
+    "\x37\x3F\x3A\x13\x13\x30\x3E\x1E";                                 /* 128-135 */
+
+// 2. Modern Dark Slate: High contrast dark theme, zero muddy colors
+static const char cpModernDark[] =
+    "\x08\x07\x08\x0E\x1F\x18\x1E\x08\x0B\x0E\x08\x0B\x0F\x30\x0F" /* 1-15: Desktop, Menu/Status, Win1 */
+    "\x08\x0B\x0F\x08\x08\x0F\x0E\x0B\x08\x0F\x0E\x08\x08\x0F\x0F\x0E" /* 16-31: Win2, Win3 */
+    "\x08\x0F\x0E\x08\x08\x07\x08\x0F\x0E\x1F\x1B\x1F\x08\x1E\x07\x10" /* 32-47: Dialog */
+    "\x1F\x1E\x0F\x1F\x0B\x10\x71\x08\x08\x10\x1F\x1E\x08\x08\x08\x00" /* 48-63: Controls */
+    "\x08\x0F\x0B\x07\x07\x0F\x08\x0F\x0E\x1F\x1B\x1F\x08\x1E\x10\x10" /* 64-79 */
+    "\x1F\x1E\x07\x1F\x0A\x10\x12\x08\x08\x10\x1F\x1E\x08\x08\x08\x00" /* 80-95 */
+    "\x07\x0F\x0B\x08\x08\x0E\x10\x1F\x1E\x1F\x1B\x1F\x08\x1E\x10\x07" /* 96-111 */
+    "\x0F\x0E\x0F\x1F\x0A\x10\x12\x08\x07\x08\x1F\x0E\x07\x08\x08\x00" /* 112-127 */
+    "\x07\x0F\x0B\x08\x08\x10\x1E\x0E";                                 /* 128-135 */
+
+HoroscopeTuiApp::HoroscopeTuiApp(int initialTheme) :
     TProgInit(&HoroscopeTuiApp::initStatusLine,
               &HoroscopeTuiApp::initMenuBar,
               &HoroscopeTuiApp::initDeskTop),
@@ -31,21 +56,41 @@ HoroscopeTuiApp::HoroscopeTuiApp() :
     currentZodiacMode(Astro::ZodiacMode::TROPICAL),
     currentAyanamsa(Astro::AyanamsaType::LAHIRI),
     currentHouseSystem(Astro::HouseSystem::PLACIDUS),
+    currentTheme(initialTheme),
     windowCount(0)
 {
-    // Default birth data (Yangon, 2000-01-01 12:00:00)
-    currentBirthData.year = 2000;
-    currentBirthData.month = 1;
-    currentBirthData.day = 1;
-    currentBirthData.hour = 12;
-    currentBirthData.minute = 0;
-    currentBirthData.second = 0;
+    if (currentTheme == 2) {
+        appPalette = apBlackWhite;
+    } else {
+        appPalette = apColor;
+    }
+    // Initialize with real-time system clock
+    std::time_t now = std::time(nullptr);
+    std::tm* lt = std::localtime(&now);
+    if (lt) {
+        currentBirthData.year = lt->tm_year + 1900;
+        currentBirthData.month = lt->tm_mon + 1;
+        currentBirthData.day = lt->tm_mday;
+        currentBirthData.hour = lt->tm_hour;
+        currentBirthData.minute = lt->tm_min;
+        currentBirthData.second = lt->tm_sec;
+    } else {
+        currentBirthData.year = 2026;
+        currentBirthData.month = 9;
+        currentBirthData.day = 6;
+        currentBirthData.hour = 12;
+        currentBirthData.minute = 0;
+        currentBirthData.second = 0;
+    }
     currentBirthData.latitude = 16.8661;
     currentBirthData.longitude = 96.1951;
     currentBirthData.timezone = 6.5;
 
-    // Show initial welcome chart
-    showWesternWheel();
+    // Queue New Chart dialog on startup so the user fills in their data first
+    TEvent ev;
+    ev.what = evCommand;
+    ev.message.command = cmNewChart;
+    putEvent(ev);
 }
 
 HoroscopeTuiApp::~HoroscopeTuiApp() {
@@ -55,43 +100,55 @@ TMenuBar* HoroscopeTuiApp::initMenuBar(TRect r) {
     r.b.y = r.a.y + 1;
     return new TMenuBar(r,
         *new TSubMenu("~F~ile", kbAltF) +
-            *new TMenuItem("~N~ew Birth Chart...", cmNewChart, kbF2, hcNoContext, "F2") +
+            *new TMenuItem("~N~ew Date & Time...", cmNewChart, kbF2, hcNoContext, "F2") +
             *new TMenuItem("~L~ocation Presets...", cmCityPreset, kbF3, hcNoContext, "F3") +
             *new TMenuItem("~E~xport Active View...", cmExportFile, kbCtrlS, hcNoContext, "Ctrl+S") +
             newLine() +
             *new TMenuItem("E~x~it", cmQuit, kbAltX, hcNoContext, "Alt+X") +
-        *new TSubMenu("~C~harts", kbAltC) +
-            *new TMenuItem("~W~estern Wheel Chart", cmWesternWheel, kbNoKey) +
-            *new TMenuItem("Western ~R~ectangular Chart", cmWesternRect, kbNoKey) +
+        *new TSubMenu("~E~phemeris", kbAltE) +
+            *new TMenuItem("~C~ustom Ephemeris Generator Form...", cmEphemerisDialog, kbNoKey) +
             newLine() +
-            *new TMenuItem("~N~orth Indian Vedic Chart", cmVedicNorth, kbNoKey) +
-            *new TMenuItem("~S~outh Indian Vedic Chart", cmVedicSouth, kbNoKey) +
-            *new TMenuItem("~E~ast Indian Vedic Chart", cmVedicEast, kbNoKey) +
+            *new TMenuItem("~P~lanetary Positions & Houses Table", cmPlanetPositions, kbF4, hcNoContext, "F4") +
+            *new TMenuItem("~M~onthly Ephemeris (30-Day Daily Table)", cmEphemerisMonthly, kbNoKey) +
+            *new TMenuItem("~Y~early Ephemeris (12-Month Table)", cmEphemerisYearly, kbNoKey) +
+            *new TMenuItem("~1~4-Day Ephemeris Table", cmEphemerisTable, kbNoKey) +
             newLine() +
-            *new TMenuItem("Solar S~y~stem 2D Orbit View", cmSolarSystem, kbNoKey) +
-        *new TSubMenu("C~a~lendars", kbAltA) +
+            *new TMenuItem("~T~ransit Planets vs Natal Query...", cmTransitDialog, kbNoKey) +
+            *new TMenuItem("Astronomical ~D~etails & Coordinates", cmAstroCoordinates, kbNoKey) +
+        *new TSubMenu("~C~alendars", kbAltC) +
+            *new TMenuItem("~Q~uery Calendar for Date & City...", cmCalendarDialog, kbNoKey) +
+            *new TMenuItem("~M~onthly Calendar Query Form...", cmMonthlyDialog, kbNoKey) +
+            newLine() +
+            *new TMenuItem("~U~nified Astro-Calendar (Daily View)", cmAstroCalendarDay, kbNoKey) +
+            *new TMenuItem("Unified Monthly ~A~stro-Calendar", cmAstroCalendarMonth, kbNoKey) +
+            newLine() +
             *new TMenuItem("~H~indu Daily Panchang", cmHinduPanchang, kbNoKey) +
-            *new TMenuItem("Hindu ~M~onthly Calendar", cmHinduMonth, kbNoKey) +
+            *new TMenuItem("Hindu Monthly ~P~anchang Calendar", cmHinduMonth, kbNoKey) +
             newLine() +
-            *new TMenuItem("M~y~anmar Daily Calendar", cmMyanmarCalendar, kbNoKey) +
+            *new TMenuItem("M~y~anmar Daily Calendar (မြန်မာပြက္ခဒိန်)", cmMyanmarCalendar, kbNoKey) +
             *new TMenuItem("Myanmar Mo~n~thly Calendar", cmMyanmarMonth, kbNoKey) +
             newLine() +
-            *new TMenuItem("~C~hinese Sexagenary Calendar", cmChineseCalendar, kbNoKey) +
-        *new TSubMenu("~A~nalysis", kbAltN) +
+            *new TMenuItem("Chinese ~S~exagenary Calendar (中国农历)", cmChineseCalendar, kbNoKey) +
+        *new TSubMenu("~A~nalysis", kbAltA) +
             *new TMenuItem("Planetary ~A~spect Grid", cmAspectGrid, kbCtrlA, hcNoContext, "Ctrl+A") +
             *new TMenuItem("Planetary ~C~onjunctions (1 Year)", cmConjunctions, kbNoKey) +
             *new TMenuItem("Solar & Lunar ~E~clipses (2 Years)", cmEclipses, kbNoKey) +
             newLine() +
             *new TMenuItem("~K~P Sub-Lord 5-Levels Table", cmKPTable, kbF5, hcNoContext, "F5") +
             *new TMenuItem("KP Planetary ~T~ransitions", cmKPTransitions, kbNoKey) +
-            *new TMenuItem("E~p~hemeris 30-Day Table", cmEphemerisTable, kbNoKey) +
         *new TSubMenu("~W~indow", kbAltW) +
             *new TMenuItem("~T~ile Windows", cmTileWindows, kbShiftF5, hcNoContext, "Shift+F5") +
             *new TMenuItem("~C~ascade Windows", cmCascadeWindows, kbShiftF4, hcNoContext, "Shift+F4") +
             *new TMenuItem("Cl~o~se Active Window", cmClose, kbAltF3, hcNoContext, "Alt+F3") +
             *new TMenuItem("~S~ize / Move", cmResize, kbCtrlF5, hcNoContext, "Ctrl+F5") +
             *new TMenuItem("~Z~oom / Maximize", cmZoom, kbF6, hcNoContext, "F6") +
-        *new TSubMenu("~H~elp", kbAltH) +
+        *new TSubMenu("~T~heme", kbAltT) +
+            *new TMenuItem("~1~ Turbo C++ 3.0 Classic", cmThemeTurboCpp, kbNoKey) +
+            *new TMenuItem("~2~ Modern Dark Slate", cmThemeDark, kbNoKey) +
+            *new TMenuItem("~3~ Monochrome High Contrast B&W", cmThemeBW, kbNoKey) +
+            newLine() +
+            *new TMenuItem("~P~alette Selector...", cmThemeDialog, kbF9, hcNoContext, "F9") +
+        *new TSubMenu("Hel~p~", kbAltP) +
             *new TMenuItem("~A~bout Horoscope TUI", cmHelpAbout, kbNoKey) +
             *new TMenuItem("Astrological ~L~egend", cmHelpLegend, kbNoKey) +
             *new TMenuItem("Keyboard & Mouse ~S~hortcuts", cmHelpShortcuts, kbF1, hcNoContext, "F1")
@@ -103,9 +160,10 @@ TStatusLine* HoroscopeTuiApp::initStatusLine(TRect r) {
     return new TStatusLine(r,
         *new TStatusDef(0, 0xFFFF) +
             *new TStatusItem("~Alt+X~ Exit", kbAltX, cmQuit) +
-            *new TStatusItem("~F2~ New Chart", kbF2, cmNewChart) +
-            *new TStatusItem("~F3~ Presets", kbF3, cmCityPreset) +
+            *new TStatusItem("~F2~ Date", kbF2, cmNewChart) +
+            *new TStatusItem("~F4~ Planets", kbF4, cmPlanetPositions) +
             *new TStatusItem("~F5~ KP Table", kbF5, cmKPTable) +
+            *new TStatusItem("~F9~ Theme", kbF9, cmThemeDialog) +
             *new TStatusItem("~Ctrl+A~ Aspects", kbCtrlA, cmAspectGrid) +
             *new TStatusItem("~F10~ Menu", kbF10, cmMenu) +
             *new TStatusItem("~Alt+F3~ Close", kbAltF3, cmClose)
@@ -128,28 +186,44 @@ void HoroscopeTuiApp::handleEvent(TEvent& event) {
                 showExportDialog();
                 clearEvent(event);
                 break;
-            case cmWesternWheel:
-                showWesternWheel();
+            case cmEphemerisDialog:
+                showEphemerisDialog();
                 clearEvent(event);
                 break;
-            case cmWesternRect:
-                showWesternRect();
+            case cmCalendarDialog:
+                showCalendarQueryDialog();
                 clearEvent(event);
                 break;
-            case cmVedicNorth:
-                showVedicNorth();
+            case cmMonthlyDialog:
+                showMonthlyDialog();
                 clearEvent(event);
                 break;
-            case cmVedicSouth:
-                showVedicSouth();
+            case cmTransitDialog:
+                showTransitDialog();
                 clearEvent(event);
                 break;
-            case cmVedicEast:
-                showVedicEast();
+            case cmEphemerisMonthly:
+                showEphemerisMonthly();
                 clearEvent(event);
                 break;
-            case cmSolarSystem:
-                showSolarSystem();
+            case cmEphemerisYearly:
+                showEphemerisYearly();
+                clearEvent(event);
+                break;
+            case cmEphemerisTransits:
+                showEphemerisTransits();
+                clearEvent(event);
+                break;
+            case cmAstroCalendarDay:
+                showAstroCalendarDay();
+                clearEvent(event);
+                break;
+            case cmAstroCalendarMonth:
+                showAstroCalendarMonth();
+                clearEvent(event);
+                break;
+            case cmPlanetPositions:
+                showPlanetaryPositions();
                 clearEvent(event);
                 break;
             case cmHinduPanchang:
@@ -196,6 +270,10 @@ void HoroscopeTuiApp::handleEvent(TEvent& event) {
                 showEphemerisTable();
                 clearEvent(event);
                 break;
+            case cmAstroCoordinates:
+                showAstroCoordinates();
+                clearEvent(event);
+                break;
             case cmTileWindows:
                 if (deskTop) deskTop->tile(deskTop->getExtent());
                 clearEvent(event);
@@ -216,6 +294,22 @@ void HoroscopeTuiApp::handleEvent(TEvent& event) {
                 showHelpShortcuts();
                 clearEvent(event);
                 break;
+            case cmThemeTurboCpp:
+                setTheme(0);
+                clearEvent(event);
+                break;
+            case cmThemeDark:
+                setTheme(1);
+                clearEvent(event);
+                break;
+            case cmThemeBW:
+                setTheme(2);
+                clearEvent(event);
+                break;
+            case cmThemeDialog:
+                showThemeDialog();
+                clearEvent(event);
+                break;
             default:
                 break;
         }
@@ -230,13 +324,25 @@ void HoroscopeTuiApp::openWindow(const std::string& title, const std::string& co
 
     TRect extent = deskTop->getExtent();
     if (bounds.a.x == 0 && bounds.b.x == 0) {
-        int offset = (windowCount % 6) * 2;
-        int w = std::min(82, extent.b.x - 4);
-        int h = std::min(24, extent.b.y - 4);
-        int x1 = std::max(1, extent.a.x + 2 + offset);
-        int y1 = std::max(1, extent.a.y + 1 + offset);
-        int x2 = std::min(extent.b.x - 1, x1 + w);
-        int y2 = std::min(extent.b.y - 1, y1 + h);
+        int deskW = extent.b.x - extent.a.x;
+        int deskH = extent.b.y - extent.a.y;
+
+        // Generous sizing so full chart wheels and tables fit comfortably without clipping
+        int targetW = std::max(84, (deskW * 88) / 100);
+        int targetH = std::max(28, (deskH * 88) / 100);
+        int w = std::min(deskW - 2, targetW);
+        int h = std::min(deskH - 2, targetH);
+
+        // Center on screen with slight offset for multiple windows
+        int x1 = extent.a.x + std::max(0, (deskW - w) / 2);
+        int y1 = extent.a.y + std::max(0, (deskH - h) / 2);
+        if (windowCount > 0) {
+            int offset = (windowCount % 5) * 2;
+            x1 = std::min(extent.b.x - w - 1, x1 + offset);
+            y1 = std::min(extent.b.y - h - 1, y1 + offset);
+        }
+        int x2 = std::min(extent.b.x, x1 + w);
+        int y2 = std::min(extent.b.y, y1 + h);
         bounds = TRect(x1, y1, x2, y2);
         windowCount++;
     }
@@ -246,7 +352,7 @@ void HoroscopeTuiApp::openWindow(const std::string& title, const std::string& co
 }
 
 void HoroscopeTuiApp::showNewChartDialog() {
-    TDialog* d = new TDialog(TRect(12, 3, 68, 20), "Enter Birth Chart Data");
+    TDialog* d = new TDialog(TRect(10, 2, 70, 22), "Enter Birth & Calculation Data");
 
     char dateBuf[32];
     snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d",
@@ -263,38 +369,59 @@ void HoroscopeTuiApp::showNewChartDialog() {
     char cityBuf[64];
     snprintf(cityBuf, sizeof(cityBuf), "%s", currentCityName.c_str());
 
-    TInputLine* inDate = new TInputLine(TRect(20, 2, 40, 3), 20);
+    TInputLine* inDate = new TInputLine(TRect(22, 2, 44, 3), 20);
     inDate->setData(dateBuf);
     d->insert(inDate);
-    d->insert(new TLabel(TRect(3, 2, 19, 3), "~D~ate (Y-M-D):", inDate));
+    d->insert(new TLabel(TRect(3, 2, 21, 3), "~D~ate (Y-M-D):", inDate));
 
-    TInputLine* inTime = new TInputLine(TRect(20, 4, 40, 5), 20);
+    TInputLine* inTime = new TInputLine(TRect(22, 4, 44, 5), 20);
     inTime->setData(timeBuf);
     d->insert(inTime);
-    d->insert(new TLabel(TRect(3, 4, 19, 5), "~T~ime (H:M:S):", inTime));
+    d->insert(new TLabel(TRect(3, 4, 21, 5), "~T~ime (H:M:S):", inTime));
 
-    TInputLine* inLat = new TInputLine(TRect(20, 6, 40, 7), 20);
-    inLat->setData(latBuf);
-    d->insert(inLat);
-    d->insert(new TLabel(TRect(3, 6, 19, 7), "~L~atitude (°):", inLat));
-
-    TInputLine* inLon = new TInputLine(TRect(20, 8, 40, 9), 20);
-    inLon->setData(lonBuf);
-    d->insert(inLon);
-    d->insert(new TLabel(TRect(3, 8, 19, 9), "L~o~ngitude (°):", inLon));
-
-    TInputLine* inTz = new TInputLine(TRect(20, 10, 40, 11), 20);
-    inTz->setData(tzBuf);
-    d->insert(inTz);
-    d->insert(new TLabel(TRect(3, 10, 19, 11), "Time~z~one:", inTz));
-
-    TInputLine* inCity = new TInputLine(TRect(20, 12, 52, 13), 50);
+    TInputLine* inCity = new TInputLine(TRect(22, 6, 56, 7), 50);
     inCity->setData(cityBuf);
     d->insert(inCity);
-    d->insert(new TLabel(TRect(3, 12, 19, 13), "~C~ity Name:", inCity));
+    d->insert(new TLabel(TRect(3, 6, 21, 7), "~C~ity / Place:", inCity));
 
-    d->insert(new TButton(TRect(15, 14, 28, 16), "~C~alculate", cmOK, bfDefault));
-    d->insert(new TButton(TRect(30, 14, 43, 16), "Cancel", cmCancel, bfNormal));
+    TInputLine* inLat = new TInputLine(TRect(22, 8, 35, 9), 12);
+    inLat->setData(latBuf);
+    d->insert(inLat);
+    d->insert(new TLabel(TRect(3, 8, 21, 9), "~L~atitude (°):", inLat));
+
+    TInputLine* inLon = new TInputLine(TRect(44, 8, 56, 9), 12);
+    inLon->setData(lonBuf);
+    d->insert(inLon);
+    d->insert(new TLabel(TRect(38, 8, 43, 9), "L~o~n:", inLon));
+
+    TInputLine* inTz = new TInputLine(TRect(22, 10, 35, 11), 12);
+    inTz->setData(tzBuf);
+    d->insert(inTz);
+    d->insert(new TLabel(TRect(3, 10, 21, 11), "Time~z~one:", inTz));
+
+    TSItem* zItems = new TSItem("Tropical (Western)",
+                     new TSItem("Sidereal (Vedic Lahiri)", nullptr));
+    TRadioButtons* rbZodiac = new TRadioButtons(TRect(22, 12, 56, 14), zItems);
+    ushort zVal = (currentZodiacMode == Astro::ZodiacMode::SIDEREAL) ? 1 : 0;
+    rbZodiac->setData(&zVal);
+    d->insert(rbZodiac);
+    d->insert(new TLabel(TRect(3, 12, 21, 13), "~Z~odiac Mode:", rbZodiac));
+
+    TSItem* hItems = new TSItem("Placidus",
+                     new TSItem("Whole Sign",
+                     new TSItem("Koch",
+                     new TSItem("Equal", nullptr))));
+    TRadioButtons* rbHouse = new TRadioButtons(TRect(22, 15, 56, 17), hItems);
+    ushort hVal = 0;
+    if (currentHouseSystem == Astro::HouseSystem::WHOLE_SIGN) hVal = 1;
+    else if (currentHouseSystem == Astro::HouseSystem::KOCH) hVal = 2;
+    else if (currentHouseSystem == Astro::HouseSystem::EQUAL) hVal = 3;
+    rbHouse->setData(&hVal);
+    d->insert(rbHouse);
+    d->insert(new TLabel(TRect(3, 15, 21, 16), "~H~ouse System:", rbHouse));
+
+    d->insert(new TButton(TRect(15, 18, 32, 20), "~C~alculate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(36, 18, 49, 20), "Cancel", cmCancel, bfNormal));
 
     if (deskTop->execView(d) == cmOK) {
         inDate->getData(dateBuf);
@@ -303,6 +430,8 @@ void HoroscopeTuiApp::showNewChartDialog() {
         inLon->getData(lonBuf);
         inTz->getData(tzBuf);
         inCity->getData(cityBuf);
+        rbZodiac->getData(&zVal);
+        rbHouse->getData(&hVal);
 
         int y = 2000, m = 1, day = 1, h = 12, min = 0, s = 0;
         sscanf(dateBuf, "%d-%d-%d", &y, &m, &day);
@@ -322,10 +451,158 @@ void HoroscopeTuiApp::showNewChartDialog() {
         currentBirthData.timezone = tz;
         currentCityName = cityBuf;
 
-        showWesternWheel();
-        showKPTable();
+        currentZodiacMode = (zVal == 1) ? Astro::ZodiacMode::SIDEREAL : Astro::ZodiacMode::TROPICAL;
+        if (hVal == 1) currentHouseSystem = Astro::HouseSystem::WHOLE_SIGN;
+        else if (hVal == 2) currentHouseSystem = Astro::HouseSystem::KOCH;
+        else if (hVal == 3) currentHouseSystem = Astro::HouseSystem::EQUAL;
+        else currentHouseSystem = Astro::HouseSystem::PLACIDUS;
+
+        showPlanetaryPositions();
     }
     destroy(d);
+}
+
+bool HoroscopeTuiApp::promptDateLocation(const char* title, Astro::BirthData& data, std::string& cityName, bool showTime) {
+    TDialog* d = new TDialog(TRect(12, 4, 68, showTime ? 18 : 16), title);
+
+    char dateBuf[32];
+    snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", data.year, data.month, data.day);
+    char timeBuf[32];
+    snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d", data.hour, data.minute, data.second);
+    char cityBuf[64];
+    snprintf(cityBuf, sizeof(cityBuf), "%s", cityName.c_str());
+    char latBuf[32];
+    snprintf(latBuf, sizeof(latBuf), "%.4f", data.latitude);
+    char lonBuf[32];
+    snprintf(lonBuf, sizeof(lonBuf), "%.4f", data.longitude);
+
+    int yPos = 2;
+    TInputLine* inDate = new TInputLine(TRect(22, yPos, 44, yPos + 1), 20);
+    inDate->setData(dateBuf);
+    d->insert(inDate);
+    d->insert(new TLabel(TRect(3, yPos, 21, yPos + 1), "~D~ate (Y-M-D):", inDate));
+    yPos += 2;
+
+    TInputLine* inTime = nullptr;
+    if (showTime) {
+        inTime = new TInputLine(TRect(22, yPos, 44, yPos + 1), 20);
+        inTime->setData(timeBuf);
+        d->insert(inTime);
+        d->insert(new TLabel(TRect(3, yPos, 21, yPos + 1), "~T~ime (H:M:S):", inTime));
+        yPos += 2;
+    }
+
+    TInputLine* inCity = new TInputLine(TRect(22, yPos, 52, yPos + 1), 45);
+    inCity->setData(cityBuf);
+    d->insert(inCity);
+    d->insert(new TLabel(TRect(3, yPos, 21, yPos + 1), "~C~ity / Place:", inCity));
+    yPos += 2;
+
+    TInputLine* inLat = new TInputLine(TRect(22, yPos, 36, yPos + 1), 12);
+    inLat->setData(latBuf);
+    d->insert(inLat);
+    d->insert(new TLabel(TRect(3, yPos, 21, yPos + 1), "~L~atitude (°):", inLat));
+
+    TInputLine* inLon = new TInputLine(TRect(44, yPos, 54, yPos + 1), 12);
+    inLon->setData(lonBuf);
+    d->insert(inLon);
+    d->insert(new TLabel(TRect(38, yPos, 43, yPos + 1), "L~o~n:", inLon));
+    yPos += 2;
+
+    d->insert(new TButton(TRect(14, yPos + 1, 28, yPos + 3), "~V~iew", cmOK, bfDefault));
+    d->insert(new TButton(TRect(32, yPos + 1, 44, yPos + 3), "Cancel", cmCancel, bfNormal));
+
+    bool ok = (deskTop->execView(d) == cmOK);
+    if (ok) {
+        inDate->getData(dateBuf);
+        if (inTime) inTime->getData(timeBuf);
+        inCity->getData(cityBuf);
+        inLat->getData(latBuf);
+        inLon->getData(lonBuf);
+
+        int y = 2000, m = 1, day = 1, h = 12, min = 0, s = 0;
+        sscanf(dateBuf, "%d-%d-%d", &y, &m, &day);
+        if (showTime) sscanf(timeBuf, "%d:%d:%d", &h, &min, &s);
+
+        data.year = y; data.month = m; data.day = day;
+        if (showTime) { data.hour = h; data.minute = min; data.second = s; }
+        cityName = cityBuf;
+        data.latitude = atof(latBuf);
+        data.longitude = atof(lonBuf);
+    }
+    destroy(d);
+    return ok;
+}
+
+bool HoroscopeTuiApp::promptYearMonth(const char* title, int& year, int& month) {
+    TDialog* d = new TDialog(TRect(15, 6, 65, 17), title);
+
+    char yearBuf[16];
+    snprintf(yearBuf, sizeof(yearBuf), "%d", year);
+    char monthBuf[16];
+    snprintf(monthBuf, sizeof(monthBuf), "%d", month);
+
+    TInputLine* inYear = new TInputLine(TRect(24, 2, 38, 3), 10);
+    inYear->setData(yearBuf);
+    d->insert(inYear);
+    d->insert(new TLabel(TRect(4, 2, 22, 3), "~Y~ear (YYYY):", inYear));
+
+    TInputLine* inMonth = new TInputLine(TRect(24, 4, 32, 5), 5);
+    inMonth->setData(monthBuf);
+    d->insert(inMonth);
+    d->insert(new TLabel(TRect(4, 4, 22, 5), "~M~onth (1-12):", inMonth));
+
+    d->insert(new TButton(TRect(12, 7, 26, 9), "~G~enerate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(28, 7, 40, 9), "Cancel", cmCancel, bfNormal));
+
+    bool ok = (deskTop->execView(d) == cmOK);
+    if (ok) {
+        inYear->getData(yearBuf);
+        inMonth->getData(monthBuf);
+        int y = atoi(yearBuf);
+        int m = atoi(monthBuf);
+        if (y > 0) year = y;
+        if (m >= 1 && m <= 12) month = m;
+    }
+    destroy(d);
+    return ok;
+}
+
+bool HoroscopeTuiApp::promptDateRange(const char* title, Astro::BirthData& start, int& days) {
+    TDialog* d = new TDialog(TRect(14, 5, 66, 17), title);
+
+    char dateBuf[32];
+    snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", start.year, start.month, start.day);
+    char daysBuf[16];
+    snprintf(daysBuf, sizeof(daysBuf), "%d", days);
+
+    TInputLine* inDate = new TInputLine(TRect(26, 2, 46, 3), 20);
+    inDate->setData(dateBuf);
+    d->insert(inDate);
+    d->insert(new TLabel(TRect(3, 2, 25, 3), "~S~tart Date (Y-M-D):", inDate));
+
+    TInputLine* inDays = new TInputLine(TRect(26, 4, 38, 5), 10);
+    inDays->setData(daysBuf);
+    d->insert(inDays);
+    d->insert(new TLabel(TRect(3, 4, 25, 5), "Duration (~D~ays):", inDays));
+
+    d->insert(new TButton(TRect(12, 7, 26, 9), "~C~alculate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(29, 7, 41, 9), "Cancel", cmCancel, bfNormal));
+
+    bool ok = (deskTop->execView(d) == cmOK);
+    if (ok) {
+        inDate->getData(dateBuf);
+        inDays->getData(daysBuf);
+        int y = 2000, m = 1, day = 1;
+        sscanf(dateBuf, "%d-%d-%d", &y, &m, &day);
+        int dCount = atoi(daysBuf);
+        if (y > 0) start.year = y;
+        if (m >= 1 && m <= 12) start.month = m;
+        if (day >= 1 && day <= 31) start.day = day;
+        if (dCount > 0) days = dCount;
+    }
+    destroy(d);
+    return ok;
 }
 
 void HoroscopeTuiApp::showCityPresetDialog() {
@@ -371,7 +648,7 @@ void HoroscopeTuiApp::showCityPresetDialog() {
             currentBirthData.latitude = p.lat;
             currentBirthData.longitude = p.lon;
             currentBirthData.timezone = p.tz;
-            showWesternWheel();
+            showPlanetaryPositions();
         }
     }
     destroy(d);
@@ -415,68 +692,310 @@ static Astro::BirthChart computeCurrentChart(const Astro::BirthData& data,
     return chart;
 }
 
-void HoroscopeTuiApp::showWesternWheel() {
+static Astro::BirthData addCalendarDays(const Astro::BirthData& start, double days) {
+    double h_dec = start.hour + start.minute / 60.0 + start.second / 3600.0;
+    double jd = swe_julday(start.year, start.month, start.day, h_dec, SE_GREG_CAL) + days;
+    int y, m, d;
+    double h;
+    swe_revjul(jd, SE_GREG_CAL, &y, &m, &d, &h);
+    Astro::BirthData res = start;
+    res.year = y;
+    res.month = m;
+    res.day = d;
+    return res;
+}
+
+void HoroscopeTuiApp::showEphemerisDialog() {
+    TDialog* d = new TDialog(TRect(10, 3, 70, 21), "Generate Custom Ephemeris Table");
+
+    char startBuf[32];
+    snprintf(startBuf, sizeof(startBuf), "%04d-%02d-%02d",
+             currentBirthData.year, currentBirthData.month, currentBirthData.day);
+
+    Astro::BirthData endDef = addCalendarDays(currentBirthData, 14.0);
+    char endBuf[32];
+    snprintf(endBuf, sizeof(endBuf), "%04d-%02d-%02d",
+             endDef.year, endDef.month, endDef.day);
+
+    char stepBuf[16] = "1";
+
+    TInputLine* inStart = new TInputLine(TRect(26, 2, 46, 3), 20);
+    inStart->setData(startBuf);
+    d->insert(inStart);
+    d->insert(new TLabel(TRect(3, 2, 25, 3), "~S~tart Date (Y-M-D):", inStart));
+
+    TInputLine* inEnd = new TInputLine(TRect(26, 4, 46, 5), 20);
+    inEnd->setData(endBuf);
+    d->insert(inEnd);
+    d->insert(new TLabel(TRect(3, 4, 25, 5), "~E~nd Date (Y-M-D):", inEnd));
+
+    TInputLine* inStep = new TInputLine(TRect(26, 6, 36, 7), 10);
+    inStep->setData(stepBuf);
+    d->insert(inStep);
+    d->insert(new TLabel(TRect(3, 6, 25, 7), "Interval / ~S~tep (days):", inStep));
+
+    TSItem* zItems = new TSItem("Tropical Zodiac",
+                     new TSItem("Sidereal (Lahiri Ayanamsa)", nullptr));
+    TRadioButtons* rbZodiac = new TRadioButtons(TRect(26, 8, 58, 10), zItems);
+    ushort zVal = (currentZodiacMode == Astro::ZodiacMode::SIDEREAL) ? 1 : 0;
+    rbZodiac->setData(&zVal);
+    d->insert(rbZodiac);
+    d->insert(new TLabel(TRect(3, 8, 25, 9), "~Z~odiac System:", rbZodiac));
+
+    TSItem* optItems = new TSItem("Show Daily Motion / Speed",
+                       new TSItem("Show Declination Coordinates",
+                       new TSItem("Show Retrograde Status", nullptr)));
+    TCheckBoxes* cbOpts = new TCheckBoxes(TRect(26, 11, 58, 14), optItems);
+    ushort optVal = 0x05;
+    cbOpts->setData(&optVal);
+    d->insert(cbOpts);
+    d->insert(new TLabel(TRect(3, 11, 25, 12), "~O~ptions:", cbOpts));
+
+    d->insert(new TButton(TRect(15, 15, 32, 17), "~G~enerate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(35, 15, 48, 17), "Cancel", cmCancel, bfNormal));
+
+    if (deskTop->execView(d) == cmOK) {
+        inStart->getData(startBuf);
+        inEnd->getData(endBuf);
+        inStep->getData(stepBuf);
+        rbZodiac->getData(&zVal);
+        cbOpts->getData(&optVal);
+
+        int sy = 2000, sm = 1, sd = 1;
+        int ey = 2000, em = 1, ed = 1;
+        sscanf(startBuf, "%d-%d-%d", &sy, &sm, &sd);
+        sscanf(endBuf, "%d-%d-%d", &ey, &em, &ed);
+        int step = atoi(stepBuf);
+        if (step <= 0) step = 1;
+
+        Astro::EphemerisTable eph;
+        if (eph.initialize()) {
+            Astro::EphemerisConfig cfg;
+            cfg.startDate = currentBirthData;
+            cfg.startDate.year = sy; cfg.startDate.month = sm; cfg.startDate.day = sd;
+            cfg.endDate = currentBirthData;
+            cfg.endDate.year = ey; cfg.endDate.month = em; cfg.endDate.day = ed;
+            cfg.intervalDays = step;
+            cfg.zodiacMode = (zVal == 1) ? Astro::ZodiacMode::SIDEREAL : Astro::ZodiacMode::TROPICAL;
+            cfg.ayanamsa = currentAyanamsa;
+            cfg.useColors = false;
+            cfg.showSiderealTime = true;
+            cfg.showSpeed = (optVal & 0x01) != 0;
+            cfg.showDeclination = (optVal & 0x02) != 0;
+            cfg.showRetrograde = (optVal & 0x04) != 0;
+
+            std::string text = eph.generateTable(cfg);
+            std::ostringstream title;
+            title << "Custom Ephemeris (" << startBuf << " to " << endBuf << ", step=" << step << "d)";
+            openWindow(title.str(), text);
+        } else {
+            messageBox(mfError | mfOKButton, "Failed to initialize Ephemeris Table.");
+        }
+    }
+    destroy(d);
+}
+
+void HoroscopeTuiApp::showCalendarQueryDialog() {
+    TDialog* d = new TDialog(TRect(10, 3, 70, 21), "Calendar & Panchang Query Form");
+
+    char dateBuf[32];
+    snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d",
+             currentBirthData.year, currentBirthData.month, currentBirthData.day);
+    char timeBuf[32];
+    snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d",
+             currentBirthData.hour, currentBirthData.minute, currentBirthData.second);
+    char cityBuf[64];
+    snprintf(cityBuf, sizeof(cityBuf), "%s", currentCityName.c_str());
+
+    TInputLine* inDate = new TInputLine(TRect(26, 2, 46, 3), 20);
+    inDate->setData(dateBuf);
+    d->insert(inDate);
+    d->insert(new TLabel(TRect(3, 2, 25, 3), "~D~ate (Y-M-D):", inDate));
+
+    TInputLine* inTime = new TInputLine(TRect(26, 4, 46, 5), 20);
+    inTime->setData(timeBuf);
+    d->insert(inTime);
+    d->insert(new TLabel(TRect(3, 4, 25, 5), "~T~ime (H:M:S):", inTime));
+
+    TInputLine* inCity = new TInputLine(TRect(26, 6, 56, 7), 50);
+    inCity->setData(cityBuf);
+    d->insert(inCity);
+    d->insert(new TLabel(TRect(3, 6, 25, 7), "~C~ity / Place:", inCity));
+
+    TSItem* calItems = new TSItem("Unified Astro-Calendar (Daily View)",
+                       new TSItem("Hindu Daily Panchanga (Panchang Details)",
+                       new TSItem("Myanmar Daily Calendar (မြန်မာပြက္ခဒိန်)",
+                       new TSItem("Chinese Sexagenary Calendar (中国农历)", nullptr))));
+    TRadioButtons* rbCal = new TRadioButtons(TRect(26, 8, 62, 12), calItems);
+    ushort calVal = 0;
+    rbCal->setData(&calVal);
+    d->insert(rbCal);
+    d->insert(new TLabel(TRect(3, 8, 25, 9), "Calendar ~S~ystem:", rbCal));
+
+    d->insert(new TButton(TRect(15, 14, 30, 16), "~V~iew", cmOK, bfDefault));
+    d->insert(new TButton(TRect(34, 14, 47, 16), "Cancel", cmCancel, bfNormal));
+
+    if (deskTop->execView(d) == cmOK) {
+        inDate->getData(dateBuf);
+        inTime->getData(timeBuf);
+        inCity->getData(cityBuf);
+        rbCal->getData(&calVal);
+
+        int y = 2000, m = 1, day = 1, h = 12, min = 0, s = 0;
+        sscanf(dateBuf, "%d-%d-%d", &y, &m, &day);
+        sscanf(timeBuf, "%d:%d:%d", &h, &min, &s);
+
+        currentBirthData.year = y; currentBirthData.month = m; currentBirthData.day = day;
+        currentBirthData.hour = h; currentBirthData.minute = min; currentBirthData.second = s;
+        currentCityName = cityBuf;
+
+        switch (calVal) {
+            case 0: showAstroCalendarDay(); break;
+            case 1: showHinduPanchang(); break;
+            case 2: showMyanmarCalendar(); break;
+            case 3: showChineseCalendar(); break;
+            default: showAstroCalendarDay(); break;
+        }
+    }
+    destroy(d);
+}
+
+void HoroscopeTuiApp::showMonthlyDialog() {
+    TDialog* d = new TDialog(TRect(12, 4, 68, 19), "Monthly Calendar & Ephemeris Query");
+
+    char yearBuf[16];
+    snprintf(yearBuf, sizeof(yearBuf), "%d", currentBirthData.year);
+    char monthBuf[16];
+    snprintf(monthBuf, sizeof(monthBuf), "%d", currentBirthData.month);
+
+    TInputLine* inYear = new TInputLine(TRect(24, 2, 36, 3), 10);
+    inYear->setData(yearBuf);
+    d->insert(inYear);
+    d->insert(new TLabel(TRect(3, 2, 22, 3), "~Y~ear (YYYY):", inYear));
+
+    TInputLine* inMonth = new TInputLine(TRect(24, 4, 32, 5), 5);
+    inMonth->setData(monthBuf);
+    d->insert(inMonth);
+    d->insert(new TLabel(TRect(3, 4, 22, 5), "~M~onth (1-12):", inMonth));
+
+    TSItem* mItems = new TSItem("30-Day Planetary Ephemeris Table",
+                     new TSItem("Unified Monthly Astro-Calendar",
+                     new TSItem("Hindu Monthly Panchang Calendar",
+                     new TSItem("Myanmar Monthly Traditional Calendar", nullptr))));
+    TRadioButtons* rbMonth = new TRadioButtons(TRect(24, 6, 62, 10), mItems);
+    ushort mVal = 0;
+    rbMonth->setData(&mVal);
+    d->insert(rbMonth);
+    d->insert(new TLabel(TRect(3, 6, 22, 7), "~V~iew Mode:", rbMonth));
+
+    d->insert(new TButton(TRect(15, 12, 30, 14), "~G~enerate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(33, 12, 46, 14), "Cancel", cmCancel, bfNormal));
+
+    if (deskTop->execView(d) == cmOK) {
+        inYear->getData(yearBuf);
+        inMonth->getData(monthBuf);
+        rbMonth->getData(&mVal);
+
+        int y = atoi(yearBuf);
+        int m = atoi(monthBuf);
+        if (y < 100) y = currentBirthData.year;
+        if (m < 1 || m > 12) m = currentBirthData.month;
+
+        currentBirthData.year = y;
+        currentBirthData.month = m;
+
+        switch (mVal) {
+            case 0: showEphemerisMonthly(); break;
+            case 1: showAstroCalendarMonth(); break;
+            case 2: showHinduMonth(); break;
+            case 3: showMyanmarMonth(); break;
+            default: showEphemerisMonthly(); break;
+        }
+    }
+    destroy(d);
+}
+
+void HoroscopeTuiApp::showTransitDialog() {
+    TDialog* d = new TDialog(TRect(12, 4, 68, 18), "Planetary Transits Query");
+
+    char natalBuf[32];
+    snprintf(natalBuf, sizeof(natalBuf), "%04d-%02d-%02d",
+             currentBirthData.year, currentBirthData.month, currentBirthData.day);
+
+    Astro::BirthData nowData = currentBirthData;
+    char transitBuf[32];
+    snprintf(transitBuf, sizeof(transitBuf), "%04d-%02d-%02d",
+             nowData.year, nowData.month, nowData.day);
+
+    char daysBuf[16] = "30";
+
+    TInputLine* inNatal = new TInputLine(TRect(26, 2, 46, 3), 20);
+    inNatal->setData(natalBuf);
+    d->insert(inNatal);
+    d->insert(new TLabel(TRect(3, 2, 25, 3), "~N~atal Date (Y-M-D):", inNatal));
+
+    TInputLine* inTransit = new TInputLine(TRect(26, 4, 46, 5), 20);
+    inTransit->setData(transitBuf);
+    d->insert(inTransit);
+    d->insert(new TLabel(TRect(3, 4, 25, 5), "~T~ransit Start Date:", inTransit));
+
+    TInputLine* inDays = new TInputLine(TRect(26, 6, 36, 7), 10);
+    inDays->setData(daysBuf);
+    d->insert(inDays);
+    d->insert(new TLabel(TRect(3, 6, 25, 7), "Range (~D~ays):", inDays));
+
+    d->insert(new TButton(TRect(15, 10, 32, 12), "~C~alculate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(35, 10, 48, 12), "Cancel", cmCancel, bfNormal));
+
+    if (deskTop->execView(d) == cmOK) {
+        inNatal->getData(natalBuf);
+        inTransit->getData(transitBuf);
+        inDays->getData(daysBuf);
+
+        int ny = 2000, nm = 1, nd = 1;
+        int ty = 2000, tm = 1, td = 1;
+        sscanf(natalBuf, "%d-%d-%d", &ny, &nm, &nd);
+        sscanf(transitBuf, "%d-%d-%d", &ty, &tm, &td);
+        int days = atoi(daysBuf);
+        if (days <= 0) days = 30;
+
+        Astro::BirthData natal = currentBirthData;
+        natal.year = ny; natal.month = nm; natal.day = nd;
+
+        Astro::BirthData tStart = currentBirthData;
+        tStart.year = ty; tStart.month = tm; tStart.day = td;
+        Astro::BirthData tEnd = addCalendarDays(tStart, (double)days);
+
+        Astro::EphemerisTable eph;
+        if (eph.initialize()) {
+            std::string text = eph.generateTransitTable(natal, tStart, tEnd, 1);
+            std::ostringstream title;
+            title << "Planetary Transits (" << transitBuf << " for " << days << " days)";
+            openWindow(title.str(), text);
+        } else {
+            messageBox(mfError | mfOKButton, "Failed to initialize Ephemeris Table.");
+        }
+    }
+    destroy(d);
+}
+
+void HoroscopeTuiApp::showPlanetaryPositions() {
+    if (!promptDateLocation("Planetary Positions & Houses - Query Date", currentBirthData, currentCityName, true)) return;
     Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, currentZodiacMode, currentAyanamsa);
-
-    Astro::WesternChartDrawer drawer;
-    drawer.setShowAspects(true);
-    std::string text = drawer.drawChartWheel(chart);
-
-    openWindow("Western Wheel Chart - " + currentCityName, text);
+    std::string text = chart.getFormattedChart();
+    openWindow("Planetary Positions & House Cusps - " + currentCityName, text);
 }
 
-void HoroscopeTuiApp::showWesternRect() {
+void HoroscopeTuiApp::showAstroCoordinates() {
+    if (!promptDateLocation("Astronomical Details & Coordinates - Query Date", currentBirthData, currentCityName, true)) return;
     Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, currentZodiacMode, currentAyanamsa);
-
-    Astro::WesternChartDrawer drawer;
-    std::string text = drawer.drawRectangularChart(chart);
-
-    openWindow("Western Rectangular Layout - " + currentCityName, text);
-}
-
-void HoroscopeTuiApp::showVedicNorth() {
-    Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, Astro::ZodiacMode::SIDEREAL, currentAyanamsa);
-
-    Astro::EasternChartDrawer drawer;
-    drawer.setChartStyle("north-indian");
-    std::string text = drawer.drawEasternChart(chart);
-
-    openWindow("North Indian Vedic Chart - " + currentCityName, text);
-}
-
-void HoroscopeTuiApp::showVedicSouth() {
-    Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, Astro::ZodiacMode::SIDEREAL, currentAyanamsa);
-
-    Astro::EasternChartDrawer drawer;
-    drawer.setChartStyle("south-indian");
-    std::string text = drawer.drawEasternChart(chart);
-
-    openWindow("South Indian Vedic Chart - " + currentCityName, text);
-}
-
-void HoroscopeTuiApp::showVedicEast() {
-    Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, Astro::ZodiacMode::SIDEREAL, currentAyanamsa);
-
-    Astro::EasternChartDrawer drawer;
-    drawer.setChartStyle("east-indian");
-    std::string text = drawer.drawEasternChart(chart);
-
-    openWindow("East Indian Vedic Chart - " + currentCityName, text);
-}
-
-void HoroscopeTuiApp::showSolarSystem() {
-    Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, currentZodiacMode, currentAyanamsa);
-
-    Astro::SolarSystemDrawer drawer;
-    drawer.setShowOrbits(true);
-    drawer.setShowPlanetNames(true);
-    drawer.setShowDistances(true);
-    std::string text = drawer.drawSolarSystem(chart);
-
-    openWindow("Solar System 2D Orbit View", text);
+    std::string text = chart.getFormattedChart(true);
+    openWindow("Planetary Coordinates & Astronomical Details - " + currentCityName, text);
 }
 
 void HoroscopeTuiApp::showHinduPanchang() {
+    if (!promptDateLocation("Hindu Daily Panchanga - Date Query", currentBirthData, currentCityName, true)) return;
+
     Astro::HinduCalendar hindu;
     if (hindu.initialize()) {
         Astro::PanchangaData p = hindu.calculatePanchanga(currentBirthData);
@@ -488,16 +1007,32 @@ void HoroscopeTuiApp::showHinduPanchang() {
 }
 
 void HoroscopeTuiApp::showHinduMonth() {
+    int y = currentBirthData.year, m = currentBirthData.month;
+    if (!promptYearMonth("Hindu Monthly Panchang - Year & Month Query", y, m)) return;
+    currentBirthData.year = y; currentBirthData.month = m;
+
     Astro::HinduMonthlyCalendar::DisplayOptions opts = Astro::HinduMonthlyCalendar::getDefaultDisplayOptions();
     opts.timeZoneOffset = currentBirthData.timezone;
+    opts.colorOutput = false; // Crisp plain text in TVision
+    opts.showTithi = true;
+    opts.showNakshatra = true;
+    opts.showYoga = true;
+    opts.showKarana = true;
+    opts.showFestivals = true;
+    opts.showSpecialDays = true;
+    opts.showMuhurta = true;
 
     Astro::HinduMonthlyCalendar monthly(currentBirthData.latitude, currentBirthData.longitude, opts);
     monthly.initialize();
     std::string text = monthly.generateCalendar(currentBirthData.year, currentBirthData.month);
-    openWindow("Hindu Monthly Calendar", text);
+    std::ostringstream title;
+    title << "Hindu Monthly Calendar (" << y << "-" << std::setw(2) << std::setfill('0') << m << ") - " << currentCityName;
+    openWindow(title.str(), text);
 }
 
 void HoroscopeTuiApp::showMyanmarCalendar() {
+    if (!promptDateLocation("Myanmar Calendar - Date Query (မြန်မာပြက္ခဒိန်)", currentBirthData, currentCityName, false)) return;
+
     Astro::MyanmarCalendar myanmar;
     if (myanmar.initialize()) {
         Astro::MyanmarCalendarData d = myanmar.calculateMyanmarCalendar(currentBirthData);
@@ -509,18 +1044,26 @@ void HoroscopeTuiApp::showMyanmarCalendar() {
 }
 
 void HoroscopeTuiApp::showMyanmarMonth() {
+    int y = currentBirthData.year, m = currentBirthData.month;
+    if (!promptYearMonth("Myanmar Monthly Calendar Query (လဆန်း/လဆုတ် ဥပုသ်နေ့များ)", y, m)) return;
+    currentBirthData.year = y; currentBirthData.month = m;
+
     Astro::MyanmarMonthlyCalendar monthly;
     if (monthly.initialize()) {
         auto data = monthly.calculateMonthlyData(currentBirthData.year, currentBirthData.month,
                                                currentBirthData.latitude, currentBirthData.longitude);
         std::string text = monthly.generateTraditionalMyanmarCalendar(data);
-        openWindow("Myanmar Monthly Calendar", text);
+        std::ostringstream title;
+        title << "Myanmar Monthly Calendar (" << y << "-" << std::setw(2) << std::setfill('0') << m << ") - မြန်မာပြက္ခဒိန်";
+        openWindow(title.str(), text);
     } else {
         messageBox(mfError | mfOKButton, "Failed to initialize Myanmar Monthly Calendar.");
     }
 }
 
 void HoroscopeTuiApp::showChineseCalendar() {
+    if (!promptDateLocation("Chinese Calendar - Date Query (中国农历)", currentBirthData, currentCityName, true)) return;
+
     Astro::ChineseCalendar chinese;
     if (chinese.initialize()) {
         double jd = chinese.gregorianToJulian(currentBirthData.year, currentBirthData.month, currentBirthData.day, currentBirthData.hour);
@@ -533,84 +1076,213 @@ void HoroscopeTuiApp::showChineseCalendar() {
 }
 
 void HoroscopeTuiApp::showAspectGrid() {
+    if (!promptDateLocation("Planetary Aspect Grid - Query Date", currentBirthData, currentCityName, true)) return;
     Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, currentZodiacMode, currentAyanamsa);
 
     Astro::WesternChartDrawer drawer;
     std::string text = drawer.drawAspectGrid(chart);
 
-    openWindow("Planetary Aspect Grid", text);
+    openWindow("Planetary Aspect Grid - " + currentCityName, text);
 }
 
 void HoroscopeTuiApp::showConjunctions() {
+    int days = 365;
+    if (!promptDateRange("Planetary Conjunctions Search Window", currentBirthData, days)) return;
+
     Astro::ConjunctionCalculator conj;
     conj.initialize();
-    Astro::BirthData toDate = currentBirthData;
-    toDate.year += 1; // 1 year search
+    Astro::BirthData toDate = addCalendarDays(currentBirthData, (double)days);
 
     auto list = conj.findConjunctions(currentBirthData, toDate, 3.0);
     std::string text = conj.generateConjunctionReport(list);
 
-    openWindow("Planetary Conjunctions (1-Year Window)", text);
+    std::ostringstream title;
+    title << "Planetary Conjunctions (" << days << " Days Window)";
+    openWindow(title.str(), text);
 }
 
 void HoroscopeTuiApp::showEclipses() {
+    int days = 730;
+    if (!promptDateRange("Solar & Lunar Eclipses Search Window", currentBirthData, days)) return;
+
     Astro::EclipseCalculator ecl;
     ecl.initialize();
-    Astro::BirthData toDate = currentBirthData;
-    toDate.year += 2; // 2 years search
+    Astro::BirthData toDate = addCalendarDays(currentBirthData, (double)days);
 
     auto list = ecl.findEclipses(currentBirthData, toDate);
     std::string text = ecl.generateEclipseReport(list);
 
-    openWindow("Solar & Lunar Eclipses (2-Year Window)", text);
+    std::ostringstream title;
+    title << "Solar & Lunar Eclipses (" << days << " Days Window)";
+    openWindow(title.str(), text);
 }
 
 void HoroscopeTuiApp::showKPTable() {
+    if (!promptDateLocation("KP Sub-Lord Analysis - Query Date", currentBirthData, currentCityName, true)) return;
     Astro::BirthChart chart = computeCurrentChart(currentBirthData, currentHouseSystem, Astro::ZodiacMode::SIDEREAL, Astro::AyanamsaType::KRISHNAMURTI);
 
     Astro::KPSystem kp;
     kp.initialize();
     std::string text = kp.generateKPTable(chart.getPlanetPositions());
 
-    openWindow("KP System 5-Levels Sub-Lord Analysis", text);
+    openWindow("KP System 5-Levels Sub-Lord Analysis - " + currentCityName, text);
 }
 
 void HoroscopeTuiApp::showKPTransitions() {
+    int days = 7;
+    if (!promptDateRange("KP Planetary Transitions Search Window", currentBirthData, days)) return;
+
     Astro::KPSystem kp;
     kp.initialize();
-    Astro::BirthData toDate = currentBirthData;
-    toDate.day += 7; // 7 days window
+    Astro::BirthData toDate = addCalendarDays(currentBirthData, (double)days);
 
     auto transitions = kp.findTransitions(currentBirthData, toDate, Astro::Planet::SUN, Astro::KPLevel::SUB);
     std::string text = kp.generateTransitionTable(transitions);
 
-    openWindow("KP Planetary Transitions (Sun Sub-Lord)", text);
+    std::ostringstream title;
+    title << "KP Planetary Transitions (" << days << " Days Window)";
+    openWindow(title.str(), text);
 }
 
 void HoroscopeTuiApp::showEphemerisTable() {
+    showEphemerisDialog();
+}
+
+void HoroscopeTuiApp::showEphemerisMonthly() {
+    int y = currentBirthData.year, m = currentBirthData.month;
+    if (!promptYearMonth("Monthly Ephemeris Table Query", y, m)) return;
+    currentBirthData.year = y; currentBirthData.month = m;
+
     Astro::EphemerisTable ephTable;
-    ephTable.initialize();
-    Astro::EphemerisConfig cfg;
-    cfg.startDate = currentBirthData;
-    cfg.endDate = currentBirthData;
-    cfg.endDate.day += 14; // 14 days table
-    cfg.intervalDays = 1.0;
+    if (ephTable.initialize()) {
+        int daysInMonth = 31;
+        if (m == 2) {
+            daysInMonth = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? 29 : 28;
+        } else if (m == 4 || m == 6 || m == 9 || m == 11) {
+            daysInMonth = 30;
+        }
 
-    std::string text = ephTable.generateTable(cfg);
+        Astro::EphemerisConfig cfg;
+        cfg.startDate = currentBirthData;
+        cfg.startDate.year = y; cfg.startDate.month = m; cfg.startDate.day = 1;
+        cfg.startDate.hour = 0; cfg.startDate.minute = 0; cfg.startDate.second = 0;
+        cfg.endDate = currentBirthData;
+        cfg.endDate.year = y; cfg.endDate.month = m; cfg.endDate.day = daysInMonth;
+        cfg.endDate.hour = 23; cfg.endDate.minute = 59; cfg.endDate.second = 59;
+        cfg.intervalDays = 1;
+        cfg.planets = {
+            Astro::Planet::SUN, Astro::Planet::MOON, Astro::Planet::MERCURY,
+            Astro::Planet::VENUS, Astro::Planet::MARS, Astro::Planet::JUPITER,
+            Astro::Planet::SATURN, Astro::Planet::URANUS, Astro::Planet::NEPTUNE,
+            Astro::Planet::PLUTO, Astro::Planet::NORTH_NODE, Astro::Planet::SOUTH_NODE
+        };
+        cfg.zodiacMode = currentZodiacMode;
+        cfg.ayanamsa = currentAyanamsa;
+        cfg.useColors = false;
+        cfg.showRetrograde = true;
+        cfg.showSiderealTime = true;
+        cfg.showDayNames = true;
 
-    openWindow("14-Day Planetary Ephemeris Table", text);
+        std::string text = ephTable.generateTable(cfg);
+        std::ostringstream title;
+        title << "Monthly Ephemeris (" << y << "-"
+              << std::setw(2) << std::setfill('0') << m << ") - Daily Positions ("
+              << (currentZodiacMode == Astro::ZodiacMode::SIDEREAL ? "Sidereal" : "Tropical") << ")";
+        openWindow(title.str(), text);
+    } else {
+        messageBox(mfError | mfOKButton, "Failed to initialize Ephemeris Table.");
+    }
+}
+
+void HoroscopeTuiApp::showEphemerisYearly() {
+    int y = currentBirthData.year, m = 1;
+    if (!promptYearMonth("Yearly Ephemeris Table Query", y, m)) return;
+    currentBirthData.year = y;
+
+    Astro::EphemerisTable ephTable;
+    if (ephTable.initialize()) {
+        std::vector<Astro::Planet> planets = {
+            Astro::Planet::SUN, Astro::Planet::MOON, Astro::Planet::MERCURY,
+            Astro::Planet::VENUS, Astro::Planet::MARS, Astro::Planet::JUPITER,
+            Astro::Planet::SATURN, Astro::Planet::URANUS, Astro::Planet::NEPTUNE,
+            Astro::Planet::PLUTO, Astro::Planet::NORTH_NODE, Astro::Planet::SOUTH_NODE
+        };
+
+        Astro::EphemerisConfig cfg;
+        cfg.startDate = currentBirthData;
+        cfg.startDate.year = y; cfg.startDate.month = 1; cfg.startDate.day = 1;
+        cfg.startDate.hour = 0; cfg.startDate.minute = 0; cfg.startDate.second = 0;
+        cfg.endDate = currentBirthData;
+        cfg.endDate.year = y; cfg.endDate.month = 12; cfg.endDate.day = 31;
+        cfg.endDate.hour = 23; cfg.endDate.minute = 59; cfg.endDate.second = 59;
+        cfg.intervalDays = 30;
+        cfg.planets = planets;
+        cfg.zodiacMode = currentZodiacMode;
+        cfg.ayanamsa = currentAyanamsa;
+        cfg.useColors = false;
+        cfg.showRetrograde = true;
+        cfg.showSiderealTime = true;
+        cfg.showDayNames = true;
+
+        std::string text = ephTable.generateTable(cfg);
+        std::ostringstream title;
+        title << "Yearly Ephemeris (" << y << ") - 12-Month Table ("
+              << (currentZodiacMode == Astro::ZodiacMode::SIDEREAL ? "Sidereal" : "Tropical") << ")";
+        openWindow(title.str(), text);
+    } else {
+        messageBox(mfError | mfOKButton, "Failed to initialize Ephemeris Table.");
+    }
+}
+
+void HoroscopeTuiApp::showEphemerisTransits() {
+    showTransitDialog();
+}
+
+void HoroscopeTuiApp::showAstroCalendarDay() {
+    if (!promptDateLocation("Unified Astro-Calendar - Date Query", currentBirthData, currentCityName, true)) return;
+
+    Astro::AstroCalendar astro;
+    if (astro.initialize(currentBirthData.latitude, currentBirthData.longitude)) {
+        astro.setIncludePlanetaryTransitions(true);
+        astro.setIncludeAllFestivals(true);
+        astro.setIncludeKPTransitions(true);
+        Astro::AstroCalendarDay dayData = astro.calculateAstroCalendarDay(currentBirthData);
+        std::string text = astro.generateDayCalendar(dayData, "professional");
+        openWindow("Unified Astro-Calendar (Daily) - " + currentCityName, text);
+    } else {
+        messageBox(mfError | mfOKButton, "Failed to initialize Astro Calendar.");
+    }
+}
+
+void HoroscopeTuiApp::showAstroCalendarMonth() {
+    int y = currentBirthData.year, m = currentBirthData.month;
+    if (!promptYearMonth("Unified Monthly Astro-Calendar Query", y, m)) return;
+    currentBirthData.year = y; currentBirthData.month = m;
+
+    Astro::AstroCalendar astro;
+    if (astro.initialize(currentBirthData.latitude, currentBirthData.longitude)) {
+        astro.setIncludePlanetaryTransitions(true);
+        astro.setIncludeAllFestivals(true);
+        Astro::AstroCalendarMonth monthData = astro.calculateAstroCalendarMonth(currentBirthData.year, currentBirthData.month);
+        std::string text = astro.generateMonthlyCalendar(monthData, "professional");
+        std::ostringstream title;
+        title << "Unified Monthly Astro-Calendar (" << y << "-" << std::setw(2) << std::setfill('0') << m << ") - " << currentCityName;
+        openWindow(title.str(), text);
+    } else {
+        messageBox(mfError | mfOKButton, "Failed to initialize Astro Calendar.");
+    }
 }
 
 void HoroscopeTuiApp::showHelpAbout() {
     messageBox(mfInformation | mfOKButton,
         "Horoscope CLI & TVision TUI v2.1.0\n\n"
-        "Professional Multi-Calendar & Astrological Engine\n"
+        "Professional Ephemeris & Multi-Calendar Engine\n"
         "Powered by Swiss Ephemeris & Turbo Vision 2.0\n\n"
         "Features:\n"
-        "• Western, Vedic (North, South, East) & Solar System Charts\n"
-        "• KP System 5-Levels Sub-Lord Analysis\n"
-        "• Hindu Panchang, Myanmar & Chinese Calendars\n"
-        "• Conjunctions, Eclipses & Aspect Grids\n\n"
+        "• Professional Ephemeris Tables (Daily, Monthly, Yearly, Transits)\n"
+        "• Multi-Calendar Integration (Unified, Hindu Panchang, Myanmar, Chinese)\n"
+        "• KP System 5-Levels Sub-Lord Analysis & Transitions\n"
+        "• Planetary Conjunctions, Eclipses & Aspect Grids\n\n"
         "Built with Turbo Vision by magiblot"
     );
 }
@@ -665,8 +1337,60 @@ void HoroscopeTuiApp::showHelpShortcuts() {
     openWindow("Keyboard & Mouse Shortcuts", shortcuts);
 }
 
-int runTuiApplication() {
-    HoroscopeTuiApp app;
+void HoroscopeTuiApp::setTheme(int themeId) {
+    if (themeId < 0 || themeId > 2) return;
+    currentTheme = themeId;
+    appPalette = (themeId == 2) ? apBlackWhite : apColor;
+    setState(sfExposed, False);
+    setState(sfExposed, True);
+    redraw();
+}
+
+TPalette& HoroscopeTuiApp::getPalette() const {
+    static TPalette turboPal(cpTurboCpp, sizeof(cpTurboCpp) - 1);
+    static TPalette darkPal(cpModernDark, sizeof(cpModernDark) - 1);
+    static TPalette bwPal(cpAppBlackWhite, sizeof(cpAppBlackWhite) - 1);
+
+    static TPalette* palettes[] = {
+        &turboPal,
+        &darkPal,
+        &bwPal
+    };
+
+    if (currentTheme >= 0 && currentTheme < 3) {
+        return *(palettes[currentTheme]);
+    }
+    return turboPal;
+}
+
+void HoroscopeTuiApp::showThemeDialog() {
+    TDialog* d = new TDialog(TRect(20, 6, 68, 16), "Select Color Theme");
+    d->options |= ofCentered;
+
+    TSItem* items =
+        new TSItem("1. Turbo C++ 3.0 Classic (Recommended)",
+        new TSItem("2. Modern Dark Slate",
+        new TSItem("3. Monochrome High Contrast B&W", nullptr)));
+    TRadioButtons* rb = new TRadioButtons(TRect(3, 2, 44, 5), items);
+    d->insert(rb);
+    ushort val = (ushort)currentTheme;
+    rb->setData(&val);
+
+    d->insert(new TButton(TRect(8, 6, 20, 8), "O~K~", cmOK, bfDefault));
+    d->insert(new TButton(TRect(24, 6, 36, 8), "Cancel", cmCancel, bfNormal));
+
+    if (validView(d)) {
+        if (deskTop->execView(d) == cmOK) {
+            ushort selected = 0;
+            rb->getData(&selected);
+            setTheme(selected);
+        }
+        destroy(d);
+    }
+}
+
+int runTuiApplication(int initialTheme) {
+    HoroscopeTuiApp app(initialTheme);
     app.run();
     return 0;
 }

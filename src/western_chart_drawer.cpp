@@ -54,25 +54,26 @@ WesternChartDrawer::WesternChartDrawer()
 }
 
 std::string WesternChartDrawer::drawChartWheel(const BirthChart& chart) const {
-    const int wheelSize = 61; // Must be odd for center
-    const int centerX = wheelSize / 2;
-    const int centerY = wheelSize / 2;
+    const int wheelWidth = 63;
+    const int wheelHeight = 29;
+    const int centerX = wheelWidth / 2;
+    const int centerY = wheelHeight / 2;
 
-    // Create empty wheel
-    std::vector<std::string> wheel(wheelSize, std::string(wheelSize, ' '));
+    // Create empty wheel canvas with proper terminal aspect ratio
+    std::vector<std::string> wheel(wheelHeight, std::string(wheelWidth, ' '));
 
-    // Draw the basic wheel structure
-    std::string frame = drawWheelFrame(wheelSize);
+    // Draw the basic circular wheel structure
+    std::string frame = drawWheelFrame(wheelWidth);
     std::istringstream frameStream(frame);
     std::string line;
     int lineIndex = 0;
-    while (std::getline(frameStream, line) && lineIndex < wheelSize) {
-        if (line.length() > static_cast<size_t>(wheelSize)) {
-            wheel[lineIndex] = line.substr(0, wheelSize);
+    while (std::getline(frameStream, line) && lineIndex < wheelHeight) {
+        if (line.length() > static_cast<size_t>(wheelWidth)) {
+            wheel[lineIndex] = line.substr(0, wheelWidth);
         } else {
             wheel[lineIndex] = line;
-            if (wheel[lineIndex].length() < static_cast<size_t>(wheelSize)) {
-                wheel[lineIndex].resize(wheelSize, ' ');
+            if (wheel[lineIndex].length() < static_cast<size_t>(wheelWidth)) {
+                wheel[lineIndex].resize(wheelWidth, ' ');
             }
         }
         lineIndex++;
@@ -83,7 +84,7 @@ std::string WesternChartDrawer::drawChartWheel(const BirthChart& chart) const {
     const auto& cusps = chart.getHouseCusps();
 
     fillWheelWithPlanets(wheel, positions, cusps, centerX, centerY);
-    drawHouseCusps(wheel, cusps, centerX, centerY, 25);
+    drawHouseCusps(wheel, cusps, centerX, centerY, 24);
 
     if (showAspects) {
         drawAspectLines(wheel, chart.getAspects(), positions, cusps, centerX, centerY);
@@ -301,23 +302,31 @@ std::string WesternChartDrawer::drawAspectGrid(const BirthChart& chart) const {
 
 std::string WesternChartDrawer::drawWheelFrame(int size) const {
     std::stringstream ss;
-    int center = size / 2;
-    int outerRadius = center - 1;
-    int innerRadius = center - 8;
+    int width = size;
+    int height = (size * 29) / 63; // Monospace aspect ratio (2:1 char cell)
+    double centerX = width / 2.0;
+    double centerY = height / 2.0;
 
-    for (int y = 0; y < size; y++) {
-        for (int x = 0; x < size; x++) {
-            int dx = x - center;
-            int dy = y - center;
-            double distance = sqrt(dx * dx + dy * dy);
+    double radiusX = (width / 2.0) - 2.0;
+    double radiusY = (height / 2.0) - 1.5;
+    double innerRadiusX = radiusX * 0.70;
+    double innerRadiusY = radiusY * 0.70;
 
-            if (distance <= innerRadius) {
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            double dx = x - centerX;
+            double dy = y - centerY;
+
+            double normOuter = (dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY);
+            double normInner = (dx * dx) / (innerRadiusX * innerRadiusX) + (dy * dy) / (innerRadiusY * innerRadiusY);
+
+            if (normInner < 0.88) {
                 ss << " ";
-            } else if (distance <= innerRadius + 1) {
+            } else if (normInner <= 1.08) {
                 ss << ".";
-            } else if (distance <= outerRadius - 1) {
+            } else if (normOuter <= 0.88) {
                 ss << " ";
-            } else if (distance <= outerRadius) {
+            } else if (normOuter <= 1.08) {
                 ss << "*";
             } else {
                 ss << " ";
@@ -441,8 +450,11 @@ void WesternChartDrawer::drawAspectLines(std::vector<std::string>& wheel, const 
 }
 
 std::pair<int, int> WesternChartDrawer::getWheelPosition(int centerX, int centerY, double angle, int radius) const {
-    int x = centerX + static_cast<int>(radius * cos(angle));
-    int y = centerY + static_cast<int>(radius * sin(angle));
+    // Aspect ratio compensation for monospace terminal characters (width:height ~ 1:2.1)
+    double rx = radius * 1.08;
+    double ry = radius * 0.50;
+    int x = centerX + static_cast<int>(std::round(rx * cos(angle)));
+    int y = centerY + static_cast<int>(std::round(ry * sin(angle)));
     return {x, y};
 }
 

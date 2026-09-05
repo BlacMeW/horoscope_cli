@@ -81,6 +81,7 @@ struct CommandLineArgs {
     bool showVersion = false;
     bool showFeatures = false;
     bool showTui = false;
+    std::string tuiTheme = "classic";
     bool showSolarSystemOnly = false;
     bool noDrawing = false;
     bool showAstronomicalCoordinates = false;
@@ -1066,7 +1067,8 @@ void printHelp() {
     std::cout << "    --help, -h         Show this comprehensive help message\n";
     std::cout << "    --features, -f     Show colorful feature showcase\n";
     std::cout << "    --version, -v      Show version and build information\n";
-    std::cout << "    --tui              Launch Turbo Vision interactive Desktop TUI mode\n\n";
+    std::cout << "    --tui              Launch Turbo Vision interactive Desktop TUI mode\n";
+    std::cout << "    --theme THEME      TUI color theme (classic, dark, bw)\n\n";
 
     // std::cout << "NEW ENHANCED FEATURES 🚀✨\n";
     // std::cout << "    --interactive      Launch interactive mode with guided wizards\n";
@@ -1791,6 +1793,10 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--tui") {
             args.showTui = true;
             return true;
+        } else if (arg == "--theme" && i + 1 < argc) {
+            args.tuiTheme = argv[++i];
+            args.showTui = true;
+            return true;
         } else if (arg == "--date" && i + 1 < argc) {
             args.date = argv[++i];
         } else if (arg == "--time" && i + 1 < argc) {
@@ -2476,7 +2482,13 @@ int main(int argc, char* argv[]) {
 
     // Launch Turbo Vision Desktop TUI if requested or if launched interactively without arguments
     if (args.showTui || (argc == 1 && isatty(STDIN_FILENO))) {
-        return AstroTui::runTuiApplication();
+        int initialTheme = 0;
+        std::string th = args.tuiTheme;
+        std::transform(th.begin(), th.end(), th.begin(), ::tolower);
+        if (th == "dark" || th == "modern" || th == "slate") initialTheme = 1;
+        else if (th == "bw" || th == "mono" || th == "monochrome" || th == "white") initialTheme = 2;
+        else initialTheme = 0; // classic / turbocpp / borland / tc
+        return AstroTui::runTuiApplication(initialTheme);
     }
 
     if (args.showHelp) {

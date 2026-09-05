@@ -209,9 +209,9 @@ std::pair<int, int> SolarSystemDrawer::calculatePlanetPosition(const PlanetPosit
     // Convert longitude to radians (0° = right, 90° = up)
     double angleRad = (position.longitude * M_PI / 180.0) - (M_PI / 2.0);
 
-    // Calculate position on orbit
-    int x = centerX + static_cast<int>(radius * cos(angleRad));
-    int y = centerY + static_cast<int>(radius * sin(angleRad));
+    // Calculate position on orbit with aspect ratio compensation for terminal monospace cells (1:2.1)
+    int x = centerX + static_cast<int>(std::round(radius * 1.15 * cos(angleRad)));
+    int y = centerY + static_cast<int>(std::round(radius * 0.54 * sin(angleRad)));
 
     return {x, y};
 }
@@ -231,11 +231,11 @@ void SolarSystemDrawer::drawOrbitOnCanvas(std::vector<std::string>& canvas, int 
     int height = canvas.size();
     int width = canvas[0].length();
 
-    // Draw orbit as a circle using ASCII characters
-    for (int angle = 0; angle < 360; angle += 5) {
+    // Draw orbit as an ellipse matching terminal character aspect ratio
+    for (int angle = 0; angle < 360; angle += 4) {
         double angleRad = angle * M_PI / 180.0;
-        int x = centerX + static_cast<int>(radius * cos(angleRad));
-        int y = centerY + static_cast<int>(radius * sin(angleRad));
+        int x = centerX + static_cast<int>(std::round(radius * 1.15 * cos(angleRad)));
+        int y = centerY + static_cast<int>(std::round(radius * 0.54 * sin(angleRad)));
 
         if (x >= 0 && x < width && y >= 0 && y < height) {
             if (canvas[y][x] == ' ') { // Don't overwrite planets

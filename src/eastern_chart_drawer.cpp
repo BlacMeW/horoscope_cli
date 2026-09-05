@@ -90,7 +90,7 @@ std::string EasternChartDrawer::drawSouthIndianChart(const BirthChart& chart) co
         "+-------------+-------------+-------------+-------------+"
     };
 
-    fillSouthIndianHouses(lines, positions);
+    fillSouthIndianHouses(lines, positions, chart.getHouseCusps().ascendant);
 
     for (const auto& line : lines) {
         oss << line << "\n";
@@ -235,57 +235,83 @@ void EasternChartDrawer::fillNorthIndianHouses(std::vector<std::string>& lines,
     };
 
     for (int house = 1; house <= 12; house++) {
+        const auto& pos = housePositions[house];
+
+        // Indicate Ascendant in House 1 on the top line
+        if (house == 1 && pos.line - 1 >= 0 && pos.line - 1 < static_cast<int>(lines.size())) {
+            std::string ascStr = formatHouseContent("[ASC]", pos.width);
+            lines[pos.line - 1].replace(pos.startCol, ascStr.length(), ascStr);
+        }
+
         std::string planets = getPlanetsInHouse(positions, house);
         if (!planets.empty()) {
-            const auto& pos = housePositions[house];
             std::string formatted = formatHouseContent(planets, pos.width);
-
-            if (pos.line < static_cast<int>(lines.size())) {
-                std::string& line = lines[pos.line];
-                if (pos.startCol + formatted.length() <= line.length()) {
-                    line.replace(pos.startCol, formatted.length(), formatted);
-                }
+            // Put planets on line below the house number so house number is not overwritten
+            if (pos.line + 1 < static_cast<int>(lines.size())) {
+                lines[pos.line + 1].replace(pos.startCol, formatted.length(), formatted);
             }
         }
     }
 }
 
 void EasternChartDrawer::fillSouthIndianHouses(std::vector<std::string>& lines,
-                                              const std::vector<PlanetPosition>& positions) const {
+                                              const std::vector<PlanetPosition>& positions,
+                                              double ascendantLongitude) const {
     struct HousePosition {
         int line;
         int startCol;
         int width;
     };
 
-    // South Indian chart house positions in the 4x4 grid (Pisces top-left to Aquarius mid-left)
+    // South Indian chart fixed signs: 1 (Aries) to 12 (Pisces)
     std::vector<HousePosition> housePositions = {
         {0, 0, 0},      // Dummy for index 0
-        {3, 16, 11},    // House 1 (Aries)
-        {3, 30, 11},    // House 2 (Taurus)
-        {3, 44, 11},    // House 3 (Gemini)
-        {7, 44, 11},    // House 4 (Cancer)
-        {11, 44, 11},   // House 5 (Leo)
-        {15, 44, 11},   // House 6 (Virgo)
-        {15, 30, 11},   // House 7 (Libra)
-        {15, 16, 11},   // House 8 (Scorpio)
-        {15, 2, 11},    // House 9 (Sagittarius)
-        {11, 2, 11},    // House 10 (Capricorn)
-        {7, 2, 11},     // House 11 (Aquarius)
-        {3, 2, 11}      // House 12 (Pisces)
+        {3, 16, 11},    // Sign 1 (Aries / Mesha)
+        {3, 30, 11},    // Sign 2 (Taurus / Vrishabha)
+        {3, 44, 11},    // Sign 3 (Gemini / Mithuna)
+        {7, 44, 11},    // Sign 4 (Cancer / Karka)
+        {11, 44, 11},   // Sign 5 (Leo / Simha)
+        {15, 44, 11},   // Sign 6 (Virgo / Kanya)
+        {15, 30, 11},   // Sign 7 (Libra / Tula)
+        {15, 16, 11},   // Sign 8 (Scorpio / Vrishchika)
+        {15, 2, 11},    // Sign 9 (Sagittarius / Dhanu)
+        {11, 2, 11},    // Sign 10 (Capricorn / Makara)
+        {7, 2, 11},     // Sign 11 (Aquarius / Kumbha)
+        {3, 2, 11}      // Sign 12 (Pisces / Meena)
     };
 
-    for (int house = 1; house <= 12; house++) {
-        std::string planets = getPlanetsInHouse(positions, house);
-        if (!planets.empty()) {
-            const auto& pos = housePositions[house];
-            std::string formatted = formatHouseContent(planets, pos.width);
+    int ascSignNum = (static_cast<int>(ascendantLongitude) / 30) + 1;
+    if (ascSignNum < 1) ascSignNum = 1;
+    if (ascSignNum > 12) ascSignNum = 12;
 
-            if (pos.line < static_cast<int>(lines.size())) {
-                std::string& line = lines[pos.line];
-                if (pos.startCol + formatted.length() <= line.length()) {
-                    line.replace(pos.startCol, formatted.length(), formatted);
-                }
+    for (int signNum = 1; signNum <= 12; signNum++) {
+        const auto& pos = housePositions[signNum];
+        ZodiacSign sign = static_cast<ZodiacSign>(signNum - 1);
+
+        // If this sign is the Ascendant, show [ASC] on line pos.line - 1
+        if (signNum == ascSignNum && pos.line - 1 >= 0 && pos.line - 1 < static_cast<int>(lines.size())) {
+            std::string ascStr = formatHouseContent("[ASC]", pos.width);
+            lines[pos.line - 1].replace(pos.startCol, ascStr.length(), ascStr);
+        }
+
+        // Find all planets in this sign
+        std::vector<std::string> planets;
+        for (const auto& p : positions) {
+            if (p.sign == sign) {
+                planets.push_back(getShortPlanetName(p.planet));
+            }
+        }
+
+        if (!planets.empty()) {
+            std::string pStr;
+            for (size_t i = 0; i < planets.size(); i++) {
+                if (i > 0) pStr += ",";
+                pStr += planets[i];
+            }
+            std::string formatted = formatHouseContent(pStr, pos.width);
+            // Place planets on line below the sign label
+            if (pos.line + 1 < static_cast<int>(lines.size())) {
+                lines[pos.line + 1].replace(pos.startCol, formatted.length(), formatted);
             }
         }
     }
@@ -317,16 +343,18 @@ void EasternChartDrawer::fillEastIndianHouses(std::vector<std::string>& lines,
     };
 
     for (int house = 1; house <= 12; house++) {
+        const auto& pos = housePositions[house];
+
+        if (house == 1 && pos.line - 1 >= 0 && pos.line - 1 < static_cast<int>(lines.size())) {
+            std::string ascStr = formatHouseContent("[ASC]", pos.width);
+            lines[pos.line - 1].replace(pos.startCol, ascStr.length(), ascStr);
+        }
+
         std::string planets = getPlanetsInHouse(positions, house);
         if (!planets.empty()) {
-            const auto& pos = housePositions[house];
             std::string formatted = formatHouseContent(planets, pos.width);
-
-            if (pos.line < static_cast<int>(lines.size())) {
-                std::string& line = lines[pos.line];
-                if (pos.startCol + formatted.length() <= line.length()) {
-                    line.replace(pos.startCol, formatted.length(), formatted);
-                }
+            if (pos.line + 1 < static_cast<int>(lines.size())) {
+                lines[pos.line + 1].replace(pos.startCol, formatted.length(), formatted);
             }
         }
     }
