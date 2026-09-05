@@ -58,6 +58,11 @@ double HouseCalculator::getHousePosition(const HouseCusps& cusps, double longitu
     double houseSize;
     double positionInHouse;
 
+    if (std::abs(nextCusp - currentCusp) < 0.0001) {
+        // Equal cusps indicate invalid or zero-sized house
+        return 0.0;
+    }
+
     if (nextCusp > currentCusp) {
         // Normal case: cusp doesn't cross 0°
         houseSize = nextCusp - currentCusp;

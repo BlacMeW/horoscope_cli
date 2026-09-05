@@ -23,6 +23,10 @@ int HouseCusps::getHouseForLongitude(double longitude) const {
         double currentCusp = normalizeAngle(cusps[house]);
         double nextCusp = normalizeAngle(cusps[house == 12 ? 1 : house + 1]);
 
+        if (std::abs(nextCusp - currentCusp) < 0.0001) {
+            continue;
+        }
+
         if (nextCusp > currentCusp) {
             // Normal case: cusp doesn't cross 0°
             if (longitude >= currentCusp && longitude < nextCusp) {
@@ -40,33 +44,40 @@ int HouseCusps::getHouseForLongitude(double longitude) const {
 }
 
 // Implement the house position calculation from house_calculator.cpp
-double getHousePosition(const HouseCusps& cusps, double longitude, int house) {
-    if (house < 1 || house > 12) return 0.0;
+class HouseCalculator {
+public:
+    static double getHousePosition(const HouseCusps& cusps, double longitude, int house) {
+        if (house < 1 || house > 12) return 0.0;
 
-    double currentCusp = normalizeAngle(cusps.cusps[house]);
-    double nextCusp = normalizeAngle(cusps.cusps[house == 12 ? 1 : house + 1]);
-    longitude = normalizeAngle(longitude);
+        double currentCusp = normalizeAngle(cusps.cusps[house]);
+        double nextCusp = normalizeAngle(cusps.cusps[house == 12 ? 1 : house + 1]);
+        longitude = normalizeAngle(longitude);
 
-    double houseSize;
-    double positionInHouse;
+        if (std::abs(nextCusp - currentCusp) < 0.0001) {
+            return 0.0;
+        }
 
-    if (nextCusp > currentCusp) {
-        // Normal case: cusp doesn't cross 0°
-        houseSize = nextCusp - currentCusp;
-        positionInHouse = longitude - currentCusp;
-    } else {
-        // Cusp crosses 0° Aries
-        houseSize = (360.0 - currentCusp) + nextCusp;
-        if (longitude >= currentCusp) {
+        double houseSize;
+        double positionInHouse;
+
+        if (nextCusp > currentCusp) {
+            // Normal case: cusp doesn't cross 0°
+            houseSize = nextCusp - currentCusp;
             positionInHouse = longitude - currentCusp;
         } else {
-            positionInHouse = (360.0 - currentCusp) + longitude;
+            // Cusp crosses 0° Aries
+            houseSize = (360.0 - currentCusp) + nextCusp;
+            if (longitude >= currentCusp) {
+                positionInHouse = longitude - currentCusp;
+            } else {
+                positionInHouse = (360.0 - currentCusp) + longitude;
+            }
         }
-    }
 
-    // Convert to 0-30 degree scale (as if each house were 30 degrees)
-    return (positionInHouse / houseSize) * 30.0;
-}
+        // Convert to 0-30 degree scale (as if each house were 30 degrees)
+        return (positionInHouse / houseSize) * 30.0;
+    }
+};
 
 void testHouseCrossingZeroAries() {
     std::cout << "=== Testing House Position Calculation (0° Aries Crossing) ===" << std::endl;

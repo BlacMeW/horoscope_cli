@@ -644,13 +644,33 @@ double ChineseCalendar::gregorianToJulian(int year, int month, int day, double h
 }
 
 void ChineseCalendar::julianToGregorian(double jd, int& year, int& month, int& day) const {
-    // Use Swiss Ephemeris conversion
-    int y, m, d, h, min;
-    double sec;
-    swe_jdut1_to_utc(jd, SE_GREG_CAL, &y, &m, &d, &h, &min, &sec);
-    year = y;
-    month = m;
-    day = d;
+    double hour = 0.0;
+    swe_revjul(jd, SE_GREG_CAL, &year, &month, &day, &hour);
+}
+
+std::vector<ChineseCalendarData> ChineseCalendar::calculateChineseCalendarRange(
+    const std::string& fromDate, const std::string& toDate) const {
+    std::vector<ChineseCalendarData> results;
+    int fromYear = 0, fromMonth = 0, fromDay = 0;
+    int toYear = 0, toMonth = 0, toDay = 0;
+
+    if (sscanf(fromDate.c_str(), "%d-%d-%d", &fromYear, &fromMonth, &fromDay) != 3 ||
+        sscanf(toDate.c_str(), "%d-%d-%d", &toYear, &toMonth, &toDay) != 3) {
+        return results;
+    }
+
+    double startJd = gregorianToJulian(fromYear, fromMonth, fromDay, 12.0);
+    double endJd = gregorianToJulian(toYear, toMonth, toDay, 12.0);
+
+    if (startJd > endJd) {
+        return results;
+    }
+
+    for (double jd = startJd; jd <= endJd + 0.1; jd += 1.0) {
+        results.push_back(calculateChineseCalendar(jd));
+    }
+
+    return results;
 }
 
 // Generate formatted output

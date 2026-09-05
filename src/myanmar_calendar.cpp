@@ -952,14 +952,13 @@ std::vector<MyanmarCalendar::SearchResult> MyanmarCalendar::searchMyanmarCalenda
             // Calculate Myanmar calendar for this day
             MyanmarCalendarData myanmarData = calculateMyanmarCalendar(jd);
 
-            // Calculate weekday (0=Saturday, 6=Friday for Myanmar calendar)
-            int weekday = static_cast<int>(jd + 1.5) % 7; // 0=Saturday in Myanmar calendar
+            // Use accurately calculated Myanmar weekday (0=Saturday, 1=Sunday, ..., 6=Friday)
+            int weekday = static_cast<int>(myanmarData.weekday);
 
-            // Convert to Gregorian date for result
+            // Convert to Gregorian date for result using swe_revjul (no deltaT day shift)
             int gregYear, gregMonth, gregDay;
-            int gregHour, gregMin;
-            double gregSec;
-            swe_jdet_to_utc(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gregHour, &gregMin, &gregSec);
+            double gTime;
+            swe_revjul(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gTime);
 
             char dateBuffer[32];
             snprintf(dateBuffer, sizeof(dateBuffer), "%04d-%02d-%02d", gregYear, gregMonth, gregDay);

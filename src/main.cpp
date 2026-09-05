@@ -4082,10 +4082,105 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Handle Chinese Calendar Range
+        if (args.showChineseRange) {
+            ChineseCalendar chineseCalendar;
+            if (!chineseCalendar.initialize()) {
+                std::cerr << "Error: Failed to initialize Chinese Calendar system: " << chineseCalendar.getLastError() << std::endl;
+                return 1;
+            }
+
+            std::string fromDate = args.chineseFromDate;
+            std::string toDate = args.chineseToDate;
+
+            if (fromDate.empty() || toDate.empty()) {
+                std::cerr << "Error: Chinese calendar range requires --chinese-range FROM TO dates" << std::endl;
+                return 1;
+            }
+
+            std::vector<ChineseCalendarData> chineseList = chineseCalendar.calculateChineseCalendarRange(fromDate, toDate);
+
+            if (!chineseList.empty()) {
+                if (args.chineseFormat == "csv") {
+                    std::cout << "Date,Chinese Date,Gan-Zhi,Zodiac Animal,Year Element,Solar Term,Auspicious\n";
+                    for (const auto& item : chineseList) {
+                        int gy, gm, gd;
+                        chineseCalendar.julianToGregorian(item.julianDay, gy, gm, gd);
+                        char dateBuf[32];
+                        snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", gy, gm, gd);
+                        std::cout << dateBuf << ","
+                                  << item.chineseYear << "/" << item.chineseMonth << (item.isLeapMonth ? "(leap)/" : "/") << item.chineseDay << ","
+                                  << item.ganZhi << ","
+                                  << chineseCalendar.getZodiacAnimalName(item.yearAnimal, false) << ","
+                                  << chineseCalendar.getElementName(item.yearElement, false) << ","
+                                  << chineseCalendar.getSolarTermName(item.currentSolarTerm, false) << ","
+                                  << (item.isAuspicious ? "Yes" : "No") << "\n";
+                    }
+                } else if (args.chineseFormat == "json") {
+                    std::cout << "[\n";
+                    for (size_t i = 0; i < chineseList.size(); ++i) {
+                        const auto& item = chineseList[i];
+                        int gy, gm, gd;
+                        chineseCalendar.julianToGregorian(item.julianDay, gy, gm, gd);
+                        char dateBuf[32];
+                        snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", gy, gm, gd);
+                        std::cout << "  {\n"
+                                  << "    \"gregorianDate\": \"" << dateBuf << "\",\n"
+                                  << "    \"chineseYear\": " << item.chineseYear << ",\n"
+                                  << "    \"chineseMonth\": " << item.chineseMonth << ",\n"
+                                  << "    \"chineseDay\": " << item.chineseDay << ",\n"
+                                  << "    \"isLeapMonth\": " << (item.isLeapMonth ? "true" : "false") << ",\n"
+                                  << "    \"ganZhi\": \"" << item.ganZhi << "\",\n"
+                                  << "    \"zodiacAnimal\": \"" << chineseCalendar.getZodiacAnimalName(item.yearAnimal, false) << "\",\n"
+                                  << "    \"yearElement\": \"" << chineseCalendar.getElementName(item.yearElement, false) << "\",\n"
+                                  << "    \"solarTerm\": \"" << chineseCalendar.getSolarTermName(item.currentSolarTerm, false) << "\",\n"
+                                  << "    \"isAuspicious\": " << (item.isAuspicious ? "true" : "false") << "\n"
+                                  << "  }" << (i < chineseList.size() - 1 ? "," : "") << "\n";
+                    }
+                    std::cout << "]\n";
+                } else if (args.chineseFormat == "compact") {
+                    for (const auto& item : chineseList) {
+                        int gy, gm, gd;
+                        chineseCalendar.julianToGregorian(item.julianDay, gy, gm, gd);
+                        char dateBuf[32];
+                        snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", gy, gm, gd);
+                        std::cout << dateBuf << " | "
+                                  << item.chineseYear << "/" << std::setw(2) << std::setfill('0') << item.chineseMonth 
+                                  << (item.isLeapMonth ? "L/" : "/") << std::setw(2) << std::setfill('0') << item.chineseDay << " | "
+                                  << item.ganZhi << " (" << chineseCalendar.getZodiacAnimalName(item.yearAnimal, false) << ") | "
+                                  << chineseCalendar.getSolarTermName(item.currentSolarTerm, false) << " | "
+                                  << (item.isAuspicious ? "Auspicious" : "Inauspicious") << "\n";
+                    }
+                } else {
+                    // Table format
+                    std::cout << "========================================================================================================\n";
+                    std::cout << " Date       | Chinese Date | Gan-Zhi    | Zodiac Animal | Solar Term       | Auspicious\n";
+                    std::cout << "========================================================================================================\n";
+                    for (const auto& item : chineseList) {
+                        int gy, gm, gd;
+                        chineseCalendar.julianToGregorian(item.julianDay, gy, gm, gd);
+                        char dateBuf[32];
+                        snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", gy, gm, gd);
+                        std::ostringstream cDate;
+                        cDate << item.chineseYear << "/" << item.chineseMonth << (item.isLeapMonth ? "L/" : "/") << item.chineseDay;
+                        std::cout << " " << std::left << std::setw(10) << dateBuf << " | "
+                                  << std::setw(12) << cDate.str() << " | "
+                                  << std::setw(10) << item.ganZhi << " | "
+                                  << std::setw(13) << chineseCalendar.getZodiacAnimalName(item.yearAnimal, false) << " | "
+                                  << std::setw(16) << chineseCalendar.getSolarTermName(item.currentSolarTerm, false) << " | "
+                                  << (item.isAuspicious ? "Yes" : "No") << "\n";
+                    }
+                    std::cout << "========================================================================================================\n";
+                }
+            } else {
+                std::cout << "Failed to generate Chinese Calendar for the specified period." << std::endl;
+            }
+        }
+
         // Return early if only special features were requested
         if (args.showEclipses || args.showConjunctions || args.showEphemerisTable ||
             args.showKPTransitions || args.showPanchangaRange || args.showMyanmarCalendarRange ||
-            args.showHinduSearch || args.showMyanmarSearch || args.showGrahaYuddha) {
+            args.showChineseRange || args.showHinduSearch || args.showMyanmarSearch || args.showGrahaYuddha) {
             return 0;
         }
     } catch (const std::exception& e) {
@@ -4259,10 +4354,15 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Handle time parsing with defaults for panchanga and drik sunrise
+    // Handle time parsing with defaults for panchanga, drik sunrise, and Chinese calendar
     if (args.time.empty() && (args.showPanchanga || args.showPanchangaRange || args.showDrikSunrise)) {
         // For panchanga and sunrise calculations, default to sunrise (6:00 AM local time)
         birthData.hour = 6;
+        birthData.minute = 0;
+        birthData.second = 0;
+    } else if (args.time.empty() && (args.showChineseCalendar || args.showSolarTerms || args.showChineseFestivals || args.showBaZi)) {
+        // For Chinese calendar, default to noon (12:00 PM local time)
+        birthData.hour = 12;
         birthData.minute = 0;
         birthData.second = 0;
     } else if (!parseTime(args.time, birthData.hour, birthData.minute, birthData.second)) {
@@ -4560,7 +4660,39 @@ int main(int argc, char* argv[]) {
             ChineseCalendarData chineseData = chineseCalendar.calculateChineseCalendar(julianDay);
 
             if (args.showChineseCalendar) {
-                std::cout << chineseCalendar.generateTable(chineseData) << std::endl;
+                if (args.chineseFormat == "json") {
+                    int gy, gm, gd;
+                    chineseCalendar.julianToGregorian(chineseData.julianDay, gy, gm, gd);
+                    char dateBuf[32];
+                    snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", gy, gm, gd);
+                    std::cout << "{\n"
+                              << "  \"gregorianDate\": \"" << dateBuf << "\",\n"
+                              << "  \"chineseYear\": " << chineseData.chineseYear << ",\n"
+                              << "  \"chineseMonth\": " << chineseData.chineseMonth << ",\n"
+                              << "  \"chineseDay\": " << chineseData.chineseDay << ",\n"
+                              << "  \"isLeapMonth\": " << (chineseData.isLeapMonth ? "true" : "false") << ",\n"
+                              << "  \"ganZhi\": \"" << chineseData.ganZhi << "\",\n"
+                              << "  \"zodiacAnimal\": \"" << chineseCalendar.getZodiacAnimalName(chineseData.yearAnimal, false) << "\",\n"
+                              << "  \"yearElement\": \"" << chineseCalendar.getElementName(chineseData.yearElement, false) << "\",\n"
+                              << "  \"solarTerm\": \"" << chineseCalendar.getSolarTermName(chineseData.currentSolarTerm, false) << "\",\n"
+                              << "  \"isAuspicious\": " << (chineseData.isAuspicious ? "true" : "false") << "\n"
+                              << "}" << std::endl;
+                } else if (args.chineseFormat == "csv") {
+                    int gy, gm, gd;
+                    chineseCalendar.julianToGregorian(chineseData.julianDay, gy, gm, gd);
+                    char dateBuf[32];
+                    snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", gy, gm, gd);
+                    std::cout << "Date,Chinese Date,Gan-Zhi,Zodiac Animal,Year Element,Solar Term,Auspicious\n";
+                    std::cout << dateBuf << ","
+                              << chineseData.chineseYear << "/" << chineseData.chineseMonth << (chineseData.isLeapMonth ? "(leap)/" : "/") << chineseData.chineseDay << ","
+                              << chineseData.ganZhi << ","
+                              << chineseCalendar.getZodiacAnimalName(chineseData.yearAnimal, false) << ","
+                              << chineseCalendar.getElementName(chineseData.yearElement, false) << ","
+                              << chineseCalendar.getSolarTermName(chineseData.currentSolarTerm, false) << ","
+                              << (chineseData.isAuspicious ? "Yes" : "No") << std::endl;
+                } else {
+                    std::cout << chineseCalendar.generateTable(chineseData) << std::endl;
+                }
             }
 
             if (args.showSolarTerms) {

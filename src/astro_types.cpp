@@ -185,6 +185,10 @@ int HouseCusps::getHouseForLongitude(double longitude) const {
         double currentCusp = normalizeAngle(cusps[house]);
         double nextCusp = normalizeAngle(cusps[house == 12 ? 1 : house + 1]);
 
+        if (std::abs(nextCusp - currentCusp) < 0.0001) {
+            continue; // Skip invalid or zero-sized house
+        }
+
         bool inThisHouse = false;
         
         if (nextCusp > currentCusp) {

@@ -962,37 +962,15 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         int result = swe_rise_trans(panchanga.julianDay, SE_SUN, nullptr, flags, SE_CALC_RISE,
                                    geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
         if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
+            // Convert to UTC time then apply civil timezone offset
             int year, month, day, hour, min;
             double sec;
             swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
             
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.sunriseTime = hour + min / 60.0 + sec / 3600.0;
+            double local_time = (hour + min / 60.0 + sec / 3600.0) + timezoneOffset;
+            while (local_time < 0.0) local_time += 24.0;
+            while (local_time >= 24.0) local_time -= 24.0;
+            panchanga.sunriseTime = local_time;
         } else {
             panchanga.sunriseTime = 6.0; // Default fallback
         }
@@ -1001,37 +979,14 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         result = swe_rise_trans(panchanga.julianDay, SE_SUN, nullptr, flags, SE_CALC_SET,
                                geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
         if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
             int year, month, day, hour, min;
             double sec;
             swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
             
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.sunsetTime = hour + min / 60.0 + sec / 3600.0;
+            double local_time = (hour + min / 60.0 + sec / 3600.0) + timezoneOffset;
+            while (local_time < 0.0) local_time += 24.0;
+            while (local_time >= 24.0) local_time -= 24.0;
+            panchanga.sunsetTime = local_time;
         } else {
             panchanga.sunsetTime = 18.0; // Default fallback
         }
@@ -1040,37 +995,14 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         result = swe_rise_trans(panchanga.julianDay, SE_MOON, nullptr, flags, SE_CALC_RISE,
                                geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
         if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
             int year, month, day, hour, min;
             double sec;
             swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
             
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.moonriseTime = hour + min / 60.0 + sec / 3600.0;
+            double local_time = (hour + min / 60.0 + sec / 3600.0) + timezoneOffset;
+            while (local_time < 0.0) local_time += 24.0;
+            while (local_time >= 24.0) local_time -= 24.0;
+            panchanga.moonriseTime = local_time;
         } else {
             panchanga.moonriseTime = 7.0; // Default fallback
         }
@@ -1079,37 +1011,14 @@ void HinduCalendar::calculateSunMoonTimes(PanchangaData& panchanga, double latit
         result = swe_rise_trans(panchanga.julianDay, SE_MOON, nullptr, flags, SE_CALC_SET,
                                geopos, atmosphere.pressure, atmosphere.temperature, tret, serr);
         if (result != ERR) {
-            // Use CORRECT birthfinder approach: swe_jdut1_to_utc() then apply timezone
             int year, month, day, hour, min;
             double sec;
             swe_jdut1_to_utc(tret[0], 1, &year, &month, &day, &hour, &min, &sec);
             
-            // Apply timezone offset (longitude-based)
-            double hour_offset = longitude / 15.0;
-            int hour_offset_int = (int)hour_offset;
-            double minute_offset = (hour_offset - hour_offset_int) * 60.0;
-            
-            hour += hour_offset_int;
-            min += (int)minute_offset;
-            
-            // Handle minute overflow
-            if (min >= 60) {
-                hour += 1;
-                min -= 60;
-            } else if (min < 0) {
-                hour -= 1;
-                min += 60;
-            }
-            
-            // Handle hour overflow/underflow
-            if (hour >= 24) {
-                hour -= 24;
-            } else if (hour < 0) {
-                hour += 24;
-            }
-            
-            // Convert back to decimal time
-            panchanga.moonsetTime = hour + min / 60.0 + sec / 3600.0;
+            double local_time = (hour + min / 60.0 + sec / 3600.0) + timezoneOffset;
+            while (local_time < 0.0) local_time += 24.0;
+            while (local_time >= 24.0) local_time -= 24.0;
+            panchanga.moonsetTime = local_time;
         } else {
             panchanga.moonsetTime = 19.0; // Default fallback
         }
@@ -2040,28 +1949,14 @@ std::string HinduCalendar::generatePanchangaTableFormat(const std::vector<Pancha
         oss.unsetf(std::ios::fixed | std::ios::showpos);
 
         // === GREGORIAN CALENDAR - Independent calculation from JD ===
-        int gregYear, gregMonth, gregDay, gregHour, gregMin;
-        double gregSec;
-        swe_jdet_to_utc(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gregHour, &gregMin, &gregSec);
+        int gregYear, gregMonth, gregDay;
+        double gTime;
+        swe_revjul(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gTime);
 
-        // === JULIAN CALENDAR - Simple approximation from Gregorian ===
-        // Julian calendar is approximately 13 days behind Gregorian in current era
-        int julYear = gregYear;
-        int julMonth = gregMonth;
-        int julDay = gregDay - 13;
-
-        // Handle month/year rollover for negative days
-        while (julDay <= 0) {
-            julMonth--;
-            if (julMonth <= 0) {
-                julMonth = 12;
-                julYear--;
-            }
-            // Days in month (Julian calendar)
-            int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-            if (julMonth == 2 && julYear % 4 == 0) daysInMonth[1] = 29; // Julian leap year rule
-            julDay += daysInMonth[julMonth - 1];
-        }
+        // === JULIAN CALENDAR - Exact calculation from JD ===
+        int julYear, julMonth, julDay;
+        double jTime;
+        swe_revjul(jd, SE_JUL_CAL, &julYear, &julMonth, &julDay, &jTime);
 
 
         // === HINDU CALENDAR - Independent calculation from JD ===
@@ -2429,11 +2324,10 @@ std::vector<Astro::HinduCalendar::SearchResult> Astro::HinduCalendar::searchHind
             // Calculate weekday (0=Sunday, 6=Saturday)
             int weekday = static_cast<int>(jd + 1.5) % 7;
 
-            // Convert to Gregorian date for result
+            // Convert to Gregorian date for result using swe_revjul (no deltaT day shift)
             int gregYear, gregMonth, gregDay;
-            int gregHour, gregMin;
-            double gregSec;
-            swe_jdet_to_utc(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gregHour, &gregMin, &gregSec);
+            double gTime;
+            swe_revjul(jd, SE_GREG_CAL, &gregYear, &gregMonth, &gregDay, &gTime);
 
             char dateBuffer[32];
             snprintf(dateBuffer, sizeof(dateBuffer), "%04d-%02d-%02d", gregYear, gregMonth, gregDay);
@@ -2998,7 +2892,10 @@ double HinduCalendar::calculateSankrantiTime(double julianDay, Rashi currentRash
         // Check if this is the best we've found
         if (distanceToTarget < bestDistance) {
             bestDistance = distanceToTarget;
-            bestTime = (midPoint - floor(midPoint)) * 24.0;
+            int y, m, d, h, mn;
+            double s;
+            swe_jdut1_to_utc(midPoint, 1, &y, &m, &d, &h, &mn, &s);
+            bestTime = h + mn / 60.0 + s / 3600.0;
         }
 
         // Check if we've found the transition time
@@ -3023,7 +2920,6 @@ double HinduCalendar::calculateSankrantiTime(double julianDay, Rashi currentRash
     if (bestTime >= 24.0) bestTime = 23.99;
 
     return bestTime;
-    return (searchStart - floor(searchStart)) * 24.0;
 }
 
 std::string HinduCalendar::calculateNextSankranti(double julianDay, double& daysUntil) const {
@@ -3455,6 +3351,16 @@ double HinduCalendar::calculateRefraction(double elevation, const AtmosphericMod
     }
 }
 
+static inline double jdToLocalTime(double jd, double timezone) {
+    int y, m, d, hour, min;
+    double sec;
+    swe_jdut1_to_utc(jd, 1, &y, &m, &d, &hour, &min, &sec);
+    double localTime = (hour + min / 60.0 + sec / 3600.0) + timezone;
+    while (localTime >= 24.0) localTime -= 24.0;
+    while (localTime < 0.0) localTime += 24.0;
+    return localTime;
+}
+
 HinduCalendar::RiseSetEvent HinduCalendar::calculatePreciseRiseSet(int body, double jdStart,
                                                                   double latitude, double longitude,
                                                                   double elevation, double timezone) const {
@@ -3503,7 +3409,7 @@ HinduCalendar::RiseSetEvent HinduCalendar::calculatePreciseRiseSet(int body, dou
 
         result.isValid = true;
         result.julianDay = riseSet[0];
-        result.localTime = (riseSet[0] - floor(riseSet[0])) * 24.0 + timezone;
+        result.localTime = jdToLocalTime(riseSet[0], timezone);
         result.azimuth = result.coordinates.topocentric.azimuth;
         result.elevation = result.coordinates.topocentric.elevation;
 
@@ -3669,7 +3575,7 @@ void HinduCalendar::addSolarEvents(std::vector<RiseSetEvent>& events, double jdS
             sunset.objectName = "Sun";
             sunset.eventType = "sunset";
             sunset.julianDay = tret[0];
-            sunset.localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
+            sunset.localTime = jdToLocalTime(tret[0], timezone);
             sunset.isValid = true;
             sunset.coordinates = calculateAllCoordinates(SE_SUN, tret[0], latitude, longitude, elevation);
             sunset.azimuth = sunset.coordinates.topocentric.azimuth;
@@ -3684,7 +3590,7 @@ void HinduCalendar::addSolarEvents(std::vector<RiseSetEvent>& events, double jdS
             culmination.objectName = "Sun";
             culmination.eventType = "culmination";
             culmination.julianDay = culminationJD;
-            culmination.localTime = (culminationJD - floor(culminationJD)) * 24.0 + timezone;
+            culmination.localTime = jdToLocalTime(culminationJD, timezone);
             culmination.isValid = true;
             culmination.coordinates = calculateAllCoordinates(SE_SUN, culminationJD, latitude, longitude, elevation);
             events.push_back(culmination);
@@ -3721,7 +3627,7 @@ void HinduCalendar::addLunarEvents(std::vector<RiseSetEvent>& events, double jdS
             moonset.objectName = "Moon";
             moonset.eventType = "moonset";
             moonset.julianDay = tret[0];
-            moonset.localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
+            moonset.localTime = jdToLocalTime(tret[0], timezone);
             moonset.isValid = true;
             moonset.coordinates = calculateAllCoordinates(SE_MOON, tret[0], latitude, longitude, elevation);
             moonset.azimuth = moonset.coordinates.topocentric.azimuth;
@@ -3736,7 +3642,7 @@ void HinduCalendar::addLunarEvents(std::vector<RiseSetEvent>& events, double jdS
             culmination.objectName = "Moon";
             culmination.eventType = "culmination";
             culmination.julianDay = culminationJD;
-            culmination.localTime = (culminationJD - floor(culminationJD)) * 24.0 + timezone;
+            culmination.localTime = jdToLocalTime(culminationJD, timezone);
             culmination.isValid = true;
             culmination.coordinates = calculateAllCoordinates(SE_MOON, culminationJD, latitude, longitude, elevation);
             events.push_back(culmination);
@@ -3774,7 +3680,7 @@ HinduCalendar::RiseSetEvent HinduCalendar::findSetEvent(int body, double jdStart
 
         if (result != ERR) {
             event.julianDay = tret[0];
-            event.localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
+            event.localTime = jdToLocalTime(tret[0], timezone);
             event.coordinates = calculateAllCoordinates(body, tret[0], latitude, longitude, elevation);
             event.azimuth = event.coordinates.topocentric.azimuth;
             event.elevation = event.coordinates.topocentric.elevation;
@@ -3801,7 +3707,7 @@ HinduCalendar::RiseSetEvent HinduCalendar::findCulminationEvent(int body, double
         double culminationJD = calculateCulminationTime(body, jdStart, latitude);
         if (culminationJD > 0) {
             event.julianDay = culminationJD;
-            event.localTime = (culminationJD - floor(culminationJD)) * 24.0 + timezone;
+            event.localTime = jdToLocalTime(culminationJD, timezone);
             event.coordinates = calculateAllCoordinates(body, culminationJD, latitude, longitude, 0.0);
             event.azimuth = event.coordinates.topocentric.azimuth;
             event.elevation = event.coordinates.topocentric.elevation;
@@ -3997,12 +3903,7 @@ double HinduCalendar::calculateSunriseByMethod(double julianDay, double latitude
             return -1.0;
         }
 
-        // Convert to local time
-        double localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
-        if (localTime >= 24.0) localTime -= 24.0;
-        if (localTime < 0.0) localTime += 24.0;
-
-        return localTime;
+        return jdToLocalTime(tret[0], timezone);
 
     } catch (const std::exception& e) {
         std::cerr << "Exception in calculateSunriseByMethod: " << e.what() << std::endl;
@@ -4045,12 +3946,7 @@ double HinduCalendar::calculateSunsetByMethod(double julianDay, double latitude,
             return -1.0;
         }
 
-        // Convert to local time
-        double localTime = (tret[0] - floor(tret[0])) * 24.0 + timezone;
-        if (localTime >= 24.0) localTime -= 24.0;
-        if (localTime < 0.0) localTime += 24.0;
-
-        return localTime;
+        return jdToLocalTime(tret[0], timezone);
 
     } catch (const std::exception& e) {
         std::cerr << "Exception in calculateSunsetByMethod: " << e.what() << std::endl;
