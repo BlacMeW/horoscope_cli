@@ -1129,19 +1129,137 @@ void HoroscopeTuiApp::showKPTable() {
 }
 
 void HoroscopeTuiApp::showKPTransitions() {
-    int days = 7;
-    if (!promptDateRange("KP Planetary Transitions Search Window", currentBirthData, days)) return;
+    TDialog* d = new TDialog(TRect(7, 2, 73, 23), "KP Planetary Transitions (Sub-L1 to Sub-L5)");
 
-    Astro::KPSystem kp;
-    kp.initialize();
-    Astro::BirthData toDate = addCalendarDays(currentBirthData, (double)days);
+    char startBuf[32];
+    snprintf(startBuf, sizeof(startBuf), "%04d-%02d-%02d",
+             currentBirthData.year, currentBirthData.month, currentBirthData.day);
+    char daysBuf[16] = "7";
 
-    auto transitions = kp.findTransitions(currentBirthData, toDate, Astro::Planet::SUN, Astro::KPLevel::SUB);
-    std::string text = kp.generateTransitionTable(transitions);
+    TInputLine* inStart = new TInputLine(TRect(26, 2, 46, 3), 20);
+    inStart->setData(startBuf);
+    d->insert(inStart);
+    d->insert(new TLabel(TRect(3, 2, 25, 3), "~S~tart Date (Y-M-D):", inStart));
 
-    std::ostringstream title;
-    title << "KP Planetary Transitions (" << days << " Days Window)";
-    openWindow(title.str(), text);
+    TInputLine* inDays = new TInputLine(TRect(26, 4, 38, 5), 10);
+    inDays->setData(daysBuf);
+    d->insert(inDays);
+    d->insert(new TLabel(TRect(3, 4, 25, 5), "Duration (~D~ays):", inDays));
+
+    TSItem* pItems =
+        new TSItem("Sun",
+        new TSItem("Moon",
+        new TSItem("Mars",
+        new TSItem("Mercury",
+        new TSItem("Jupiter",
+        new TSItem("Venus",
+        new TSItem("Saturn",
+        new TSItem("Rahu",
+        new TSItem("Ketu",
+        new TSItem("All Planets", nullptr))))))))));
+
+    TRadioButtons* rbPlanet = new TRadioButtons(TRect(3, 7, 25, 17), pItems);
+    ushort pVal = 0; // Sun default
+    rbPlanet->setData(&pVal);
+    d->insert(rbPlanet);
+    d->insert(new TLabel(TRect(3, 6, 25, 7), "~P~lanet:", rbPlanet));
+
+    TSItem* lItems =
+        new TSItem("Sub-L1 (Sub Lord)",
+        new TSItem("Sub-L2 (Sub-Sub)",
+        new TSItem("Sub-L3 (Sub³ Lord)",
+        new TSItem("Sub-L4 (Sub-L4)",
+        new TSItem("Sub-L5 (Sub-L5)",
+        new TSItem("Star (Nakshatra)",
+        new TSItem("Sign (Rashi)",
+        new TSItem("All Sub-Levels (1-5)",
+        new TSItem("All Levels", nullptr)))))))));
+
+    TRadioButtons* rbLevel = new TRadioButtons(TRect(28, 7, 61, 16), lItems);
+    ushort lVal = 0; // Sub-L1 default
+    rbLevel->setData(&lVal);
+    d->insert(rbLevel);
+    d->insert(new TLabel(TRect(28, 6, 56, 7), "~K~P Level:", rbLevel));
+
+    d->insert(new TButton(TRect(16, 18, 30, 20), "~C~alculate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(36, 18, 48, 20), "Cancel", cmCancel, bfNormal));
+
+    if (deskTop->execView(d) == cmOK) {
+        inStart->getData(startBuf);
+        inDays->getData(daysBuf);
+        rbPlanet->getData(&pVal);
+        rbLevel->getData(&lVal);
+
+        int y = currentBirthData.year, m = currentBirthData.month, day = currentBirthData.day;
+        sscanf(startBuf, "%d-%d-%d", &y, &m, &day);
+        int dCount = atoi(daysBuf);
+        if (dCount <= 0) dCount = 7;
+        if (dCount > 60) dCount = 60; // Safeguard window size
+
+        currentBirthData.year = y;
+        currentBirthData.month = m;
+        currentBirthData.day = day;
+
+        Astro::BirthData toDate = addCalendarDays(currentBirthData, (double)dCount);
+
+        std::vector<Astro::Planet> selectedPlanets;
+        if (pVal == 0) selectedPlanets.push_back(Astro::Planet::SUN);
+        else if (pVal == 1) selectedPlanets.push_back(Astro::Planet::MOON);
+        else if (pVal == 2) selectedPlanets.push_back(Astro::Planet::MARS);
+        else if (pVal == 3) selectedPlanets.push_back(Astro::Planet::MERCURY);
+        else if (pVal == 4) selectedPlanets.push_back(Astro::Planet::JUPITER);
+        else if (pVal == 5) selectedPlanets.push_back(Astro::Planet::VENUS);
+        else if (pVal == 6) selectedPlanets.push_back(Astro::Planet::SATURN);
+        else if (pVal == 7) selectedPlanets.push_back(Astro::Planet::NORTH_NODE);
+        else if (pVal == 8) selectedPlanets.push_back(Astro::Planet::SOUTH_NODE);
+        else {
+            selectedPlanets = {Astro::Planet::SUN, Astro::Planet::MOON, Astro::Planet::MARS,
+                               Astro::Planet::MERCURY, Astro::Planet::JUPITER, Astro::Planet::VENUS,
+                               Astro::Planet::SATURN, Astro::Planet::NORTH_NODE, Astro::Planet::SOUTH_NODE};
+        }
+
+        std::vector<Astro::KPLevel> selectedLevels;
+        if (lVal == 0) selectedLevels.push_back(Astro::KPLevel::SUB);
+        else if (lVal == 1) selectedLevels.push_back(Astro::KPLevel::SUB_SUB);
+        else if (lVal == 2) selectedLevels.push_back(Astro::KPLevel::SUB_SUB_SUB);
+        else if (lVal == 3) selectedLevels.push_back(Astro::KPLevel::SUB_4);
+        else if (lVal == 4) selectedLevels.push_back(Astro::KPLevel::SUB_5);
+        else if (lVal == 5) selectedLevels.push_back(Astro::KPLevel::STAR);
+        else if (lVal == 6) selectedLevels.push_back(Astro::KPLevel::SIGN);
+        else if (lVal == 7) {
+            selectedLevels = {Astro::KPLevel::SUB, Astro::KPLevel::SUB_SUB,
+                              Astro::KPLevel::SUB_SUB_SUB, Astro::KPLevel::SUB_4,
+                              Astro::KPLevel::SUB_5};
+        } else {
+            selectedLevels = {Astro::KPLevel::SIGN, Astro::KPLevel::STAR,
+                              Astro::KPLevel::SUB, Astro::KPLevel::SUB_SUB,
+                              Astro::KPLevel::SUB_SUB_SUB, Astro::KPLevel::SUB_4,
+                              Astro::KPLevel::SUB_5};
+        }
+
+        Astro::KPSystem kp;
+        kp.initialize();
+
+        std::vector<Astro::KPTransition> allTransitions;
+        for (auto p : selectedPlanets) {
+            for (auto lvl : selectedLevels) {
+                auto transitions = kp.findTransitions(currentBirthData, toDate, p, lvl);
+                allTransitions.insert(allTransitions.end(), transitions.begin(), transitions.end());
+            }
+        }
+
+        std::sort(allTransitions.begin(), allTransitions.end(),
+                  [](const Astro::KPTransition& a, const Astro::KPTransition& b) {
+                      return a.julianDay < b.julianDay;
+                  });
+
+        std::string text = kp.generateTransitionTable(allTransitions);
+
+        std::ostringstream title;
+        title << "KP Planetary Transitions (" << dCount << " Days Window)";
+        openWindow(title.str(), text);
+    }
+    destroy(d);
 }
 
 void HoroscopeTuiApp::showEphemerisTable() {

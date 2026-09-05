@@ -671,9 +671,11 @@ void printHelp() {
     std::cout << "                       Transition level to track\n";
     std::cout << "                       sign    = Sign changes only\n";
     std::cout << "                       star    = Nakshatra changes\n";
-    std::cout << "                       sub     = Sub-lord changes\n";
-    std::cout << "                       sub-sub = Sub-sub lord changes\n";
-    std::cout << "                       sub³    = Sub³ lord changes\n";
+    std::cout << "                       sub     = Sub-lord changes (Sub-L1)\n";
+    std::cout << "                       sub-sub = Sub-sub lord changes (Sub-L2)\n";
+    std::cout << "                       sub³    = Sub³ lord changes (Sub-L3)\n";
+    std::cout << "                       sub-l4  = Sub-lord 4 changes (Sub-L4)\n";
+    std::cout << "                       sub-l5  = Sub-lord 5 changes (Sub-L5)\n";
     std::cout << "                       (default: all levels)\n\n";
 
     std::cout << "    --kp-format FORMAT KP output format\n";
@@ -3177,12 +3179,14 @@ int main(int argc, char* argv[]) {
             if (allPlanets) {
                 // Calculate for all planets
                 std::vector<Planet> planets = {Planet::SUN, Planet::MOON, Planet::MERCURY, Planet::VENUS,
-                                             Planet::MARS, Planet::JUPITER, Planet::SATURN};
+                                             Planet::MARS, Planet::JUPITER, Planet::SATURN,
+                                             Planet::NORTH_NODE, Planet::SOUTH_NODE};
                 for (Planet planet : planets) {
                     if (allLevels) {
                         // Calculate for all levels
                         std::vector<KPLevel> levels = {KPLevel::SIGN, KPLevel::STAR, KPLevel::SUB,
-                                                     KPLevel::SUB_SUB, KPLevel::SUB_SUB_SUB};
+                                                     KPLevel::SUB_SUB, KPLevel::SUB_SUB_SUB,
+                                                     KPLevel::SUB_4, KPLevel::SUB_5};
                         for (KPLevel level : levels) {
                             auto transitions = kpSystem.findTransitions(fromDate, toDate, planet, level);
                             allTransitions.insert(allTransitions.end(), transitions.begin(), transitions.end());
@@ -3196,7 +3200,8 @@ int main(int argc, char* argv[]) {
                 if (allLevels) {
                     // Calculate for all levels of target planet
                     std::vector<KPLevel> levels = {KPLevel::SIGN, KPLevel::STAR, KPLevel::SUB,
-                                                 KPLevel::SUB_SUB, KPLevel::SUB_SUB_SUB};
+                                                 KPLevel::SUB_SUB, KPLevel::SUB_SUB_SUB,
+                                                 KPLevel::SUB_4, KPLevel::SUB_5};
                     for (KPLevel level : levels) {
                         auto transitions = kpSystem.findTransitions(fromDate, toDate, targetPlanet, level);
                         allTransitions.insert(allTransitions.end(), transitions.begin(), transitions.end());

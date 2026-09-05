@@ -417,16 +417,31 @@ std::vector<KPTransition> KPSystem::findTransitions(const BirthData& fromDate, c
     double fromJD = fromDate.getJulianDay();
     double toJD = toDate.getJulianDay();
 
-    // Sample every 0.1 days for precision
-    double step = 0.1;
-    Planet previousLord = Planet::SUN; // Initialize with a default
-    bool firstIteration = true;
+    // Adaptive step size based on KP Level
+    double step = 0.05; // ~1.2 hours for Sign, Star, Sub-L1
+    if (level == KPLevel::SUB_SUB) {
+        step = 0.01; // ~14 minutes
+    } else if (level == KPLevel::SUB_SUB_SUB) {
+        step = 0.002; // ~2.8 minutes
+    } else if (level == KPLevel::SUB_4) {
+        step = 0.0005; // ~43 seconds
+    } else if (level == KPLevel::SUB_5) {
+        step = 0.0001; // ~8.6 seconds
+    }
 
-    for (double jd = fromJD; jd <= toJD; jd += step) {
+    // Moon moves 13x faster than Sun, adapt step for Moon
+    if (planet == Planet::MOON) {
+        step *= 0.2;
+    }
+
+    Planet previousLord = Planet::SUN;
+    bool firstIteration = true;
+    const size_t MAX_TRANSITIONS = 1500;
+
+    for (double jd = fromJD; jd <= toJD && transitions.size() < MAX_TRANSITIONS; jd += step) {
         // Calculate planet position for this Julian Day
         double planetLongitude = calculatePlanetLongitudeForJD(jd, planet);
-
-        if (planetLongitude < 0) continue; // Skip if calculation failed
+        if (planetLongitude < 0) continue;
 
         // Get the appropriate lord for the requested level
         Planet currentLord;
@@ -442,14 +457,38 @@ std::vector<KPTransition> KPSystem::findTransitions(const BirthData& fromDate, c
 
         // Check for transition
         if (!firstIteration && currentLord != previousLord) {
+            // Binary search (bisection) to locate exact transition timestamp
+            double lowJD = jd - step;
+            double highJD = jd;
+            for (int iter = 0; iter < 8; ++iter) {
+                double midJD = (lowJD + highJD) * 0.5;
+                double midLon = calculatePlanetLongitudeForJD(midJD, planet);
+                if (midLon >= 0) {
+                    Nakshatra midNak = findNakshatra(midLon);
+                    Planet midLord;
+                    if (level == KPLevel::SIGN) {
+                        midLord = getSignLord(longitudeToSign(midLon));
+                    } else if (level == KPLevel::STAR) {
+                        midLord = midNak.lord;
+                    } else {
+                        midLord = findSubLord(midLon, midNak, static_cast<int>(level));
+                    }
+                    if (midLord == previousLord) {
+                        lowJD = midJD;
+                    } else {
+                        highJD = midJD;
+                    }
+                }
+            }
+
             KPTransition transition;
-            transition.julianDay = jd;
+            transition.julianDay = highJD;
             transition.planet = planet;
             transition.level = level;
             transition.fromLord = previousLord;
             transition.toLord = currentLord;
-            transition.description = "Transition from " + planetToString(previousLord) +
-                                   " to " + planetToString(currentLord);
+            transition.description = planetToString(planet) + " " + kpLevelToString(level) +
+                                   ": " + planetToString(previousLord) + " -> " + planetToString(currentLord);
 
             transitions.push_back(transition);
         }
@@ -462,20 +501,30 @@ std::vector<KPTransition> KPSystem::findTransitions(const BirthData& fromDate, c
 }
 
 double KPSystem::calculatePlanetLongitudeForJD(double julianDay, Planet planet) const {
-    // Simplified planet calculation - in a real implementation,
-    // this would use Swiss Ephemeris or similar
     double pos[6];
     char serr[256];
 
-    int planetNum = static_cast<int>(planet);
-    if (planetNum > 11) return -1; // Skip minor bodies for now
+    swe_set_sid_mode(SE_SIDM_KRISHNAMURTI, 0, 0);
 
-    int32 result = swe_calc_ut(julianDay, planetNum, SEFLG_SWIEPH, pos, serr);
+    int planetNum = static_cast<int>(planet);
+    if (planet == Planet::NORTH_NODE) {
+        planetNum = SE_TRUE_NODE;
+    } else if (planet == Planet::SOUTH_NODE) {
+        planetNum = SE_TRUE_NODE;
+    } else if (planetNum > 11) {
+        return -1; // Skip minor bodies for now
+    }
+
+    int32 result = swe_calc_ut(julianDay, planetNum, SEFLG_SWIEPH | SEFLG_SIDEREAL, pos, serr);
     if (result < 0) {
         return -1; // Calculation failed
     }
 
-    return pos[0]; // Longitude in degrees
+    double lon = pos[0];
+    if (planet == Planet::SOUTH_NODE) {
+        lon = fmod(lon + 180.0, 360.0);
+    }
+    return normalizeKPLongitude(lon);
 }
 
 std::string KPSystem::generateTransitionTable(const std::vector<KPTransition>& transitions) const {
