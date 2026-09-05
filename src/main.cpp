@@ -17,6 +17,8 @@
 #include "astro_calendar.h"
 #include "professional_table.h"
 #include "swephexp.h"
+#include "tui/horoscope_tui.h"
+#include <unistd.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -78,6 +80,7 @@ struct CommandLineArgs {
     bool showHelp = false;
     bool showVersion = false;
     bool showFeatures = false;
+    bool showTui = false;
     bool showSolarSystemOnly = false;
     bool noDrawing = false;
     bool showAstronomicalCoordinates = false;
@@ -1062,7 +1065,8 @@ void printHelp() {
 
     std::cout << "    --help, -h         Show this comprehensive help message\n";
     std::cout << "    --features, -f     Show colorful feature showcase\n";
-    std::cout << "    --version, -v      Show version and build information\n\n";
+    std::cout << "    --version, -v      Show version and build information\n";
+    std::cout << "    --tui              Launch Turbo Vision interactive Desktop TUI mode\n\n";
 
     // std::cout << "NEW ENHANCED FEATURES 🚀✨\n";
     // std::cout << "    --interactive      Launch interactive mode with guided wizards\n";
@@ -1784,6 +1788,9 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--features" || arg == "-f") {
             args.showFeatures = true;
             return true;
+        } else if (arg == "--tui") {
+            args.showTui = true;
+            return true;
         } else if (arg == "--date" && i + 1 < argc) {
             args.date = argv[++i];
         } else if (arg == "--time" && i + 1 < argc) {
@@ -2465,6 +2472,11 @@ int main(int argc, char* argv[]) {
 
     if (!parseCommandLine(argc, argv, args)) {
         return 1;
+    }
+
+    // Launch Turbo Vision Desktop TUI if requested or if launched interactively without arguments
+    if (args.showTui || (argc == 1 && isatty(STDIN_FILENO))) {
+        return AstroTui::runTuiApplication();
     }
 
     if (args.showHelp) {

@@ -4,9 +4,15 @@ project(HoroscopeCLI VERSION 2.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(TV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(TV_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(third_party/tvision)
+
 # Include directories
 include_directories(include)
 include_directories(third_party/swisseph)
+include_directories(third_party/tvision/include)
+include_directories(third_party/tabulate/single_include)
 
 # Swiss Ephemeris source files
 set(SWISSEPH_SOURCES
@@ -45,6 +51,9 @@ set(SOURCES
     src/myanmar_monthly_calendar.cpp
     src/professional_table.cpp
     src/astro_calendar.cpp
+    src/chinese_calendar.cpp
+    src/tui/chart_view.cpp
+    src/tui/horoscope_tui.cpp
     ${SWISSEPH_SOURCES}
 )
 
@@ -62,13 +71,16 @@ set(HEADERS
     include/kp_system.h
     include/hindu_calendar.h
     include/astro_calendar.h
+    include/chinese_calendar.h
+    include/tui/chart_view.h
+    include/tui/horoscope_tui.h
 )
 
 # Create executable
 add_executable(horoscope_cli ${SOURCES} ${HEADERS})
 
 # Link libraries
-target_link_libraries(horoscope_cli m)
+target_link_libraries(horoscope_cli PRIVATE tvision m)
 
 # Set ephemeris data path
 target_compile_definitions(horoscope_cli PRIVATE SE_EPHE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/data")
