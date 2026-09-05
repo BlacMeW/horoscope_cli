@@ -110,6 +110,26 @@ std::string WesternChartDrawer::drawChartWheel(const BirthChart& chart) const {
     return ss.str();
 }
 
+static std::string getPlanetAbbr(Planet planet) {
+    switch (planet) {
+        case Planet::SUN: return "Su";
+        case Planet::MOON: return "Mo";
+        case Planet::MERCURY: return "Me";
+        case Planet::VENUS: return "Ve";
+        case Planet::MARS: return "Ma";
+        case Planet::JUPITER: return "Ju";
+        case Planet::SATURN: return "Sa";
+        case Planet::URANUS: return "Ur";
+        case Planet::NEPTUNE: return "Ne";
+        case Planet::PLUTO: return "Pl";
+        case Planet::NORTH_NODE: return "Ra";
+        case Planet::SOUTH_NODE: return "Ke";
+        case Planet::CHIRON: return "Ch";
+        case Planet::LILITH: return "Li";
+        default: return "??";
+    }
+}
+
 std::string WesternChartDrawer::drawRectangularChart(const BirthChart& chart) const {
     std::stringstream ss;
     ss << "\n=== WESTERN CHART - RECTANGULAR LAYOUT ===\n\n";
@@ -117,83 +137,93 @@ std::string WesternChartDrawer::drawRectangularChart(const BirthChart& chart) co
     const auto& positions = chart.getPlanetPositions();
     const auto& cusps = chart.getHouseCusps();
 
-    // Create house grid (3x4 layout)
+    // Create house grid (3x4 layout) using clean ASCII borders
     std::vector<std::string> lines = {
-        "┌──────────────┬──────────────┬──────────────┬──────────────┐",
-        "│   House 10   │   House 11   │   House 12   │   House 1    │",
-        "│              │              │              │              │",
-        "│              │              │              │              │",
-        "├──────────────┼──────────────┼──────────────┼──────────────┤",
-        "│   House 9    │                            │   House 2    │",
-        "│              │         CHART WHEEL         │              │",
-        "│              │                            │              │",
-        "├──────────────┤                            ├──────────────┤",
-        "│   House 8    │                            │   House 3    │",
-        "│              │                            │              │",
-        "│              │                            │              │",
-        "├──────────────┼──────────────┼──────────────┼──────────────┤",
-        "│   House 7    │   House 6    │   House 5    │   House 4    │",
-        "│              │              │              │              │",
-        "│              │              │              │              │",
-        "└──────────────┴──────────────┴──────────────┴──────────────┘"
+        "+--------------+--------------+--------------+--------------+",
+        "|   House 10   |   House 11   |   House 12   |   House 1    |",
+        "|              |              |              |              |",
+        "|              |              |              |              |",
+        "+--------------+--------------+--------------+--------------+",
+        "|   House 9    |                             |   House 2    |",
+        "|              |         CHART WHEEL         |              |",
+        "|              |                             |              |",
+        "+--------------+                             +--------------+",
+        "|   House 8    |                             |   House 3    |",
+        "|              |                             |              |",
+        "|              |                             |              |",
+        "+--------------+--------------+--------------+--------------+",
+        "|   House 7    |   House 6    |   House 5    |   House 4    |",
+        "|              |              |              |              |",
+        "|              |              |              |              |",
+        "+--------------+--------------+--------------+--------------+"
     };
 
-    // House positions in the grid
     struct HousePos { int line; int col; int width; };
     std::vector<HousePos> housePositions = {
         {0, 0, 0},         // Dummy for index 0
-        {1, 46, 12},       // House 1
-        {5, 46, 12},       // House 2
-        {9, 46, 12},       // House 3
-        {13, 46, 12},      // House 4
-        {13, 32, 12},      // House 5
-        {13, 16, 12},      // House 6
-        {13, 2, 12},       // House 7
-        {9, 2, 12},        // House 8
-        {5, 2, 12},        // House 9
-        {1, 2, 12},        // House 10
-        {1, 16, 12},       // House 11
-        {1, 32, 12}        // House 12
+        {1, 46, 14},       // House 1
+        {5, 46, 14},       // House 2
+        {9, 46, 14},       // House 3
+        {13, 46, 14},      // House 4
+        {13, 31, 14},      // House 5
+        {13, 16, 14},      // House 6
+        {13, 1, 14},       // House 7
+        {9, 1, 14},        // House 8
+        {5, 1, 14},        // House 9
+        {1, 1, 14},        // House 10
+        {1, 16, 14},       // House 11
+        {1, 31, 14}        // House 12
     };
 
     // Fill houses with planets
     for (int house = 1; house <= 12; house++) {
-        std::vector<std::string> planetsInHouse;
-
+        std::vector<std::string> planetEntries;
         for (const auto& pos : positions) {
             if (pos.house == house) {
-                std::string planetStr = getPlanetGlyph(pos.planet);
+                std::string entry = getPlanetAbbr(pos.planet);
                 if (showDegrees) {
-                    planetStr += formatDegreeWithSign(pos.longitude);
+                    int deg = static_cast<int>(pos.longitude) % 30;
+                    int min = static_cast<int>((pos.longitude - static_cast<int>(pos.longitude)) * 60) % 60;
+                    char buf[16];
+                    snprintf(buf, sizeof(buf), " %02d:%02d", deg, min);
+                    entry += buf;
                 }
-                planetsInHouse.push_back(planetStr);
+                planetEntries.push_back(entry);
             }
         }
 
-        if (!planetsInHouse.empty()) {
-            const auto& housePos = housePositions[house];
-
-            // Format planets for display
-            std::string planetsStr;
-            for (size_t i = 0; i < planetsInHouse.size(); i++) {
-                if (i > 0) planetsStr += " ";
-                planetsStr += planetsInHouse[i];
-            }
-
-            // Truncate if too long
-            if (planetsStr.length() > static_cast<size_t>(housePos.width)) {
-                planetsStr = planetsStr.substr(0, housePos.width);
-            }
-
-            // Center the text
-            int padding = (housePos.width - planetsStr.length()) / 2;
-            std::string formatted = std::string(padding, ' ') + planetsStr +
-                                  std::string(housePos.width - padding - planetsStr.length(), ' ');
-
-            // Place in grid
-            if (housePos.line + 2 < static_cast<int>(lines.size()) &&
-                housePos.col + formatted.length() <= lines[housePos.line + 2].length()) {
-                lines[housePos.line + 2].replace(housePos.col, formatted.length(), formatted);
+        if (!planetEntries.empty()) {
+            const auto& hp = housePositions[house];
+            if (planetEntries.size() == 1) {
+                // Single planet: center on line + 2
+                std::string text = planetEntries[0];
+                int pad = (hp.width - static_cast<int>(text.length())) / 2;
+                if (pad < 0) pad = 0;
+                std::string formatted = std::string(pad, ' ') + text;
+                while (formatted.length() < static_cast<size_t>(hp.width)) formatted += ' ';
+                lines[hp.line + 2].replace(hp.col, hp.width, formatted);
+            } else if (planetEntries.size() == 2) {
+                // Two planets: one on line + 1, one on line + 2
+                for (size_t p = 0; p < 2; ++p) {
+                    std::string text = planetEntries[p];
+                    int pad = (hp.width - static_cast<int>(text.length())) / 2;
+                    if (pad < 0) pad = 0;
+                    std::string formatted = std::string(pad, ' ') + text;
+                    while (formatted.length() < static_cast<size_t>(hp.width)) formatted += ' ';
+                    lines[hp.line + 1 + p].replace(hp.col, hp.width, formatted);
+                }
+            } else {
+                // 3 or more planets: show comma-separated abbreviations
+                std::string abbrs;
+                for (size_t p = 0; p < planetEntries.size(); ++p) {
+                    if (p > 0) abbrs += ",";
+                    abbrs += planetEntries[p].substr(0, 2);
+                }
+                int pad = (hp.width - static_cast<int>(abbrs.length())) / 2;
+                if (pad < 0) pad = 0;
+                std::string formatted = std::string(pad, ' ') + abbrs;
+                while (formatted.length() < static_cast<size_t>(hp.width)) formatted += ' ';
+                lines[hp.line + 2].replace(hp.col, hp.width, formatted);
             }
         }
     }
@@ -220,42 +250,48 @@ std::string WesternChartDrawer::drawAspectGrid(const BirthChart& chart) const {
     const auto& positions = chart.getPlanetPositions();
     const auto& aspects = chart.getAspects();
 
-    // Create grid header
-    ss << "        ";
+    // Filter main planets
+    std::vector<PlanetPosition> mainPlanets;
     for (const auto& pos : positions) {
         if (pos.planet == Planet::NORTH_NODE || pos.planet == Planet::SOUTH_NODE ||
             pos.planet == Planet::CHIRON || pos.planet == Planet::LILITH) continue;
-        ss << std::left << std::setw(4) << getPlanetGlyph(pos.planet);
+        mainPlanets.push_back(pos);
+    }
+
+    // Create grid header (5 visual columns per planet)
+    ss << "     ";
+    for (const auto& pos : mainPlanets) {
+        ss << "  " << getPlanetGlyph(pos.planet) << "  ";
     }
     ss << "\n";
 
     // Create grid rows
-    for (const auto& pos1 : positions) {
-        if (pos1.planet == Planet::NORTH_NODE || pos1.planet == Planet::SOUTH_NODE ||
-            pos1.planet == Planet::CHIRON || pos1.planet == Planet::LILITH) continue;
+    for (const auto& pos1 : mainPlanets) {
+        ss << " " << getPlanetGlyph(pos1.planet) << ": ";
 
-        ss << std::left << std::setw(8) << (getPlanetGlyph(pos1.planet) + ":");
+        for (const auto& pos2 : mainPlanets) {
+            if (pos1.planet == pos2.planet) {
+                ss << "  -  ";
+                continue;
+            }
 
-        for (const auto& pos2 : positions) {
-            if (pos2.planet == Planet::NORTH_NODE || pos2.planet == Planet::SOUTH_NODE ||
-                pos2.planet == Planet::CHIRON || pos2.planet == Planet::LILITH) continue;
-
-            std::string aspectSymbol = "    ";
-
-            if (pos1.planet != pos2.planet) {
-                // Find aspect between these planets
-                for (const auto& aspect : aspects) {
-                    if ((aspect.planet1 == pos1.planet && aspect.planet2 == pos2.planet) ||
-                        (aspect.planet1 == pos2.planet && aspect.planet2 == pos1.planet)) {
-                        aspectSymbol = getAspectGlyph(aspect.type) +
-                                     std::to_string(static_cast<int>(aspect.orb)) + "°";
-                        if (aspectSymbol.length() > 4) aspectSymbol = aspectSymbol.substr(0, 4);
-                        break;
+            std::string cell = "     ";
+            // Find aspect between these planets
+            for (const auto& aspect : aspects) {
+                if ((aspect.planet1 == pos1.planet && aspect.planet2 == pos2.planet) ||
+                    (aspect.planet1 == pos2.planet && aspect.planet2 == pos1.planet)) {
+                    int orbInt = static_cast<int>(std::round(aspect.orb));
+                    std::string glyph = getAspectGlyph(aspect.type);
+                    if (orbInt >= 10) {
+                        cell = glyph + std::to_string(orbInt) + "° ";
+                    } else {
+                        cell = " " + glyph + std::to_string(orbInt) + "° ";
                     }
+                    break;
                 }
             }
 
-            ss << std::left << std::setw(4) << aspectSymbol;
+            ss << cell;
         }
         ss << "\n";
     }
@@ -278,7 +314,7 @@ std::string WesternChartDrawer::drawWheelFrame(int size) const {
             if (distance <= innerRadius) {
                 ss << " ";
             } else if (distance <= innerRadius + 1) {
-                ss << "·";
+                ss << ".";
             } else if (distance <= outerRadius - 1) {
                 ss << " ";
             } else if (distance <= outerRadius) {
@@ -347,11 +383,12 @@ void WesternChartDrawer::fillWheelWithPlanets(std::vector<std::string>& wheel,
         int x = wheelPos.first;
         int y = wheelPos.second;
 
-        if (x >= 0 && x < static_cast<int>(wheel[0].length()) &&
+        if (x >= 0 && x + 1 < static_cast<int>(wheel[0].length()) &&
             y >= 0 && y < static_cast<int>(wheel.size())) {
-            std::string glyph = getPlanetGlyph(pos.planet);
-            if (!glyph.empty() && glyph != "?") {
-                wheel[y][x] = glyph[0]; // Use first character if multi-byte
+            std::string abbr = getPlanetAbbr(pos.planet);
+            wheel[y][x] = abbr[0];
+            if (abbr.length() > 1) {
+                wheel[y][x + 1] = abbr[1];
             }
         }
     }
@@ -386,6 +423,11 @@ void WesternChartDrawer::drawHouseCusps(std::vector<std::string>& wheel, const H
             ny >= 0 && ny < static_cast<int>(wheel.size())) {
             if (house < 10) {
                 wheel[ny][nx] = '0' + house;
+            } else {
+                wheel[ny][nx] = '1';
+                if (nx + 1 < static_cast<int>(wheel[0].length())) {
+                    wheel[ny][nx + 1] = '0' + (house - 10);
+                }
             }
         }
     }

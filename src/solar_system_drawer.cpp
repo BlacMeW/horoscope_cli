@@ -51,6 +51,27 @@ SolarSystemDrawer::SolarSystemDrawer()
     }
 }
 
+static std::string makeTopBorder(const std::string& title, int canvasWidth = 80) {
+    std::stringstream ss;
+    ss << "\n┌─ " << title << " ";
+    int remaining = canvasWidth - static_cast<int>(title.length()) - 3;
+    for (int i = 0; i < std::max(0, remaining); ++i) {
+        ss << "─";
+    }
+    ss << "┐\n";
+    return ss.str();
+}
+
+static std::string makeBottomBorder(int canvasWidth = 80) {
+    std::stringstream ss;
+    ss << "└";
+    for (int i = 0; i < canvasWidth; ++i) {
+        ss << "─";
+    }
+    ss << "┘\n\n";
+    return ss.str();
+}
+
 std::string SolarSystemDrawer::drawOrbitalPaths() const {
     const int width = 80;
     const int height = 60;
@@ -75,11 +96,11 @@ std::string SolarSystemDrawer::drawOrbitalPaths() const {
 
     // Convert canvas to string
     std::stringstream ss;
-    ss << "\n┌─ Solar System Orbital Paths ─┐\n";
+    ss << makeTopBorder("Solar System Orbital Paths", width);
     for (const auto& row : canvas) {
         ss << "│" << row << "│\n";
     }
-    ss << "└─────────────────────────────────┘\n\n";
+    ss << makeBottomBorder(width);
 
     if (showPlanetNames) {
         ss << addLegend("");
@@ -125,11 +146,11 @@ std::string SolarSystemDrawer::drawSolarSystemWithPositions(const std::vector<Pl
 
     // Convert canvas to string
     std::stringstream ss;
-    ss << "\n┌─ Solar System Current Positions ─┐\n";
+    ss << makeTopBorder("Solar System Current Positions", width);
     for (const auto& row : canvas) {
         ss << "│" << row << "│\n";
     }
-    ss << "└──────────────────────────────────┘\n\n";
+    ss << makeBottomBorder(width);
 
     if (showPlanetNames) {
         ss << addLegend("");
@@ -311,11 +332,11 @@ std::string SolarSystemDrawer::drawGeocentricView(const std::vector<PlanetPositi
 
     // Convert canvas to string
     std::stringstream ss;
-    ss << "\n┌─ Solar System - Geocentric View ─┐\n";
+    ss << makeTopBorder("Solar System - Geocentric View", width);
     for (const auto& row : canvas) {
         ss << "│" << row << "│\n";
     }
-    ss << "└──────────────────────────────────┘\n\n";
+    ss << makeBottomBorder(width);
 
     if (showPlanetNames) {
         ss << "Planet Symbols (Geocentric View):\n";
@@ -391,11 +412,11 @@ std::string SolarSystemDrawer::drawPlanetCentricView(const std::vector<PlanetPos
     // Convert canvas to string
     std::stringstream ss;
     std::string perspectiveName = getPerspectiveName(perspective);
-    ss << "\n┌─ Solar System - " << perspectiveName << " View ─┐\n";
+    ss << makeTopBorder("Solar System - " + perspectiveName + " View", width);
     for (const auto& row : canvas) {
         ss << "│" << row << "│\n";
     }
-    ss << "└──────────────────────────────────┘\n\n";
+    ss << makeBottomBorder(width);
 
     if (showPlanetNames) {
         ss << "Planet Symbols (" << perspectiveName << " View):\n";

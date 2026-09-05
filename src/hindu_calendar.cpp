@@ -3179,7 +3179,7 @@ HinduCalendar::AtmosphericModel HinduCalendar::getSeasonalAtmosphere(double juli
         // Extract month for seasonal corrections
         int year, month, day, hour, minute;
         double second;
-        swe_jdet_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
+        swe_jdut1_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
 
         // Apply seasonal corrections based on location
         getSeasonalAtmosphericParams(month, latitude, longitude,

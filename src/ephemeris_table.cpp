@@ -197,7 +197,7 @@ std::vector<EphemerisEntry> EphemerisTable::generateEntries(const EphemerisConfi
         // Convert Julian Day to calendar date
         int year, month, day, hour, minute;
         double second;
-        swe_jdet_to_utc(currentJD, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
+        swe_jdut1_to_utc(currentJD, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
         entry.year = year;
         entry.month = month;
         entry.day = day;

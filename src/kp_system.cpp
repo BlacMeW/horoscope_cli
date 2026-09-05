@@ -11,16 +11,30 @@
 
 namespace Astro {
 
-// KP Sub Lord proportions based on Vimshottari Dasha periods
-static const double KP_SUB_PROPORTIONS[9] = {
-    20.0/120.0, 16.0/120.0, 7.0/120.0, 18.0/120.0, 16.0/120.0,
-    19.0/120.0, 17.0/120.0, 7.0/120.0, 20.0/120.0
+// Vimshottari Dasha periods (total 120 years)
+struct VimshottariLord {
+    Planet planet;
+    double years;
 };
 
-static const Planet KP_SUB_LORDS[9] = {
-    Planet::JUPITER, Planet::SATURN, Planet::MERCURY, Planet::SUN, Planet::MOON,
-    Planet::MARS, Planet::VENUS, Planet::NORTH_NODE, Planet::JUPITER
+static const VimshottariLord VIMSHOTTARI_CYCLE[9] = {
+    {Planet::SOUTH_NODE, 7.0},   // Ketu
+    {Planet::VENUS, 20.0},       // Venus
+    {Planet::SUN, 6.0},          // Sun
+    {Planet::MOON, 10.0},        // Moon
+    {Planet::MARS, 7.0},         // Mars
+    {Planet::NORTH_NODE, 18.0},  // Rahu
+    {Planet::JUPITER, 16.0},     // Jupiter
+    {Planet::SATURN, 19.0},      // Saturn
+    {Planet::MERCURY, 17.0}      // Mercury
 };
+
+static int getVimshottariIndex(Planet planet) {
+    for (int i = 0; i < 9; ++i) {
+        if (VIMSHOTTARI_CYCLE[i].planet == planet) return i;
+    }
+    return 0;
+}
 
 // Nakshatra data with lords and degrees
 static const struct {
@@ -109,32 +123,73 @@ void KPSystem::initializeSubDivisions() {
 std::vector<KPSubDivision> KPSystem::calculateSubDivisions(const Nakshatra& nakshatra, int level) const {
     std::vector<KPSubDivision> divisions;
 
-    double nakshatraSpan = nakshatra.endDegree - nakshatra.startDegree;
-    double currentDegree = nakshatra.startDegree;
+    // Level 3 (Sub): 9 divisions of the nakshatra starting from nakshatra lord
+    int startLordIdx = getVimshottariIndex(nakshatra.lord);
+    double curDegree = nakshatra.startDegree;
+    double nakSpan = nakshatra.endDegree - nakshatra.startDegree;
 
-    // For each level, calculate the subdivisions
-    int numDivisions = (level == 3) ? 9 : (level == 4) ? 81 : 729; // 9^(level-2)
-
-    for (int i = 0; i < numDivisions; i++) {
+    std::vector<KPSubDivision> level3Divs;
+    for (int i = 0; i < 9; i++) {
+        int idx = (startLordIdx + i) % 9;
         KPSubDivision div;
-        div.level = level;
-
-        // Calculate the proportion for this subdivision
-        double proportion = 1.0 / numDivisions;
-        if (level == 3) {
-            // Use Vimshottari proportions for sub level
-            proportion = KP_SUB_PROPORTIONS[i % 9];
-        }
-
-        div.startDegree = currentDegree;
-        div.endDegree = currentDegree + (nakshatraSpan * proportion);
-        div.lord = KP_SUB_LORDS[i % 9];
-
-        divisions.push_back(div);
-        currentDegree = div.endDegree;
+        div.level = 3;
+        div.lord = VIMSHOTTARI_CYCLE[idx].planet;
+        div.startDegree = curDegree;
+        double span = nakSpan * (VIMSHOTTARI_CYCLE[idx].years / 120.0);
+        div.endDegree = (i == 8) ? nakshatra.endDegree : (curDegree + span);
+        curDegree = div.endDegree;
+        level3Divs.push_back(div);
     }
 
-    return divisions;
+    if (level == 3) {
+        return level3Divs;
+    }
+
+    // Level 4 (Sub-Sub): 81 divisions, dividing each level 3 div into 9 parts starting with sub lord
+    std::vector<KPSubDivision> level4Divs;
+    for (const auto& sub3 : level3Divs) {
+        int sub3LordIdx = getVimshottariIndex(sub3.lord);
+        double sub3Cur = sub3.startDegree;
+        double sub3Span = sub3.endDegree - sub3.startDegree;
+
+        for (int j = 0; j < 9; j++) {
+            int idx = (sub3LordIdx + j) % 9;
+            KPSubDivision div;
+            div.level = 4;
+            div.lord = VIMSHOTTARI_CYCLE[idx].planet;
+            div.startDegree = sub3Cur;
+            double span = sub3Span * (VIMSHOTTARI_CYCLE[idx].years / 120.0);
+            div.endDegree = (j == 8) ? sub3.endDegree : (sub3Cur + span);
+            sub3Cur = div.endDegree;
+            level4Divs.push_back(div);
+        }
+    }
+
+    if (level == 4) {
+        return level4Divs;
+    }
+
+    // Level 5 (Sub-Sub-Sub): 729 divisions, dividing each level 4 div into 9 parts starting with sub-sub lord
+    std::vector<KPSubDivision> level5Divs;
+    for (const auto& sub4 : level4Divs) {
+        int sub4LordIdx = getVimshottariIndex(sub4.lord);
+        double sub4Cur = sub4.startDegree;
+        double sub4Span = sub4.endDegree - sub4.startDegree;
+
+        for (int m = 0; m < 9; m++) {
+            int idx = (sub4LordIdx + m) % 9;
+            KPSubDivision div;
+            div.level = 5;
+            div.lord = VIMSHOTTARI_CYCLE[idx].planet;
+            div.startDegree = sub4Cur;
+            double span = sub4Span * (VIMSHOTTARI_CYCLE[idx].years / 120.0);
+            div.endDegree = (m == 8) ? sub4.endDegree : (sub4Cur + span);
+            sub4Cur = div.endDegree;
+            level5Divs.push_back(div);
+        }
+    }
+
+    return level5Divs;
 }
 
 Nakshatra KPSystem::findNakshatra(double longitude) const {
@@ -153,15 +208,23 @@ Nakshatra KPSystem::findNakshatra(double longitude) const {
 Planet KPSystem::findSubLord(double longitude, const Nakshatra& nakshatra, int level) const {
     longitude = normalizeKPLongitude(longitude);
 
+    int nakIdx = nakshatra.number - 1;
+    if (nakIdx < 0 || nakIdx >= static_cast<int>(subDivisions.size())) {
+        return nakshatra.lord;
+    }
+
     // Find appropriate subdivision
-    for (const auto& div : subDivisions[nakshatra.number - 1]) {
-        if (div.level == level && longitude >= div.startDegree && longitude < div.endDegree) {
-            return div.lord;
+    Planet lastFound = nakshatra.lord;
+    for (const auto& div : subDivisions[nakIdx]) {
+        if (div.level == level) {
+            lastFound = div.lord;
+            if (longitude >= div.startDegree && (longitude < div.endDegree || (div.endDegree >= nakshatra.endDegree - 1e-7 && longitude <= nakshatra.endDegree + 1e-7))) {
+                return div.lord;
+            }
         }
     }
 
-    // Default fallback
-    return KP_SUB_LORDS[0];
+    return lastFound;
 }
 
 KPPosition KPSystem::calculateKPPosition(double longitude) const {
@@ -450,7 +513,7 @@ std::string KPTransition::getDateString() const {
     // Convert Julian Day to calendar date
     int year, month, day, hour, minute;
     double second;
-    swe_jdet_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
+    swe_jdut1_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
 
     std::ostringstream oss;
     if (year <= 0) {

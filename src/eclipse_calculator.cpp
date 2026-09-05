@@ -16,7 +16,7 @@ std::string EclipseEvent::getDateString() const {
     double tjd_ut = julianDay;
     int year, month, day, hour, minute;
     double second;
-    swe_jdet_to_utc(tjd_ut, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
+    swe_jdut1_to_utc(tjd_ut, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
 
     std::ostringstream oss;
     oss << year << "-" << std::setfill('0') << std::setw(2) << month

@@ -220,18 +220,18 @@ void EasternChartDrawer::fillNorthIndianHouses(std::vector<std::string>& lines,
 
     std::vector<HousePosition> housePositions = {
         {0, 0, 0},      // Dummy for index 0
-        {2, 16, 11},    // House 1
-        {2, 30, 11},    // House 2
-        {2, 44, 11},    // House 3
-        {6, 44, 11},    // House 4
-        {10, 44, 11},   // House 5
-        {14, 44, 11},   // House 6
-        {14, 30, 11},   // House 7
-        {14, 16, 11},   // House 8
-        {14, 2, 11},    // House 9
-        {10, 2, 11},    // House 10
-        {6, 2, 11},     // House 11
-        {2, 2, 11}      // House 12
+        {3, 16, 11},    // House 1
+        {3, 30, 11},    // House 2
+        {3, 44, 11},    // House 3
+        {7, 44, 11},    // House 4
+        {11, 44, 11},   // House 5
+        {15, 44, 11},   // House 6
+        {15, 30, 11},   // House 7
+        {15, 16, 11},   // House 8
+        {15, 2, 11},    // House 9
+        {11, 2, 11},    // House 10
+        {7, 2, 11},     // House 11
+        {3, 2, 11}      // House 12
     };
 
     for (int house = 1; house <= 12; house++) {
@@ -261,18 +261,18 @@ void EasternChartDrawer::fillSouthIndianHouses(std::vector<std::string>& lines,
     // South Indian chart house positions in the 4x4 grid (Pisces top-left to Aquarius mid-left)
     std::vector<HousePosition> housePositions = {
         {0, 0, 0},      // Dummy for index 0
-        {2, 16, 11},    // House 1 (Aries)
-        {2, 30, 11},    // House 2 (Taurus)
-        {2, 44, 11},    // House 3 (Gemini)
-        {6, 44, 11},    // House 4 (Cancer)
-        {10, 44, 11},   // House 5 (Leo)
-        {14, 44, 11},   // House 6 (Virgo)
-        {14, 30, 11},   // House 7 (Libra)
-        {14, 16, 11},   // House 8 (Scorpio)
-        {14, 2, 11},    // House 9 (Sagittarius)
-        {10, 2, 11},    // House 10 (Capricorn)
-        {6, 2, 11},     // House 11 (Aquarius)
-        {2, 2, 11}      // House 12 (Pisces)
+        {3, 16, 11},    // House 1 (Aries)
+        {3, 30, 11},    // House 2 (Taurus)
+        {3, 44, 11},    // House 3 (Gemini)
+        {7, 44, 11},    // House 4 (Cancer)
+        {11, 44, 11},   // House 5 (Leo)
+        {15, 44, 11},   // House 6 (Virgo)
+        {15, 30, 11},   // House 7 (Libra)
+        {15, 16, 11},   // House 8 (Scorpio)
+        {15, 2, 11},    // House 9 (Sagittarius)
+        {11, 2, 11},    // House 10 (Capricorn)
+        {7, 2, 11},     // House 11 (Aquarius)
+        {3, 2, 11}      // House 12 (Pisces)
     };
 
     for (int house = 1; house <= 12; house++) {
@@ -302,18 +302,18 @@ void EasternChartDrawer::fillEastIndianHouses(std::vector<std::string>& lines,
     // East Indian chart house positions in 4x4 grid (House 1 at top-right, clockwise)
     std::vector<HousePosition> housePositions = {
         {0, 0, 0},      // Dummy for index 0
-        {2, 44, 11},    // House 1
-        {6, 44, 11},    // House 2
-        {10, 44, 11},   // House 3
-        {14, 44, 11},   // House 4
-        {14, 30, 11},   // House 5
-        {14, 16, 11},   // House 6
-        {14, 2, 11},    // House 7
-        {10, 2, 11},    // House 8
-        {6, 2, 11},     // House 9
-        {2, 2, 11},     // House 10
-        {2, 16, 11},    // House 11
-        {2, 30, 11}     // House 12
+        {3, 44, 11},    // House 1
+        {7, 44, 11},    // House 2
+        {11, 44, 11},   // House 3
+        {15, 44, 11},   // House 4
+        {15, 30, 11},   // House 5
+        {15, 16, 11},   // House 6
+        {15, 2, 11},    // House 7
+        {11, 2, 11},    // House 8
+        {7, 2, 11},     // House 9
+        {3, 2, 11},     // House 10
+        {3, 16, 11},    // House 11
+        {3, 30, 11}     // House 12
     };
 
     for (int house = 1; house <= 12; house++) {

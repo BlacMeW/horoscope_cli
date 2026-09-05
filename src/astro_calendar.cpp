@@ -876,9 +876,9 @@ double AstroCalendar::gregorianToJulianDay(int year, int month, int day) {
 }
 
 void AstroCalendar::julianDayToGregorian(double jd, int& year, int& month, int& day) {
-    int32 y, m, d, hour, min;
-    double sec;
-    swe_jdet_to_utc(jd, SE_GREG_CAL, &y, &m, &d, &hour, &min, &sec);
+    int32 y, m, d;
+    double ut;
+    swe_revjul(jd, SE_GREG_CAL, &y, &m, &d, &ut);
     year = y;
     month = m;
     day = d;

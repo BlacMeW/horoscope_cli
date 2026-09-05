@@ -338,7 +338,16 @@ ConjunctionEvent ConjunctionCalculator::calculateConjunction(Planet planet1, Pla
     swe_calc(julianDay, sweBody1, SEFLG_SWIEPH, pos1, serr);
     swe_calc(julianDay, sweBody2, SEFLG_SWIEPH, pos2, serr);
 
-    conjunction.longitude = (pos1[0] + pos2[0]) / 2.0;
+    double l1 = pos1[0];
+    double l2 = pos2[0];
+    if (std::abs(l1 - l2) > 180.0) {
+        if (l1 < l2) l1 += 360.0;
+        else l2 += 360.0;
+    }
+    double avgLong = (l1 + l2) / 2.0;
+    while (avgLong >= 360.0) avgLong -= 360.0;
+    while (avgLong < 0.0) avgLong += 360.0;
+    conjunction.longitude = avgLong;
     conjunction.sign = longitudeToSign(conjunction.longitude);
     conjunction.orb = calculateConjunctionOrb(planet1, planet2, julianDay);
 
@@ -379,7 +388,7 @@ ConjunctionType ConjunctionCalculator::determineConjunctionType(const std::vecto
 std::string ConjunctionEvent::getDateString() const {
     int year, month, day, hour, minute;
     double second;
-    swe_jdet_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
+    swe_jdut1_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
 
     std::stringstream ss;
     ss << year << "-" << std::setfill('0') << std::setw(2) << month << "-"
