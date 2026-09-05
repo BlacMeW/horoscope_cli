@@ -457,10 +457,10 @@ std::vector<KPTransition> KPSystem::findTransitions(const BirthData& fromDate, c
 
         // Check for transition
         if (!firstIteration && currentLord != previousLord) {
-            // Binary search (bisection) to locate exact transition timestamp
+            // Binary search (bisection) to locate exact transition timestamp with millisecond precision
             double lowJD = jd - step;
             double highJD = jd;
-            for (int iter = 0; iter < 8; ++iter) {
+            for (int iter = 0; iter < 16; ++iter) {
                 double midJD = (lowJD + highJD) * 0.5;
                 double midLon = calculatePlanetLongitudeForJD(midJD, planet);
                 if (midLon >= 0) {
@@ -540,27 +540,27 @@ std::string KPSystem::generateTransitionTable(const std::vector<KPTransition>& t
 
     // Header
     table << std::left
-          << std::setw(18) << "Date & Time"
-          << std::setw(14) << "Planet"
+          << std::setw(25) << "Date & Time (ms)"
+          << std::setw(12) << "Planet"
           << std::setw(10) << "Level"
-          << std::setw(14) << "From Lord"
-          << std::setw(14) << "To Lord"
+          << std::setw(13) << "From Lord"
+          << std::setw(13) << "To Lord"
           << "Description\n";
 
-    table << std::string(90, '-') << "\n";
+    table << std::string(105, '-') << "\n";
 
     // Transition data
     for (const auto& trans : transitions) {
         table << std::left
-              << std::setw(18) << trans.getDateString()
-              << std::setw(14) << planetToString(trans.planet)
+              << std::setw(25) << trans.getDateString()
+              << std::setw(12) << planetToString(trans.planet)
               << std::setw(10) << kpLevelToString(trans.level)
-              << std::setw(14) << planetToString(trans.fromLord)
-              << std::setw(14) << planetToString(trans.toLord)
+              << std::setw(13) << planetToString(trans.fromLord)
+              << std::setw(13) << planetToString(trans.toLord)
               << trans.description << "\n";
     }
 
-    table << std::string(90, '-') << "\n";
+    table << std::string(105, '-') << "\n";
     table << "Total transitions found: " << transitions.size() << "\n";
 
     return table.str();
@@ -611,21 +611,31 @@ KPLevel stringToKPLevel(const std::string& levelStr) {
 }
 
 std::string KPTransition::getDateString() const {
-    // Convert Julian Day to calendar date
+    // Convert Julian Day to calendar date with seconds and milliseconds
     int year, month, day, hour, minute;
     double second;
     swe_jdut1_to_utc(julianDay, SE_GREG_CAL, &year, &month, &day, &hour, &minute, &second);
 
+    int isec = static_cast<int>(second);
+    if (isec < 0) isec = 0;
+    if (isec > 59) isec = 59;
+    int millis = static_cast<int>((second - isec) * 1000.0);
+    if (millis < 0) millis = 0;
+    if (millis > 999) millis = 999;
+
     std::ostringstream oss;
+    oss << std::setfill('0');
     if (year <= 0) {
         int bcYear = 1 - year;
-        oss << bcYear << " BC-" << std::setfill('0') << std::setw(2) << month
+        oss << bcYear << " BC-" << std::setw(2) << month
             << "-" << std::setw(2) << day << " "
-            << std::setw(2) << hour << ":" << std::setw(2) << minute;
+            << std::setw(2) << hour << ":" << std::setw(2) << minute << ":"
+            << std::setw(2) << isec << "." << std::setw(3) << millis;
     } else {
-        oss << year << "-" << std::setfill('0') << std::setw(2) << month
+        oss << year << "-" << std::setw(2) << month
             << "-" << std::setw(2) << day << " "
-            << std::setw(2) << hour << ":" << std::setw(2) << minute;
+            << std::setw(2) << hour << ":" << std::setw(2) << minute << ":"
+            << std::setw(2) << isec << "." << std::setw(3) << millis;
     }
     return oss.str();
 }
