@@ -65,6 +65,9 @@ const ushort cmEphemerisDialog  = 270;
 const ushort cmCalendarDialog   = 271;
 const ushort cmMonthlyDialog    = 272;
 const ushort cmTransitDialog    = 273;
+const ushort cmMyanmarEnglishConvert = 274;
+const ushort cmAncientAstronomy      = 275;
+const ushort cmVanWijkTables         = 276;
 
 class HoroscopeTuiApp : public TApplication {
 public:
@@ -118,6 +121,9 @@ public:
     void showEphemerisTransits();
     void showAstroCalendarDay(bool prompt = true);
     void showAstroCalendarMonth(bool prompt = true);
+    void showMyanmarEnglishConverterDialog();
+    void showAncientAstronomy();
+    void showVanWijkTablesDialog();
 
     // Help Dialogs
     void showHelpAbout();

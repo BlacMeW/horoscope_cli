@@ -542,23 +542,23 @@ void AstroCalendar::calculateDayQuality(AstroCalendarDay& day) const {
     if (day.hasMyanmarData) {
         if (day.myanmarData.isYatyaza) {
             score += 2;
-            day.astrologicalRecommendations.push_back("Yatyaza (ရက်ရာဇာ) - highly auspicious for business, weddings, and new beginnings");
+            day.astrologicalRecommendations.push_back("Yatyaza - highly auspicious for business, weddings, and new beginnings");
         }
         if (day.myanmarData.isPyathada || day.myanmarData.isAfternoonPyathada) {
             score -= 2;
-            day.astrologicalRecommendations.push_back("Pyathada (ပြဿဒါး) - inauspicious, postpone new ventures");
+            day.astrologicalRecommendations.push_back("Pyathada - inauspicious, postpone new ventures");
         }
         if (day.myanmarData.isThamanyo) {
             score -= 1;
-            day.astrologicalRecommendations.push_back("Thamanyo (သမားညို) - inauspicious, exercise caution");
+            day.astrologicalRecommendations.push_back("Thamanyo - inauspicious, exercise caution");
         }
         if (day.myanmarData.isAmyeittasote) {
             score += 2;
-            day.astrologicalRecommendations.push_back("Amyeittasote (အမြိတ္တစုတ်) - auspicious day");
+            day.astrologicalRecommendations.push_back("Amyeittasote - auspicious day");
         }
         if (day.myanmarData.isSabbath) {
             score += 1;
-            day.astrologicalRecommendations.push_back("Buddhist Sabbath (ဥပုသ်နေ့) - spiritual practices and merit favored");
+            day.astrologicalRecommendations.push_back("Buddhist Sabbath - spiritual practices and merit favored");
         }
     }
 
@@ -633,12 +633,12 @@ std::string AstroCalendar::generateDayCalendar(const AstroCalendarDay& day, cons
         ss << "   Month: " << monthName << "\n";
         ss << "   Day: " << day.myanmarData.dayOfMonth << "\n";
         ss << "   Moon Phase: " << moonPhaseName << "\n";
-        if (day.myanmarData.isSabbath) ss << "   • Buddhist Sabbath (ဥပုသ်နေ့)\n";
-        if (day.myanmarData.isYatyaza) ss << "   • Yatyaza (ရက်ရာဇာ မင်္ဂလာအခါ)\n";
-        if (day.myanmarData.isPyathada) ss << "   • Pyathada (ပြဿဒါး ရှောင်ကြဉ်ရမည့်ရက်)\n";
-        if (day.myanmarData.isAfternoonPyathada) ss << "   • Afternoon Pyathada (မွန်းလွဲပြဿဒါး)\n";
-        if (day.myanmarData.isThamanyo) ss << "   • Thamanyo (သမားညို)\n";
-        if (day.myanmarData.isAmyeittasote) ss << "   • Amyeittasote (အမြိတ္တစုတ်)\n";
+        if (day.myanmarData.isSabbath) ss << "   • Buddhist Sabbath Day\n";
+        if (day.myanmarData.isYatyaza) ss << "   • Yatyaza (Auspicious Day)\n";
+        if (day.myanmarData.isPyathada) ss << "   • Pyathada (Inauspicious Day)\n";
+        if (day.myanmarData.isAfternoonPyathada) ss << "   • Afternoon Pyathada (Inauspicious Afternoon)\n";
+        if (day.myanmarData.isThamanyo) ss << "   • Thamanyo (Inauspicious Day)\n";
+        if (day.myanmarData.isAmyeittasote) ss << "   • Amyeittasote (Auspicious Day)\n";
         ss << "\n";
     }
 
@@ -1688,20 +1688,20 @@ std::string AstroCalendar::generateProfessionalDayCalendar(const AstroCalendarDa
         std::string nakhatName = myanmarCalendar ? myanmarCalendar->getNakhatName(day.myanmarData.nakhat) : "";
         std::string nagahleName = myanmarCalendar ? myanmarCalendar->getNagahleDirectionName(day.myanmarData.nagahle) : "";
 
-        ss << formatTwoCol("Calendar System", "🇲🇲 Myanmar Calendar (မြန်မာပြက္ခဒိန်)");
+        ss << formatTwoCol("Calendar System", "🇲🇲 Myanmar Calendar");
         ss << "├─────────────────┼─────────────────────────────────────────────────────────────────────┤\n";
         ss << formatTwoCol("Myanmar Year:", std::to_string(day.myanmarData.myanmarYear) + " ME (" + std::to_string(day.myanmarData.sasanaYear) + " SE)");
         ss << formatTwoCol("Month & Day:", monthName + ", Day " + std::to_string(day.myanmarData.dayOfMonth));
         ss << formatTwoCol("Moon Phase:", moonPhaseName);
 
         std::string myAstro;
-        if (day.myanmarData.isYatyaza) myAstro += "Yatyaza (ရက်ရာဇာ) ";
-        if (day.myanmarData.isAmyeittasote) myAstro += "Amyeittasote (အမြိတ္တစုတ်) ";
-        if (day.myanmarData.isPyathada) myAstro += "Pyathada (ပြဿဒါး) ";
-        if (day.myanmarData.isAfternoonPyathada) myAstro += "Afternoon Pyathada (မွန်းလွဲပြဿဒါး) ";
-        if (day.myanmarData.isThamanyo) myAstro += "Thamanyo (သမားညို) ";
-        if (day.myanmarData.isSabbath) myAstro += "Sabbath (ဥပုသ်နေ့) ";
-        if (day.myanmarData.isSabbathEve) myAstro += "Sabbath Eve (အဖိတ်နေ့) ";
+        if (day.myanmarData.isYatyaza) myAstro += "Yatyaza ";
+        if (day.myanmarData.isAmyeittasote) myAstro += "Amyeittasote ";
+        if (day.myanmarData.isPyathada) myAstro += "Pyathada ";
+        if (day.myanmarData.isAfternoonPyathada) myAstro += "Afternoon Pyathada ";
+        if (day.myanmarData.isThamanyo) myAstro += "Thamanyo ";
+        if (day.myanmarData.isSabbath) myAstro += "Sabbath ";
+        if (day.myanmarData.isSabbathEve) myAstro += "Sabbath Eve ";
         if (!myAstro.empty()) {
             ss << formatTwoCol("Astrological:", myAstro);
         }

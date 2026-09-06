@@ -52,6 +52,8 @@ set(SOURCES
     src/professional_table.cpp
     src/astro_calendar.cpp
     src/chinese_calendar.cpp
+    src/ancient_astronomy.cpp
+    src/van_wijk_tables.cpp
     src/tui/chart_view.cpp
     src/tui/horoscope_tui.cpp
     ${SWISSEPH_SOURCES}
@@ -59,6 +61,8 @@ set(SOURCES
 
 # Headers
 set(HEADERS
+    include/ancient_astronomy.h
+    include/van_wijk_tables.h
     include/horoscope_calculator.h
     include/planet_calculator.h
     include/house_calculator.h

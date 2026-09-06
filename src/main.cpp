@@ -15,6 +15,8 @@
 #include "hindu_monthly_calendar.h"
 #include "chinese_calendar.h"
 #include "astro_calendar.h"
+#include "ancient_astronomy.h"
+#include "van_wijk_tables.h"
 #include "professional_table.h"
 #include "swephexp.h"
 #include "tui/horoscope_tui.h"
@@ -255,6 +257,28 @@ struct CommandLineArgs {
     bool showAstroCalendarMonthly = false;
     std::string astroCalendarFormat = "calendar";
     bool showPlanetaryTransitions = false;
+
+    // Myanmar <-> English Bidirectional Converter & Ancient Astronomy options
+    bool showGregorianToMyanmar = false;
+    std::string gregorianToMyanmarDate = "";
+    bool showMyanmarToGregorian = false;
+    int myanmarToGregorianYear = 0;
+    int myanmarToGregorianMonth = 0;
+    int myanmarToGregorianPhase = 0;
+    int myanmarToGregorianDay = 0;
+    bool showAncientAstronomy = false;
+    std::string ancientAstronomyDate = "";
+
+    // Van Wijk (1938) Decimal Reduction Tables options
+    bool showVanWijkReduce = false;
+    int vanWijkKY = 0;
+    int vanWijkMasa = 1;
+    int vanWijkPaksha = 0;
+    int vanWijkTithi = 1;
+    int vanWijkWeekday = -1;
+    bool showVanWijkConvert = false;
+    std::string vanWijkConvertDate = "";
+    std::string vanWijkConvertTime = "";
 
     // NEW ENHANCED FEATURES 🚀
 
@@ -2195,6 +2219,38 @@ bool parseCommandLine(int argc, char* argv[], CommandLineArgs& args) {
         } else if (arg == "--astrological-days-only") {
             args.showAstrologicalDaysOnly = true;
 
+        // Myanmar <-> English Converter options
+        } else if (arg == "--gregorian-to-myanmar" && i + 1 < argc) {
+            args.showGregorianToMyanmar = true;
+            args.gregorianToMyanmarDate = argv[++i];
+        } else if (arg == "--myanmar-to-gregorian" && i + 4 < argc) {
+            args.showMyanmarToGregorian = true;
+            args.myanmarToGregorianYear = std::stoi(argv[++i]);
+            args.myanmarToGregorianMonth = std::stoi(argv[++i]);
+            args.myanmarToGregorianPhase = std::stoi(argv[++i]);
+            args.myanmarToGregorianDay = std::stoi(argv[++i]);
+        } else if (arg == "--ancient-astronomy") {
+            args.showAncientAstronomy = true;
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+                args.ancientAstronomyDate = argv[++i];
+            }
+        // Van Wijk (1938) Decimal Reduction Tables options
+        } else if (arg == "--van-wijk-reduce" && i + 4 < argc) {
+            args.showVanWijkReduce = true;
+            args.vanWijkKY = std::stoi(argv[++i]);
+            args.vanWijkMasa = std::stoi(argv[++i]);
+            args.vanWijkPaksha = std::stoi(argv[++i]);
+            args.vanWijkTithi = std::stoi(argv[++i]);
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+                args.vanWijkWeekday = std::stoi(argv[++i]);
+            }
+        } else if (arg == "--van-wijk-convert" && i + 1 < argc) {
+            args.showVanWijkConvert = true;
+            args.vanWijkConvertDate = argv[++i];
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+                args.vanWijkConvertTime = argv[++i];
+            }
+
         // Myanmar Calendar Search options
         } else if (arg == "--myanmar-search" && i + 2 < argc) {
             args.showMyanmarSearch = true;
@@ -2380,6 +2436,12 @@ bool validateArgs(const CommandLineArgs& args) {
 
     // Hindu monthly calendar can work without location data (uses default coordinates)
     if (args.showHinduMonthlyCalendar) {
+        return true;
+    }
+
+    // Myanmar <-> English conversion, Ancient Astronomy, and Van Wijk Decimal Tables do not require birth data
+    if (args.showGregorianToMyanmar || args.showMyanmarToGregorian || args.showAncientAstronomy ||
+        args.showVanWijkReduce || args.showVanWijkConvert) {
         return true;
     }
 
@@ -4370,6 +4432,90 @@ int main(int argc, char* argv[]) {
         }
 
         return 0; // Exit after Hindu monthly calendar
+    }
+
+    // Handle Gregorian -> Myanmar Bidirectional Conversion
+    if (args.showGregorianToMyanmar) {
+        MyanmarCalendar cal;
+        if (!cal.initialize()) {
+            std::cerr << "Error: Failed to initialize Myanmar Calendar system: " << cal.getLastError() << std::endl;
+            return 1;
+        }
+        int gy = 2026, gm = 1, gd = 1;
+        sscanf(args.gregorianToMyanmarDate.c_str(), "%d-%d-%d", &gy, &gm, &gd);
+        MyanmarCalendarData data;
+        if (cal.gregorianToMyanmar(gy, gm, gd, data)) {
+            std::cout << MyanmarCalendar::formatBidirectionalConversion(data, gy, gm, gd) << std::endl;
+        } else {
+            std::cerr << "Error: Conversion failed for " << args.gregorianToMyanmarDate << std::endl;
+            return 1;
+        }
+        return 0;
+    }
+
+    // Handle Myanmar -> Gregorian Bidirectional Conversion
+    if (args.showMyanmarToGregorian) {
+        MyanmarCalendar cal;
+        if (!cal.initialize()) {
+            std::cerr << "Error: Failed to initialize Myanmar Calendar system: " << cal.getLastError() << std::endl;
+            return 1;
+        }
+        int gy = 0, gm = 0, gd = 0;
+        MyanmarCalendarData data;
+        if (cal.myanmarToGregorian(args.myanmarToGregorianYear, args.myanmarToGregorianMonth,
+                                   args.myanmarToGregorianPhase, args.myanmarToGregorianDay,
+                                   gy, gm, gd, &data)) {
+            std::cout << MyanmarCalendar::formatBidirectionalConversion(data, gy, gm, gd) << std::endl;
+        } else {
+            std::cerr << "Error: Conversion failed for Myanmar Date ME " << args.myanmarToGregorianYear << std::endl;
+            return 1;
+        }
+        return 0;
+    }
+
+    // Handle Ancient Astronomy (Babylonian & Surya Siddhanta comparison)
+    if (args.showAncientAstronomy) {
+        int y = 2026, m = 1, d = 1;
+        if (!args.ancientAstronomyDate.empty()) {
+            sscanf(args.ancientAstronomyDate.c_str(), "%d-%d-%d", &y, &m, &d);
+        } else if (!args.date.empty()) {
+            parseDate(args.date, y, m, d);
+        }
+        double hour = 12.0;
+        if (!args.time.empty()) {
+            int h = 0, mn = 0, s = 0;
+            if (parseTime(args.time, h, mn, s)) {
+                hour = h + mn / 60.0 + s / 3600.0;
+            }
+        }
+        double jd = swe_julday(y, m, d, hour, SE_GREG_CAL);
+        std::string report = SuryaSiddhantaCalculator::generateComparisonReport(jd, y, m, d);
+        std::cout << report << std::endl;
+        return 0;
+    }
+
+    // Handle Van Wijk Hindu Date Reduction
+    if (args.showVanWijkReduce) {
+        VanWijkReductionResult res = VanWijkReductionEngine::reduceHinduDate(
+            args.vanWijkKY, args.vanWijkMasa, args.vanWijkPaksha, args.vanWijkTithi, args.vanWijkWeekday);
+        std::cout << VanWijkReductionEngine::formatReductionReport(res) << std::endl;
+        return 0;
+    }
+
+    // Handle Van Wijk Western -> Hindu Conversion
+    if (args.showVanWijkConvert) {
+        int y = 2026, m = 1, d = 1;
+        sscanf(args.vanWijkConvertDate.c_str(), "%d-%d-%d", &y, &m, &d);
+        double hour = 6.0;
+        if (!args.vanWijkConvertTime.empty()) {
+            int h = 0, mn = 0, s = 0;
+            if (parseTime(args.vanWijkConvertTime, h, mn, s)) {
+                hour = h + mn / 60.0 + s / 3600.0;
+            }
+        }
+        VanWijkWesternToHinduResult res = VanWijkReductionEngine::convertWesternToHindu(y, m, d, hour);
+        std::cout << VanWijkReductionEngine::formatWesternToHinduReport(res) << std::endl;
+        return 0;
     }
 
     // Parse date and time (required for all other functions)

@@ -73,6 +73,21 @@ enum class NagahleDirection {
     SOUTH = 3      // South
 };
 
+enum class MyanmarAstronomicalTradition {
+    THANDEIKTA = 0, // Thandeikta (default, Konbaung reform)
+    MAKARANTA = 1   // Classical Makaranta
+};
+
+struct MyanmarThingyanDetails {
+    double akyaJd = 0.0;
+    double atetJd = 0.0;
+    int akyoYear = 0, akyoMonth = 0, akyoDay = 0;
+    int akyaYear = 0, akyaMonth = 0, akyaDay = 0;
+    int atetYear = 0, atetMonth = 0, atetDay = 0;
+    int newYearYear = 0, newYearMonth = 0, newYearDay = 0;
+    std::vector<std::tuple<int, int, int>> akyatDates;
+};
+
 // Myanmar calendar data structure
 struct MyanmarCalendarData {
     // Basic date information
@@ -118,6 +133,17 @@ struct MyanmarCalendarData {
     // Julian day information
     double julianDay;              // Julian day number
     long fullMoonJulianDay;       // Full moon day for watat calculation
+
+    // Traditional Myanmar Astronomical Coordinates (from geolib / Makaranta / Thandeikta)
+    long aharganaDays = 0;         // Days elapsed since ME epoch (Ahargana)
+    double sunMeanLonDeg = 0.0;    // Madhyama Ravi
+    double sunTrueLonDeg = 0.0;    // Spashta Ravi
+    double moonTrueLonDeg = 0.0;   // Spashta Chandra
+    double thitjaDeg = 0.0;        // Thitja (Sun anomaly from Aries)
+    double avamanna = 0.0;         // Avama remainder
+
+    // Thingyan festival details (from geolib)
+    MyanmarThingyanDetails thingyan;
 
     // Formatting methods
     std::string getFormattedDate() const;
@@ -187,9 +213,12 @@ public:
     // Initialize the calendar system
     bool initialize();
 
-    // Main calculation method (yan9a/mmcal interface)
+    // Main calculation method (yan9a/mmcal & geolib interface)
     MyanmarCalendarData calculateMyanmarCalendar(const BirthData& birthData) const;
-    MyanmarCalendarData calculateMyanmarCalendar(double julianDay) const;
+    MyanmarCalendarData calculateMyanmarCalendar(double julianDay,
+                                                 MyanmarAstronomicalTradition tradition = MyanmarAstronomicalTradition::THANDEIKTA) const;
+    static MyanmarThingyanDetails calculateThingyan(long my);
+    static std::vector<std::string> calculateHolidays(long my, long mm, long md, long mp, long jdn);
 
     // Methods for main.cpp compatibility
     MyanmarCalendarData calculateMyanmarDate(const BirthData& birthData) const;
@@ -197,6 +226,13 @@ public:
                                                               const std::string& toDate) const;
     std::string generateMyanmarCalendarTable(const MyanmarCalendarData& data) const;
     std::string generateMyanmarCalendarTable(const std::vector<MyanmarCalendarData>& dataList) const;
+
+    // Bidirectional Conversion Methods (yan9a/mmcal & geolib)
+    bool gregorianToMyanmar(int gy, int gm, int gd, MyanmarCalendarData& result) const;
+    bool myanmarToGregorian(int my, int mm, int moonPhase, int fortnightDay, int& gy, int& gm, int& gd, MyanmarCalendarData* resultData = nullptr) const;
+    bool myanmarToGregorianByDay(int my, int mm, int md, int& gy, int& gm, int& gd, MyanmarCalendarData* resultData = nullptr) const;
+    static long calculateDayOfMonth(long fortnightDay, long moonPhase, long mm, long myt);
+    static std::string formatBidirectionalConversion(const MyanmarCalendarData& data, int gy, int gm, int gd);
 
     // Bulk calculations
     std::vector<MyanmarCalendarData> calculateMyanmarCalendarRange(const std::string& fromDate,
@@ -217,13 +253,13 @@ public:
     std::string formatMyanmarDate(double jd, const std::string& format = "&y &M &P &ff", double tz = 0) const;
 
     // Name conversion utilities
-    std::string getMyanmarMonthName(MyanmarMonth month) const;
-    std::string getMyanmarWeekdayName(MyanmarWeekday weekday) const;
-    std::string getMahaboteName(Mahabote mahabote) const;
-    std::string getNakhatName(Nakhat nakhat) const;
-    std::string getNagahleDirectionName(NagahleDirection direction) const;
-    std::string getMoonPhaseName(MyanmarMoonPhase phase) const;
-    std::string getYearTypeName(MyanmarYearType type) const;
+    static std::string getMyanmarMonthName(MyanmarMonth month);
+    static std::string getMyanmarWeekdayName(MyanmarWeekday weekday);
+    static std::string getMahaboteName(Mahabote mahabote);
+    static std::string getNakhatName(Nakhat nakhat);
+    static std::string getNagahleDirectionName(NagahleDirection direction);
+    static std::string getMoonPhaseName(MyanmarMoonPhase phase);
+    static std::string getYearTypeName(MyanmarYearType type);
 
     // Error handling
     std::string getLastError() const { return lastError; }

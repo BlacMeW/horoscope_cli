@@ -13,6 +13,8 @@
 #include "eclipse_calculator.h"
 #include "ephemeris_table.h"
 #include "astro_calendar.h"
+#include "ancient_astronomy.h"
+#include "van_wijk_tables.h"
 #include "location_manager.h"
 #include "swephexp.h"
 
@@ -24,7 +26,7 @@
 namespace AstroTui {
 
 // 135-byte theme palettes for Turbo Vision
-// 1. Turbo C++ 3.0 IDE Classic: Authentic Borland Deep Dark Navy Blue (ရိုးရိုး အပြာရင့်) editor & desktop, light gray menu/status
+// 1. Turbo C++ 3.0 IDE Classic: Authentic Borland Deep Dark Navy Blue editor & desktop, light gray menu/status
 static const char cpTurboCpp[] =
     "\x11\x70\x78\x74\x1F\x18\x1E\x17\x1F\x1E\x1F\x17\x1F\x10\x1F" /* 1-15: Desktop (solid dark blue), StatusLine, MenuBar, BlueWindow */
     "\x17\x1F\x1E\x1F\x1F\x10\x1F\x1F\x70\x7F\x7E\x1F\x1F\x70\x7F\x7E" /* 16-31: Win2 (Deep Blue), GrayWin */
@@ -125,10 +127,13 @@ TMenuBar* HoroscopeTuiApp::initMenuBar(TRect r) {
             *new TMenuItem("~H~indu Daily Panchang", cmHinduPanchang, kbNoKey) +
             *new TMenuItem("Hindu Monthly ~P~anchang Calendar", cmHinduMonth, kbNoKey) +
             newLine() +
-            *new TMenuItem("M~y~anmar Daily Calendar (မြန်မာပြက္ခဒိန်)", cmMyanmarCalendar, kbNoKey) +
+            *new TMenuItem("M~y~anmar Daily Calendar", cmMyanmarCalendar, kbNoKey) +
             *new TMenuItem("Myanmar Mo~n~thly Calendar", cmMyanmarMonth, kbNoKey) +
+            *new TMenuItem("Myanmar <-> English Date ~C~onverter...", cmMyanmarEnglishConvert, kbNoKey) +
+            *new TMenuItem("~B~abylonian & Surya Siddhanta Models...", cmAncientAstronomy, kbNoKey) +
+            *new TMenuItem("Van Wijk Decimal ~T~ables (Hindu Reduction)...", cmVanWijkTables, kbNoKey) +
             newLine() +
-            *new TMenuItem("Chinese ~S~exagenary Calendar (中国农历)", cmChineseCalendar, kbNoKey) +
+            *new TMenuItem("Chinese ~S~exagenary Calendar", cmChineseCalendar, kbNoKey) +
         *new TSubMenu("~A~nalysis", kbAltA) +
             *new TMenuItem("Planetary ~A~spect Grid", cmAspectGrid, kbCtrlA, hcNoContext, "Ctrl+A") +
             *new TMenuItem("Planetary ~C~onjunctions (1 Year)", cmConjunctions, kbNoKey) +
@@ -240,6 +245,18 @@ void HoroscopeTuiApp::handleEvent(TEvent& event) {
                 break;
             case cmMyanmarMonth:
                 showMyanmarMonth();
+                clearEvent(event);
+                break;
+            case cmMyanmarEnglishConvert:
+                showMyanmarEnglishConverterDialog();
+                clearEvent(event);
+                break;
+            case cmAncientAstronomy:
+                showAncientAstronomy();
+                clearEvent(event);
+                break;
+            case cmVanWijkTables:
+                showVanWijkTablesDialog();
                 clearEvent(event);
                 break;
             case cmChineseCalendar:
@@ -824,8 +841,8 @@ void HoroscopeTuiApp::showCalendarQueryDialog() {
 
     TSItem* calItems = new TSItem("Unified Astro-Calendar (Daily View)",
                        new TSItem("Hindu Daily Panchanga (Panchang Details)",
-                       new TSItem("Myanmar Daily Calendar (မြန်မာပြက္ခဒိန်)",
-                       new TSItem("Chinese Sexagenary Calendar (中国农历)", nullptr))));
+                       new TSItem("Myanmar Daily Calendar",
+                       new TSItem("Chinese Sexagenary Calendar", nullptr))));
     TRadioButtons* rbCal = new TRadioButtons(TRect(26, 8, 62, 12), calItems);
     ushort calVal = 0;
     rbCal->setData(&calVal);
@@ -1031,13 +1048,13 @@ void HoroscopeTuiApp::showHinduMonth(bool prompt) {
 }
 
 void HoroscopeTuiApp::showMyanmarCalendar(bool prompt) {
-    if (prompt && !promptDateLocation("Myanmar Calendar - Date Query (မြန်မာပြက္ခဒိန်)", currentBirthData, currentCityName, false)) return;
+    if (prompt && !promptDateLocation("Myanmar Calendar - Date Query", currentBirthData, currentCityName, false)) return;
 
     Astro::MyanmarCalendar myanmar;
     if (myanmar.initialize()) {
         Astro::MyanmarCalendarData d = myanmar.calculateMyanmarCalendar(currentBirthData);
-        std::string text = myanmar.generateMyanmarCalendarTable(d);
-        openWindow("Myanmar Daily Calendar (မြန်မာပြက္ခဒိန်)", text);
+        std::string text = Astro::MyanmarCalendar::formatBidirectionalConversion(d, currentBirthData.year, currentBirthData.month, currentBirthData.day);
+        openWindow("Myanmar Daily Calendar (Traditional Geolib System)", text);
     } else {
         messageBox(mfError | mfOKButton, "Failed to initialize Myanmar Calendar.");
     }
@@ -1045,7 +1062,7 @@ void HoroscopeTuiApp::showMyanmarCalendar(bool prompt) {
 
 void HoroscopeTuiApp::showMyanmarMonth(bool prompt) {
     int y = currentBirthData.year, m = currentBirthData.month;
-    if (prompt && !promptYearMonth("Myanmar Monthly Calendar Query (လဆန်း/လဆုတ် ဥပုသ်နေ့များ)", y, m)) return;
+    if (prompt && !promptYearMonth("Myanmar Monthly Calendar Query", y, m)) return;
     currentBirthData.year = y; currentBirthData.month = m;
 
     Astro::MyanmarMonthlyCalendar monthly;
@@ -1054,15 +1071,250 @@ void HoroscopeTuiApp::showMyanmarMonth(bool prompt) {
                                                currentBirthData.latitude, currentBirthData.longitude);
         std::string text = monthly.generateTraditionalMyanmarCalendar(data);
         std::ostringstream title;
-        title << "Myanmar Monthly Calendar (" << y << "-" << std::setw(2) << std::setfill('0') << m << ") - မြန်မာပြက္ခဒိန်";
+        title << "Myanmar Monthly Calendar (" << y << "-" << std::setw(2) << std::setfill('0') << m << ")";
         openWindow(title.str(), text);
     } else {
         messageBox(mfError | mfOKButton, "Failed to initialize Myanmar Monthly Calendar.");
     }
 }
 
+void HoroscopeTuiApp::showMyanmarEnglishConverterDialog() {
+    TDialog* d = new TDialog(TRect(10, 2, 74, 23), "Myanmar <-> English Date Converter");
+
+    // Direction Radio Buttons
+    TSItem* dirItems = new TSItem("Gregorian (Western) -> Myanmar Lunisolar",
+                       new TSItem("Myanmar Lunisolar -> Gregorian (Western)", nullptr));
+    TRadioButtons* rbDir = new TRadioButtons(TRect(4, 2, 60, 4), dirItems);
+    ushort dirVal = 0;
+    rbDir->setData(&dirVal);
+    d->insert(rbDir);
+
+    // Gregorian inputs: Year, Month, Day
+    char gYearBuf[16], gMonthBuf[16], gDayBuf[16];
+    snprintf(gYearBuf, sizeof(gYearBuf), "%d", currentBirthData.year);
+    snprintf(gMonthBuf, sizeof(gMonthBuf), "%d", currentBirthData.month);
+    snprintf(gDayBuf, sizeof(gDayBuf), "%d", currentBirthData.day);
+
+    d->insert(new TLabel(TRect(4, 5, 60, 6), "[Gregorian Input (When converting West -> Myanmar)]", nullptr));
+    TInputLine* inGYear = new TInputLine(TRect(16, 6, 26, 7), 6);
+    inGYear->setData(gYearBuf);
+    d->insert(inGYear);
+    d->insert(new TLabel(TRect(4, 6, 15, 7), "CE ~Y~ear:", inGYear));
+
+    TInputLine* inGMonth = new TInputLine(TRect(36, 6, 44, 7), 4);
+    inGMonth->setData(gMonthBuf);
+    d->insert(inGMonth);
+    d->insert(new TLabel(TRect(28, 6, 35, 7), "~M~onth:", inGMonth));
+
+    TInputLine* inGDay = new TInputLine(TRect(52, 6, 60, 7), 4);
+    inGDay->setData(gDayBuf);
+    d->insert(inGDay);
+    d->insert(new TLabel(TRect(46, 6, 51, 7), "~D~ay:", inGDay));
+
+    // Myanmar inputs: ME Year, Month (1-12), Phase (0=Waxing, 1=Full Moon, 2=Waning, 3=New Moon), Fortnight Day (1-15)
+    char mYearBuf[16] = "1388";
+    char mMonthBuf[16] = "5"; // Wagaung
+    char mDayBuf[16] = "8";
+
+    d->insert(new TLabel(TRect(4, 8, 60, 9), "[Myanmar Input (When converting Myanmar -> West)]", nullptr));
+    TInputLine* inMYear = new TInputLine(TRect(16, 9, 26, 10), 6);
+    inMYear->setData(mYearBuf);
+    d->insert(inMYear);
+    d->insert(new TLabel(TRect(4, 9, 15, 10), "ME Y~e~ar:", inMYear));
+
+    TInputLine* inMMonth = new TInputLine(TRect(48, 9, 58, 10), 4);
+    inMMonth->setData(mMonthBuf);
+    d->insert(inMMonth);
+    d->insert(new TLabel(TRect(28, 9, 47, 10), "Mo~n~th (1-12/4=Waso):", inMMonth));
+
+    TSItem* phaseItems = new TSItem("Waxing (1-14)",
+                         new TSItem("Full Moon (15)",
+                         new TSItem("Waning (1-14)",
+                         new TSItem("New Moon (14/15)", nullptr))));
+    TRadioButtons* rbPhase = new TRadioButtons(TRect(16, 11, 42, 15), phaseItems);
+    ushort phaseVal = 2; // Waning default
+    rbPhase->setData(&phaseVal);
+    d->insert(rbPhase);
+    d->insert(new TLabel(TRect(4, 11, 15, 12), "~P~hase:", rbPhase));
+
+    TInputLine* inMDay = new TInputLine(TRect(54, 12, 62, 13), 4);
+    inMDay->setData(mDayBuf);
+    d->insert(inMDay);
+    d->insert(new TLabel(TRect(44, 12, 53, 13), "F~o~rtnight:", inMDay));
+
+    d->insert(new TButton(TRect(16, 18, 30, 20), "~C~onvert", cmOK, bfDefault));
+    d->insert(new TButton(TRect(36, 18, 48, 20), "Cancel", cmCancel, bfNormal));
+
+    if (deskTop->execView(d) == cmOK) {
+        rbDir->getData(&dirVal);
+        Astro::MyanmarCalendar cal;
+        if (!cal.initialize()) {
+            messageBox(mfError | mfOKButton, "Failed to initialize Myanmar Calendar.");
+            destroy(d);
+            return;
+        }
+
+        Astro::MyanmarCalendarData data;
+        int gy = 0, gm = 0, gd = 0;
+
+        if (dirVal == 0) { // West -> Myanmar
+            inGYear->getData(gYearBuf);
+            inGMonth->getData(gMonthBuf);
+            inGDay->getData(gDayBuf);
+            gy = atoi(gYearBuf);
+            gm = atoi(gMonthBuf);
+            gd = atoi(gDayBuf);
+            if (gy < 100) gy = 2026;
+            if (gm < 1 || gm > 12) gm = 1;
+            if (gd < 1 || gd > 31) gd = 1;
+
+            if (cal.gregorianToMyanmar(gy, gm, gd, data)) {
+                std::string report = Astro::MyanmarCalendar::formatBidirectionalConversion(data, gy, gm, gd);
+                openWindow("Myanmar <-> English Date Conversion", report);
+            } else {
+                messageBox(mfError | mfOKButton, "Conversion failed for given Gregorian date.");
+            }
+        } else { // Myanmar -> West
+            inMYear->getData(mYearBuf);
+            inMMonth->getData(mMonthBuf);
+            inMDay->getData(mDayBuf);
+            rbPhase->getData(&phaseVal);
+            int my = atoi(mYearBuf);
+            int mm = atoi(mMonthBuf);
+            int fd = atoi(mDayBuf);
+            int mp = static_cast<int>(phaseVal);
+            if (my <= 0) my = 1388;
+            if (mm < 0 || mm > 14) mm = 5;
+            if (fd < 1 || fd > 15) fd = 1;
+
+            if (cal.myanmarToGregorian(my, mm, mp, fd, gy, gm, gd, &data)) {
+                std::string report = Astro::MyanmarCalendar::formatBidirectionalConversion(data, gy, gm, gd);
+                openWindow("Myanmar <-> English Date Conversion", report);
+            } else {
+                messageBox(mfError | mfOKButton, "Conversion failed for given Myanmar date.");
+            }
+        }
+    }
+    destroy(d);
+}
+
+void HoroscopeTuiApp::showAncientAstronomy() {
+    double jd = currentBirthData.getJulianDay();
+    if (jd <= 0.0) {
+        jd = swe_julday(currentBirthData.year, currentBirthData.month, currentBirthData.day,
+                        currentBirthData.hour + currentBirthData.minute / 60.0, SE_GREG_CAL);
+    }
+
+    std::string report = Astro::SuryaSiddhantaCalculator::generateComparisonReport(
+        jd, currentBirthData.year, currentBirthData.month, currentBirthData.day
+    );
+    openWindow("Babylonian, Ptolemaic & Surya Siddhanta Models", report);
+}
+
+void HoroscopeTuiApp::showVanWijkTablesDialog() {
+    TDialog* d = new TDialog(TRect(10, 2, 74, 22), "Van Wijk Decimal Tables (Surya Siddhanta)");
+
+    TSItem* modeItems = new TSItem("1. Reduce Hindu Date (KY, Masa, Paksha, Tithi) -> Western Date",
+                        new TSItem("2. Convert Western Date -> Hindu Panchanga & Ahargana", nullptr));
+    TRadioButtons* rbMode = new TRadioButtons(TRect(4, 2, 62, 4), modeItems);
+    ushort modeVal = 0;
+    rbMode->setData(&modeVal);
+    d->insert(rbMode);
+
+    d->insert(new TLabel(TRect(4, 4, 62, 5), "[Option 1: Hindu Input (Kali Yuga Expired, Masa, Paksha, Tithi)]", nullptr));
+
+    char kyBuf[16] = "3585";
+    TInputLine* inKY = new TInputLine(TRect(18, 5, 28, 6), 8);
+    inKY->setData(kyBuf);
+    d->insert(inKY);
+    d->insert(new TLabel(TRect(4, 5, 17, 6), "KY ~Y~ear:", inKY));
+
+    char masaBuf[16] = "1";
+    TInputLine* inMasa = new TInputLine(TRect(48, 5, 58, 6), 4);
+    inMasa->setData(masaBuf);
+    d->insert(inMasa);
+    d->insert(new TLabel(TRect(30, 5, 47, 6), "~M~asa (1-12/1=Cai):", inMasa));
+
+    TSItem* pakshaItems = new TSItem("Sukla (Bright 1-15)",
+                          new TSItem("Krishna (Dark 1-15)", nullptr));
+    TRadioButtons* rbPaksha = new TRadioButtons(TRect(18, 7, 48, 9), pakshaItems);
+    ushort pakshaVal = 0;
+    rbPaksha->setData(&pakshaVal);
+    d->insert(rbPaksha);
+    d->insert(new TLabel(TRect(4, 7, 17, 8), "~P~aksha:", rbPaksha));
+
+    char tithiBuf[16] = "1";
+    TInputLine* inTithi = new TInputLine(TRect(18, 9, 28, 10), 4);
+    inTithi->setData(tithiBuf);
+    d->insert(inTithi);
+    d->insert(new TLabel(TRect(4, 9, 17, 10), "~T~ithi (1-15):", inTithi));
+
+    d->insert(new TLabel(TRect(4, 11, 62, 12), "[Option 2: Western Date Input (Year, Month, Day)]", nullptr));
+
+    char wYearBuf[16], wMonthBuf[16], wDayBuf[16];
+    snprintf(wYearBuf, sizeof(wYearBuf), "%d", currentBirthData.year);
+    snprintf(wMonthBuf, sizeof(wMonthBuf), "%d", currentBirthData.month);
+    snprintf(wDayBuf, sizeof(wDayBuf), "%d", currentBirthData.day);
+
+    TInputLine* inWYear = new TInputLine(TRect(18, 12, 28, 13), 6);
+    inWYear->setData(wYearBuf);
+    d->insert(inWYear);
+    d->insert(new TLabel(TRect(4, 12, 17, 13), "CE Y~e~ar:", inWYear));
+
+    TInputLine* inWMonth = new TInputLine(TRect(36, 12, 44, 13), 4);
+    inWMonth->setData(wMonthBuf);
+    d->insert(inWMonth);
+    d->insert(new TLabel(TRect(29, 12, 35, 13), "Mo~n~:", inWMonth));
+
+    TInputLine* inWDay = new TInputLine(TRect(52, 12, 60, 13), 4);
+    inWDay->setData(wDayBuf);
+    d->insert(inWDay);
+    d->insert(new TLabel(TRect(46, 12, 51, 13), "~D~ay:", inWDay));
+
+    d->insert(new TButton(TRect(16, 16, 30, 18), "~C~alculate", cmOK, bfDefault));
+    d->insert(new TButton(TRect(36, 16, 48, 18), "Cancel", cmCancel, bfNormal));
+
+    if (deskTop->execView(d) == cmOK) {
+        rbMode->getData(&modeVal);
+        if (modeVal == 0) { // Reduce Hindu date
+            inKY->getData(kyBuf);
+            inMasa->getData(masaBuf);
+            rbPaksha->getData(&pakshaVal);
+            inTithi->getData(tithiBuf);
+
+            int ky = atoi(kyBuf);
+            int masa = atoi(masaBuf);
+            int paksha = static_cast<int>(pakshaVal);
+            int tithi = atoi(tithiBuf);
+            if (ky <= 0) ky = 3585;
+            if (masa < 1 || masa > 12) masa = 1;
+            if (tithi < 1 || tithi > 15) tithi = 1;
+
+            Astro::VanWijkReductionResult res = Astro::VanWijkReductionEngine::reduceHinduDate(ky, masa, paksha, tithi, -1);
+            std::string report = Astro::VanWijkReductionEngine::formatReductionReport(res);
+            openWindow("Van Wijk Hindu Date Reduction", report);
+        } else { // Western -> Hindu
+            inWYear->getData(wYearBuf);
+            inWMonth->getData(wMonthBuf);
+            inWDay->getData(wDayBuf);
+
+            int y = atoi(wYearBuf);
+            int m = atoi(wMonthBuf);
+            int day = atoi(wDayBuf);
+            if (y == 0) y = 2026;
+            if (m < 1 || m > 12) m = 1;
+            if (day < 1 || day > 31) day = 1;
+
+            Astro::VanWijkWesternToHinduResult res = Astro::VanWijkReductionEngine::convertWesternToHindu(y, m, day, 6.0);
+            std::string report = Astro::VanWijkReductionEngine::formatWesternToHinduReport(res);
+            openWindow("Van Wijk Western -> Hindu Conversion", report);
+        }
+    }
+    destroy(d);
+}
+
 void HoroscopeTuiApp::showChineseCalendar(bool prompt) {
-    if (prompt && !promptDateLocation("Chinese Calendar - Date Query (中国农历)", currentBirthData, currentCityName, true)) return;
+    if (prompt && !promptDateLocation("Chinese Calendar - Date Query", currentBirthData, currentCityName, true)) return;
 
     Astro::ChineseCalendar chinese;
     if (chinese.initialize()) {
@@ -1466,7 +1718,7 @@ void HoroscopeTuiApp::setTheme(int themeId) {
 
 static TPalette createTurboCppPalette() {
     TColorAttr attrs[sizeof(cpTurboCpp) - 1];
-    // Authentic Borland Deep Dark Navy Blue (ရိုးရိုး အပြာရင့်)
+    // Authentic Borland Deep Dark Navy Blue
     const TColorRGB darkNavyBlue(0x00, 0x1A, 0x70);       // Rich Deep Dark Navy Blue (#001A70)
     const TColorRGB desktopNavyBlue(0x00, 0x10, 0x48);    // Deep solid dark blue for desktop (#001048)
     const TColorRGB brightWhite(0xFF, 0xFF, 0xFF);        // Crisp High Contrast White
