@@ -114,14 +114,16 @@ MyanmarMonthlyData MyanmarMonthlyCalendar::calculateMonthlyData(int year, int mo
             }
 
             // Determine day quality
-            if (dayData.isSabbath || dayData.isThamanyo) {
-                dayData.qualityIndicator = "*"; // Excellent/Religious (changed from emoji)
-            } else if (dayData.isPyathada || dayData.isYatyaza) {
-                dayData.qualityIndicator = "!"; // Inauspicious (changed from emoji)
+            if (dayData.isSabbath) {
+                dayData.qualityIndicator = "*"; // Religious / Sabbath
+            } else if (dayData.isYatyaza) {
+                dayData.qualityIndicator = "+"; // Auspicious (Yatyaza)
+            } else if (dayData.isPyathada || dayData.isThamanyo) {
+                dayData.qualityIndicator = "!"; // Inauspicious / Caution
             } else if (dayData.isHoliday) {
-                dayData.qualityIndicator = "#"; // Festival (changed from emoji)
+                dayData.qualityIndicator = "#"; // Festival
             } else {
-                dayData.qualityIndicator = "."; // Neutral (changed from emoji)
+                dayData.qualityIndicator = "."; // Neutral
             }
 
             // Calculate additional calendar systems if requested
@@ -729,8 +731,8 @@ void MyanmarMonthlyCalendar::calculateMonthlyStatistics(MyanmarMonthlyData& mont
 
     for (const auto& day : monthData.days) {
         if (day.isSabbath) monthData.sabbathDays++;
-        if (day.isThamanyo) monthData.auspiciousDays++;
-        if (day.isPyathada || day.isYatyaza) monthData.inauspiciousDays++;
+        if (day.isYatyaza) monthData.auspiciousDays++;
+        if (day.isPyathada || day.isThamanyo) monthData.inauspiciousDays++;
         if (day.isHoliday) monthData.festivalDays++;
     }
 }
@@ -1215,8 +1217,8 @@ std::string MyanmarMonthlyCalendar::generateHTML(const MyanmarMonthlyData& month
 
                 std::string cssClass = "";
                 if (day.isSabbath) cssClass = "sabbath";
-                else if (day.isThamanyo) cssClass = "auspicious";
-                else if (day.isPyathada || day.isYatyaza) cssClass = "inauspicious";
+                else if (day.isYatyaza) cssClass = "auspicious";
+                else if (day.isPyathada || day.isThamanyo) cssClass = "inauspicious";
                 else if (day.isHoliday) cssClass = "festival";
 
                 ss << "<td class=\"" << cssClass << "\">";
@@ -1902,9 +1904,9 @@ std::string MyanmarMonthlyCalendar::formatFixedWidthQualityCell(const MyanmarMon
     // Enhanced fixed format: Quality + Special indicators - exactly 15 characters
 
     // Quality indicator (1 char)
-    if (day.isSabbath || day.isThamanyo || day.hindu.isAuspiciousDay) {
+    if (day.isSabbath || day.isYatyaza || day.hindu.isAuspiciousDay) {
         ss << "*"; // Auspicious
-    } else if (day.isPyathada || day.isYatyaza || day.hindu.isInauspiciousDay) {
+    } else if (day.isPyathada || day.isThamanyo || day.hindu.isInauspiciousDay) {
         ss << "!"; // Caution
     } else if (day.isHoliday || !day.festivals.empty() || !day.hindu.festivals.empty()) {
         ss << "#"; // Festival

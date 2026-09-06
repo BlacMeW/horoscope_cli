@@ -850,11 +850,11 @@ void HoroscopeTuiApp::showCalendarQueryDialog() {
         currentCityName = cityBuf;
 
         switch (calVal) {
-            case 0: showAstroCalendarDay(); break;
-            case 1: showHinduPanchang(); break;
-            case 2: showMyanmarCalendar(); break;
-            case 3: showChineseCalendar(); break;
-            default: showAstroCalendarDay(); break;
+            case 0: showAstroCalendarDay(false); break;
+            case 1: showHinduPanchang(false); break;
+            case 2: showMyanmarCalendar(false); break;
+            case 3: showChineseCalendar(false); break;
+            default: showAstroCalendarDay(false); break;
         }
     }
     destroy(d);
@@ -905,11 +905,11 @@ void HoroscopeTuiApp::showMonthlyDialog() {
         currentBirthData.month = m;
 
         switch (mVal) {
-            case 0: showEphemerisMonthly(); break;
-            case 1: showAstroCalendarMonth(); break;
-            case 2: showHinduMonth(); break;
-            case 3: showMyanmarMonth(); break;
-            default: showEphemerisMonthly(); break;
+            case 0: showEphemerisMonthly(false); break;
+            case 1: showAstroCalendarMonth(false); break;
+            case 2: showHinduMonth(false); break;
+            case 3: showMyanmarMonth(false); break;
+            default: showEphemerisMonthly(false); break;
         }
     }
     destroy(d);
@@ -993,8 +993,8 @@ void HoroscopeTuiApp::showAstroCoordinates() {
     openWindow("Planetary Coordinates & Astronomical Details - " + currentCityName, text);
 }
 
-void HoroscopeTuiApp::showHinduPanchang() {
-    if (!promptDateLocation("Hindu Daily Panchanga - Date Query", currentBirthData, currentCityName, true)) return;
+void HoroscopeTuiApp::showHinduPanchang(bool prompt) {
+    if (prompt && !promptDateLocation("Hindu Daily Panchanga - Date Query", currentBirthData, currentCityName, true)) return;
 
     Astro::HinduCalendar hindu;
     if (hindu.initialize()) {
@@ -1006,9 +1006,9 @@ void HoroscopeTuiApp::showHinduPanchang() {
     }
 }
 
-void HoroscopeTuiApp::showHinduMonth() {
+void HoroscopeTuiApp::showHinduMonth(bool prompt) {
     int y = currentBirthData.year, m = currentBirthData.month;
-    if (!promptYearMonth("Hindu Monthly Panchang - Year & Month Query", y, m)) return;
+    if (prompt && !promptYearMonth("Hindu Monthly Panchang - Year & Month Query", y, m)) return;
     currentBirthData.year = y; currentBirthData.month = m;
 
     Astro::HinduMonthlyCalendar::DisplayOptions opts = Astro::HinduMonthlyCalendar::getDefaultDisplayOptions();
@@ -1030,8 +1030,8 @@ void HoroscopeTuiApp::showHinduMonth() {
     openWindow(title.str(), text);
 }
 
-void HoroscopeTuiApp::showMyanmarCalendar() {
-    if (!promptDateLocation("Myanmar Calendar - Date Query (မြန်မာပြက္ခဒိန်)", currentBirthData, currentCityName, false)) return;
+void HoroscopeTuiApp::showMyanmarCalendar(bool prompt) {
+    if (prompt && !promptDateLocation("Myanmar Calendar - Date Query (မြန်မာပြက္ခဒိန်)", currentBirthData, currentCityName, false)) return;
 
     Astro::MyanmarCalendar myanmar;
     if (myanmar.initialize()) {
@@ -1043,9 +1043,9 @@ void HoroscopeTuiApp::showMyanmarCalendar() {
     }
 }
 
-void HoroscopeTuiApp::showMyanmarMonth() {
+void HoroscopeTuiApp::showMyanmarMonth(bool prompt) {
     int y = currentBirthData.year, m = currentBirthData.month;
-    if (!promptYearMonth("Myanmar Monthly Calendar Query (လဆန်း/လဆုတ် ဥပုသ်နေ့များ)", y, m)) return;
+    if (prompt && !promptYearMonth("Myanmar Monthly Calendar Query (လဆန်း/လဆုတ် ဥပုသ်နေ့များ)", y, m)) return;
     currentBirthData.year = y; currentBirthData.month = m;
 
     Astro::MyanmarMonthlyCalendar monthly;
@@ -1061,8 +1061,8 @@ void HoroscopeTuiApp::showMyanmarMonth() {
     }
 }
 
-void HoroscopeTuiApp::showChineseCalendar() {
-    if (!promptDateLocation("Chinese Calendar - Date Query (中国农历)", currentBirthData, currentCityName, true)) return;
+void HoroscopeTuiApp::showChineseCalendar(bool prompt) {
+    if (prompt && !promptDateLocation("Chinese Calendar - Date Query (中国农历)", currentBirthData, currentCityName, true)) return;
 
     Astro::ChineseCalendar chinese;
     if (chinese.initialize()) {
@@ -1266,9 +1266,9 @@ void HoroscopeTuiApp::showEphemerisTable() {
     showEphemerisDialog();
 }
 
-void HoroscopeTuiApp::showEphemerisMonthly() {
+void HoroscopeTuiApp::showEphemerisMonthly(bool prompt) {
     int y = currentBirthData.year, m = currentBirthData.month;
-    if (!promptYearMonth("Monthly Ephemeris Table Query", y, m)) return;
+    if (prompt && !promptYearMonth("Monthly Ephemeris Table Query", y, m)) return;
     currentBirthData.year = y; currentBirthData.month = m;
 
     Astro::EphemerisTable ephTable;
@@ -1356,8 +1356,8 @@ void HoroscopeTuiApp::showEphemerisTransits() {
     showTransitDialog();
 }
 
-void HoroscopeTuiApp::showAstroCalendarDay() {
-    if (!promptDateLocation("Unified Astro-Calendar - Date Query", currentBirthData, currentCityName, true)) return;
+void HoroscopeTuiApp::showAstroCalendarDay(bool prompt) {
+    if (prompt && !promptDateLocation("Unified Astro-Calendar - Date Query", currentBirthData, currentCityName, true)) return;
 
     Astro::AstroCalendar astro;
     if (astro.initialize(currentBirthData.latitude, currentBirthData.longitude)) {
@@ -1365,16 +1365,16 @@ void HoroscopeTuiApp::showAstroCalendarDay() {
         astro.setIncludeAllFestivals(true);
         astro.setIncludeKPTransitions(true);
         Astro::AstroCalendarDay dayData = astro.calculateAstroCalendarDay(currentBirthData);
-        std::string text = astro.generateDayCalendar(dayData, "calendar");
+        std::string text = astro.generateDayCalendar(dayData, "professional");
         openWindow("Unified Astro-Calendar (Daily) - " + currentCityName, text);
     } else {
         messageBox(mfError | mfOKButton, "Failed to initialize Astro Calendar.");
     }
 }
 
-void HoroscopeTuiApp::showAstroCalendarMonth() {
+void HoroscopeTuiApp::showAstroCalendarMonth(bool prompt) {
     int y = currentBirthData.year, m = currentBirthData.month;
-    if (!promptYearMonth("Unified Monthly Astro-Calendar Query", y, m)) return;
+    if (prompt && !promptYearMonth("Unified Monthly Astro-Calendar Query", y, m)) return;
     currentBirthData.year = y; currentBirthData.month = m;
 
     Astro::AstroCalendar astro;
@@ -1382,7 +1382,7 @@ void HoroscopeTuiApp::showAstroCalendarMonth() {
         astro.setIncludePlanetaryTransitions(true);
         astro.setIncludeAllFestivals(true);
         Astro::AstroCalendarMonth monthData = astro.calculateAstroCalendarMonth(currentBirthData.year, currentBirthData.month);
-        std::string text = astro.generateMonthlyCalendar(monthData, "calendar");
+        std::string text = astro.generateMonthlyCalendar(monthData, "professional");
         std::ostringstream title;
         title << "Unified Monthly Astro-Calendar (" << y << "-" << std::setw(2) << std::setfill('0') << m << ") - " << currentCityName;
         openWindow(title.str(), text);

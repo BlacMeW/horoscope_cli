@@ -540,17 +540,25 @@ void AstroCalendar::calculateDayQuality(AstroCalendarDay& day) const {
 
     // Myanmar calendar factors
     if (day.hasMyanmarData) {
-        if (day.myanmarData.isThamanyo) {
-            score += 2;
-            day.astrologicalRecommendations.push_back("Thamanyo - auspicious day");
-        }
         if (day.myanmarData.isYatyaza) {
+            score += 2;
+            day.astrologicalRecommendations.push_back("Yatyaza (ရက်ရာဇာ) - highly auspicious for business, weddings, and new beginnings");
+        }
+        if (day.myanmarData.isPyathada || day.myanmarData.isAfternoonPyathada) {
             score -= 2;
-            day.astrologicalRecommendations.push_back("Yatyaza - avoid new ventures");
+            day.astrologicalRecommendations.push_back("Pyathada (ပြဿဒါး) - inauspicious, postpone new ventures");
+        }
+        if (day.myanmarData.isThamanyo) {
+            score -= 1;
+            day.astrologicalRecommendations.push_back("Thamanyo (သမားညို) - inauspicious, exercise caution");
+        }
+        if (day.myanmarData.isAmyeittasote) {
+            score += 2;
+            day.astrologicalRecommendations.push_back("Amyeittasote (အမြိတ္တစုတ်) - auspicious day");
         }
         if (day.myanmarData.isSabbath) {
             score += 1;
-            day.astrologicalRecommendations.push_back("Buddhist Sabbath - meditation favored");
+            day.astrologicalRecommendations.push_back("Buddhist Sabbath (ဥပုသ်နေ့) - spiritual practices and merit favored");
         }
     }
 
@@ -600,23 +608,37 @@ std::string AstroCalendar::generateDayCalendar(const AstroCalendarDay& day, cons
     // Hindu Calendar section
     if (day.hasPanchangaData) {
         ss << "🕉️ HINDU CALENDAR (PANCHANGA):\n";
-        ss << "   Tithi: " << static_cast<int>(day.panchangaData.tithi) << " ";
-        ss << (day.panchangaData.isShukla ? "(Shukla)" : "(Krishna)") << "\n";
-        ss << "   Vara: " << static_cast<int>(day.panchangaData.vara) << "\n";
-        ss << "   Nakshatra: " << static_cast<int>(day.panchangaData.nakshatra) << "\n";
-        ss << "   Yoga: " << static_cast<int>(day.panchangaData.yoga) << "\n";
-        ss << "   Karana: " << static_cast<int>(day.panchangaData.karana) << "\n";
+        std::string tithiName = hinduCalendar ? hinduCalendar->getTithiName(day.panchangaData.tithi) : ("Tithi " + std::to_string(static_cast<int>(day.panchangaData.tithi)));
+        std::string varaName = hinduCalendar ? hinduCalendar->getVaraName(day.panchangaData.vara) : std::to_string(static_cast<int>(day.panchangaData.vara));
+        std::string nakName = hinduCalendar ? hinduCalendar->getNakshatraName(day.panchangaData.nakshatra) : std::to_string(static_cast<int>(day.panchangaData.nakshatra));
+        std::string yogaName = hinduCalendar ? hinduCalendar->getYogaName(day.panchangaData.yoga) : std::to_string(static_cast<int>(day.panchangaData.yoga));
+        std::string karanaName = hinduCalendar ? hinduCalendar->getKaranaName(day.panchangaData.karana) : std::to_string(static_cast<int>(day.panchangaData.karana));
+
+        ss << "   Tithi: " << tithiName << " " << (day.panchangaData.isShukla ? "(Shukla Paksha)" : "(Krishna Paksha)") << "\n";
+        ss << "   Vara: " << varaName << "\n";
+        ss << "   Nakshatra: " << nakName << "\n";
+        ss << "   Yoga: " << yogaName << "\n";
+        ss << "   Karana: " << karanaName << "\n";
         ss << "\n";
     }
 
     // Myanmar Calendar section
     if (day.hasMyanmarData) {
         ss << "🇲🇲 MYANMAR CALENDAR:\n";
+        std::string monthName = myanmarCalendar ? myanmarCalendar->getMyanmarMonthName(day.myanmarData.month) : std::to_string(static_cast<int>(day.myanmarData.month));
+        std::string moonPhaseName = myanmarCalendar ? myanmarCalendar->getMoonPhaseName(day.myanmarData.moonPhase) : std::to_string(static_cast<int>(day.myanmarData.moonPhase));
+
         ss << "   Myanmar Year: " << day.myanmarData.myanmarYear << " ME\n";
         ss << "   Sasana Year: " << day.myanmarData.sasanaYear << " SE\n";
-        ss << "   Month: " << static_cast<int>(day.myanmarData.month) << "\n";
+        ss << "   Month: " << monthName << "\n";
         ss << "   Day: " << day.myanmarData.dayOfMonth << "\n";
-        ss << "   Moon Phase: " << static_cast<int>(day.myanmarData.moonPhase) << "\n";
+        ss << "   Moon Phase: " << moonPhaseName << "\n";
+        if (day.myanmarData.isSabbath) ss << "   • Buddhist Sabbath (ဥပုသ်နေ့)\n";
+        if (day.myanmarData.isYatyaza) ss << "   • Yatyaza (ရက်ရာဇာ မင်္ဂလာအခါ)\n";
+        if (day.myanmarData.isPyathada) ss << "   • Pyathada (ပြဿဒါး ရှောင်ကြဉ်ရမည့်ရက်)\n";
+        if (day.myanmarData.isAfternoonPyathada) ss << "   • Afternoon Pyathada (မွန်းလွဲပြဿဒါး)\n";
+        if (day.myanmarData.isThamanyo) ss << "   • Thamanyo (သမားညို)\n";
+        if (day.myanmarData.isAmyeittasote) ss << "   • Amyeittasote (အမြိတ္တစုတ်)\n";
         ss << "\n";
     }
 
@@ -1158,7 +1180,15 @@ std::string AstroCalendar::generateProfessionalDayCell(const AstroCalendarDay& d
     std::string prefix = " " + dayNum + qualitySymbol + " "; // 5 chars
 
     std::string info;
-    if (day.hasPanchangaData) {
+    if (day.hasPanchangaData && day.hasMyanmarData) {
+        info = "T" + std::to_string(static_cast<int>(day.panchangaData.tithi));
+        if (day.myanmarData.isYatyaza) info += "Y";
+        else if (day.myanmarData.isPyathada) info += "P";
+        else if (day.myanmarData.isSabbath) info += "S";
+        else if (day.panchangaData.isEkadashi) info += "E";
+        else if (day.panchangaData.isPurnima) info += "Pu";
+        else if (day.panchangaData.isAmavasya) info += "Am";
+    } else if (day.hasPanchangaData) {
         info = "T" + std::to_string(static_cast<int>(day.panchangaData.tithi));
         if (day.panchangaData.isEkadashi) info += "E";
         else if (day.panchangaData.isPurnima) info += "P";
@@ -1168,6 +1198,7 @@ std::string AstroCalendar::generateProfessionalDayCell(const AstroCalendarDay& d
         if (day.myanmarData.isSabbath) info += "S";
         else if (day.myanmarData.isPyathada) info += "P";
         else if (day.myanmarData.isYatyaza) info += "Y";
+        else if (day.myanmarData.isThamanyo) info += "T";
     }
 
     std::string cellContent = prefix + info;
@@ -1270,7 +1301,9 @@ std::string AstroCalendar::getEnhancedMyanmarInfo(const AstroCalendarDay& day) c
     std::stringstream ss;
     ss << std::to_string(day.myanmarData.myanmarYear % 100) << "ME"; // Show last 2 digits
     if (day.myanmarData.isSabbath) ss << "S";
+    if (day.myanmarData.isYatyaza) ss << "Y";
     if (day.myanmarData.isPyathada) ss << "P";
+    if (day.myanmarData.isThamanyo) ss << "T";
 
     return ss.str();
 }
@@ -1559,16 +1592,67 @@ std::string AstroCalendar::generateProfessionalDayCalendar(const AstroCalendarDa
     ss << "║           🌙 Lunar Phases • 🪐 Planetary Transits • 🕉️ Panchanga • 🇲🇲 Myanmar            ║\n";
     ss << "╚══════════════════════════════════════════════════════════════════════════════════════════════╝\n\n";
 
+    // Helper lambdas for clean box drawing alignment with UTF-8 support
+    auto safePad = [](const std::string& str, size_t targetWidth) {
+        size_t count = 0;
+        size_t byteLen = 0;
+        for (size_t i = 0; i < str.length(); ) {
+            unsigned char c = str[i];
+            size_t step = 1;
+            if (c >= 0xF0) step = 4;
+            else if (c >= 0xE0) step = 3;
+            else if (c >= 0xC0) step = 2;
+            if (i + step > str.length()) break;
+
+            // Check for Myanmar combining vowel signs and diacritics (U+102B..U+103E)
+            bool isCombining = false;
+            if (step == 3 && c == 0xE1 && (unsigned char)str[i+1] == 0x80) {
+                unsigned char c3 = (unsigned char)str[i+2];
+                if ((c3 >= 0xAB && c3 <= 0xBE) || c3 == 0xBA) {
+                    isCombining = true;
+                }
+            }
+
+            if (count >= targetWidth && !isCombining) {
+                break;
+            }
+            if (!isCombining) {
+                // Emojis (4 bytes) generally take 2 cells
+                if (step == 4) count += 2;
+                else count += 1;
+            }
+            byteLen = i + step;
+            i += step;
+        }
+
+        std::string res = str.substr(0, byteLen);
+        if (count < targetWidth) {
+            res.append(targetWidth - count, ' ');
+        }
+        return res;
+    };
+
+    auto formatTwoCol = [&](const std::string& label, const std::string& val) {
+        std::string l = label;
+        if (l.length() < 16) l.append(16 - l.length(), ' ');
+        else if (l.length() > 16) l = l.substr(0, 16);
+
+        std::string v = safePad(val, 68);
+        return "│ " + l + "│ " + v + "│\n";
+    };
+
+    auto formatBoxLine = [&](const std::string& text) {
+        std::string s = safePad(text, 87);
+        return "│ " + s + " │\n";
+    };
+
     // Day Quality Section with professional styling
     ss << "📊 DAY QUALITY ASSESSMENT\n";
     ss << "┌─────────────────────────────────────────────────────────────────────────────────────────┐\n";
-    ss << "│ Overall Rating: " << getEnhancedQualityIndicator(day) << " (" << day.auspiciousScore << "/10)";
-    ss << std::string(50, ' ') << "│\n";
-    ss << "│ Status: " << (day.isAuspicious ? "✅ HIGHLY AUSPICIOUS DAY" :
-                          (day.isInauspicious ? "⚠️ EXERCISE CAUTION" : "⚪ NEUTRAL DAY"));
-    ss << std::string(45, ' ') << "│\n";
-    ss << "│ Recommendation: " << day.dayQualityDescription;
-    ss << std::string(60 - day.dayQualityDescription.length(), ' ') << "│\n";
+    ss << formatBoxLine("Overall Rating: " + getEnhancedQualityIndicator(day) + " (" + std::to_string(day.auspiciousScore) + "/10)");
+    ss << formatBoxLine("Status: " + std::string(day.isAuspicious ? "✅ HIGHLY AUSPICIOUS DAY" :
+                                                (day.isInauspicious ? "⚠️ EXERCISE CAUTION" : "⚪ NEUTRAL DAY")));
+    ss << formatBoxLine("Recommendation: " + day.dayQualityDescription);
     ss << "└─────────────────────────────────────────────────────────────────────────────────────────┘\n\n";
 
     // Three Calendar Systems Integration
@@ -1577,36 +1661,54 @@ std::string AstroCalendar::generateProfessionalDayCalendar(const AstroCalendarDa
 
     // Hindu Calendar section
     if (day.hasPanchangaData) {
-        ss << "│ 🕉️ HINDU CALENDAR│                                                                 │\n";
+        std::string tithiName = hinduCalendar ? hinduCalendar->getTithiName(day.panchangaData.tithi) : ("Tithi " + std::to_string(static_cast<int>(day.panchangaData.tithi)));
+        std::string varaName = hinduCalendar ? hinduCalendar->getVaraName(day.panchangaData.vara) : std::to_string(static_cast<int>(day.panchangaData.vara));
+        std::string nakName = hinduCalendar ? hinduCalendar->getNakshatraName(day.panchangaData.nakshatra) : std::to_string(static_cast<int>(day.panchangaData.nakshatra));
+        std::string yogaName = hinduCalendar ? hinduCalendar->getYogaName(day.panchangaData.yoga) : std::to_string(static_cast<int>(day.panchangaData.yoga));
+        std::string karanaName = hinduCalendar ? hinduCalendar->getKaranaName(day.panchangaData.karana) : std::to_string(static_cast<int>(day.panchangaData.karana));
+
+        ss << formatTwoCol("Calendar System", "🕉️ Hindu Calendar (Panchanga)");
         ss << "├─────────────────┼─────────────────────────────────────────────────────────────────────┤\n";
-        ss << "│ Tithi:          │ " << static_cast<int>(day.panchangaData.tithi)
-           << " (" << (day.panchangaData.isShukla ? "Shukla" : "Krishna") << " Paksha)";
-        ss << std::string(40, ' ') << "│\n";
-        ss << "│ Vara:           │ " << static_cast<int>(day.panchangaData.vara);
-        ss << std::string(60, ' ') << "│\n";
-        ss << "│ Nakshatra:      │ " << static_cast<int>(day.panchangaData.nakshatra);
-        ss << std::string(60, ' ') << "│\n";
-        ss << "│ Yoga:           │ " << static_cast<int>(day.panchangaData.yoga);
-        ss << std::string(60, ' ') << "│\n";
-        ss << "│ Karana:         │ " << static_cast<int>(day.panchangaData.karana);
-        ss << std::string(60, ' ') << "│\n";
+        ss << formatTwoCol("Tithi:", tithiName + " (" + (day.panchangaData.isShukla ? "Shukla Paksha" : "Krishna Paksha") + ")");
+        ss << formatTwoCol("Vara (Day):", varaName);
+        ss << formatTwoCol("Nakshatra:", nakName);
+        ss << formatTwoCol("Yoga:", yogaName);
+        ss << formatTwoCol("Karana:", karanaName);
+        if (day.panchangaData.isEkadashi) ss << formatTwoCol("Special Observ.:", "Ekadashi (Fast & Spiritual Day)");
+        if (day.panchangaData.isPurnima) ss << formatTwoCol("Special Observ.:", "Purnima (Full Moon Day)");
+        if (day.panchangaData.isAmavasya) ss << formatTwoCol("Special Observ.:", "Amavasya (New Moon Day)");
         ss << "├─────────────────┼─────────────────────────────────────────────────────────────────────┤\n";
     }
 
     // Myanmar Calendar section
     if (day.hasMyanmarData) {
-        ss << "│ 🇲🇲 MYANMAR CAL. │                                                                 │\n";
+        std::string monthName = myanmarCalendar ? myanmarCalendar->getMyanmarMonthName(day.myanmarData.month) : std::to_string(static_cast<int>(day.myanmarData.month));
+        std::string moonPhaseName = myanmarCalendar ? myanmarCalendar->getMoonPhaseName(day.myanmarData.moonPhase) : std::to_string(static_cast<int>(day.myanmarData.moonPhase));
+        std::string mahaboteName = myanmarCalendar ? myanmarCalendar->getMahaboteName(day.myanmarData.mahabote) : "";
+        std::string nakhatName = myanmarCalendar ? myanmarCalendar->getNakhatName(day.myanmarData.nakhat) : "";
+        std::string nagahleName = myanmarCalendar ? myanmarCalendar->getNagahleDirectionName(day.myanmarData.nagahle) : "";
+
+        ss << formatTwoCol("Calendar System", "🇲🇲 Myanmar Calendar (မြန်မာပြက္ခဒိန်)");
         ss << "├─────────────────┼─────────────────────────────────────────────────────────────────────┤\n";
-        ss << "│ Myanmar Year:   │ " << day.myanmarData.myanmarYear << " ME";
-        ss << std::string(55, ' ') << "│\n";
-        ss << "│ Sasana Year:    │ " << day.myanmarData.sasanaYear << " SE";
-        ss << std::string(55, ' ') << "│\n";
-        ss << "│ Month:          │ " << static_cast<int>(day.myanmarData.month);
-        ss << std::string(60, ' ') << "│\n";
-        ss << "│ Day:            │ " << day.myanmarData.dayOfMonth;
-        ss << std::string(60, ' ') << "│\n";
-        ss << "│ Moon Phase:     │ " << static_cast<int>(day.myanmarData.moonPhase);
-        ss << std::string(60, ' ') << "│\n";
+        ss << formatTwoCol("Myanmar Year:", std::to_string(day.myanmarData.myanmarYear) + " ME (" + std::to_string(day.myanmarData.sasanaYear) + " SE)");
+        ss << formatTwoCol("Month & Day:", monthName + ", Day " + std::to_string(day.myanmarData.dayOfMonth));
+        ss << formatTwoCol("Moon Phase:", moonPhaseName);
+
+        std::string myAstro;
+        if (day.myanmarData.isYatyaza) myAstro += "Yatyaza (ရက်ရာဇာ) ";
+        if (day.myanmarData.isAmyeittasote) myAstro += "Amyeittasote (အမြိတ္တစုတ်) ";
+        if (day.myanmarData.isPyathada) myAstro += "Pyathada (ပြဿဒါး) ";
+        if (day.myanmarData.isAfternoonPyathada) myAstro += "Afternoon Pyathada (မွန်းလွဲပြဿဒါး) ";
+        if (day.myanmarData.isThamanyo) myAstro += "Thamanyo (သမားညို) ";
+        if (day.myanmarData.isSabbath) myAstro += "Sabbath (ဥပုသ်နေ့) ";
+        if (day.myanmarData.isSabbathEve) myAstro += "Sabbath Eve (အဖိတ်နေ့) ";
+        if (!myAstro.empty()) {
+            ss << formatTwoCol("Astrological:", myAstro);
+        }
+
+        if (!mahaboteName.empty()) ss << formatTwoCol("Mahabote:", mahaboteName);
+        if (!nakhatName.empty()) ss << formatTwoCol("Nakhat:", nakhatName);
+        if (!nagahleName.empty()) ss << formatTwoCol("Nagahle (Dragon):", nagahleName);
     }
 
     ss << "└─────────────────┴─────────────────────────────────────────────────────────────────────┘\n\n";
@@ -1616,8 +1718,7 @@ std::string AstroCalendar::generateProfessionalDayCalendar(const AstroCalendarDa
         ss << "🪐 PLANETARY TRANSITS & EVENTS\n";
         ss << "┌─────────────────────────────────────────────────────────────────────────────────────────┐\n";
         for (const auto& transit : day.planetaryTransitions) {
-            ss << "│ • " << transit.getDescription();
-            ss << std::string(85 - transit.getDescription().length(), ' ') << "│\n";
+            ss << formatBoxLine("• " + transit.getDescription());
         }
         ss << "└─────────────────────────────────────────────────────────────────────────────────────────┘\n\n";
     }
@@ -1627,8 +1728,7 @@ std::string AstroCalendar::generateProfessionalDayCalendar(const AstroCalendarDa
         ss << "🔮 KP SYSTEM ANALYSIS\n";
         ss << "┌─────────────────────────────────────────────────────────────────────────────────────────┐\n";
         for (const auto& kpTransit : day.kpTransitions) {
-            ss << "│ Level " << kpTransit.level << ": " << kpTransit.getDescription();
-            ss << std::string(80 - kpTransit.getDescription().length(), ' ') << "│\n";
+            ss << formatBoxLine("Level " + std::to_string(kpTransit.level) + ": " + kpTransit.getDescription());
         }
         ss << "└─────────────────────────────────────────────────────────────────────────────────────────┘\n\n";
     }
@@ -1638,8 +1738,7 @@ std::string AstroCalendar::generateProfessionalDayCalendar(const AstroCalendarDa
         ss << "🎉 FESTIVALS & SPECIAL EVENTS\n";
         ss << "┌─────────────────────────────────────────────────────────────────────────────────────────┐\n";
         for (const auto& festival : day.allFestivals) {
-            ss << "│ • " << festival;
-            ss << std::string(85 - festival.length(), ' ') << "│\n";
+            ss << formatBoxLine("• " + festival);
         }
         ss << "└─────────────────────────────────────────────────────────────────────────────────────────┘\n\n";
     }
@@ -1649,8 +1748,7 @@ std::string AstroCalendar::generateProfessionalDayCalendar(const AstroCalendarDa
         ss << "💡 ASTROLOGICAL RECOMMENDATIONS\n";
         ss << "┌─────────────────────────────────────────────────────────────────────────────────────────┐\n";
         for (const auto& rec : day.astrologicalRecommendations) {
-            ss << "│ • " << rec;
-            ss << std::string(85 - rec.length(), ' ') << "│\n";
+            ss << formatBoxLine("• " + rec);
         }
         ss << "└─────────────────────────────────────────────────────────────────────────────────────────┘\n\n";
     }

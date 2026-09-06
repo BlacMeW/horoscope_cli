@@ -526,20 +526,20 @@ void MyanmarCalendar::identifyHolidays(MyanmarCalendarData& data) {
 
 void MyanmarCalendar::identifyAstrologicalEvents(MyanmarCalendarData& data) {
     // Identify significant astrological events
-    if (data.isThamanyo || data.isWarameittugyi) {
-        data.astrologicalEvents.push_back("Auspicious Day");
+    if (data.isYatyaza || data.isAmyeittasote) {
+        data.astrologicalEvents.push_back("Auspicious Day (ရက်ရာဇာ / အမြိတ္တစုတ် မင်္ဂလာအခါ)");
     }
-    if (data.isPyathada || data.isYatyaza) {
-        data.astrologicalEvents.push_back("Inauspicious Day");
+    if (data.isPyathada || data.isAfternoonPyathada || data.isThamanyo || data.isWarameittugyi || data.isWarameittunge) {
+        data.astrologicalEvents.push_back("Inauspicious Day (ပြဿဒါး / သမားညို / ဝါရမိတ္တု ရှောင်ကြဉ်ရမည့်ရက်)");
     }
     if (data.isSabbath) {
-        data.astrologicalEvents.push_back("Buddhist Sabbath");
+        data.astrologicalEvents.push_back("Buddhist Sabbath Day (ဥပုသ်နေ့)");
     }
     if (data.moonPhase == MyanmarMoonPhase::FULL_MOON) {
-        data.astrologicalEvents.push_back("Full Moon Day");
+        data.astrologicalEvents.push_back("Full Moon Day (လပြည့်နေ့)");
     }
     if (data.moonPhase == MyanmarMoonPhase::NEW_MOON) {
-        data.astrologicalEvents.push_back("New Moon Day");
+        data.astrologicalEvents.push_back("New Moon Day (လကွယ်နေ့)");
     }
 }
 
@@ -617,15 +617,15 @@ std::string MyanmarCalendar::generateTable(const MyanmarCalendarData& data) cons
 
     // Astrological days
     ss << "\n🌟 ASTROLOGICAL DAYS:\n";
-    if (data.isSabbath) ss << "   • Buddhist Sabbath Day\n";
-    if (data.isSabbathEve) ss << "   • Sabbath Eve\n";
-    if (data.isThamanyo) ss << "   • Thamanyo (Auspicious)\n";
-    if (data.isWarameittugyi) ss << "   • Warameittugyi (Great Auspicious)\n";
-    if (data.isWarameittunge) ss << "   • Warameittunge (Lesser Auspicious)\n";
-    if (data.isAmyeittasote) ss << "   • Amyeittasote (Moderately Auspicious)\n";
-    if (data.isYatyaza) ss << "   • Yatyaza (Inauspicious)\n";
-    if (data.isPyathada) ss << "   • Pyathada (Very Inauspicious)\n";
-    if (data.isAfternoonPyathada) ss << "   • Afternoon Pyathada\n";
+    if (data.isSabbath) ss << "   • Buddhist Sabbath Day (ဥပုသ်နေ့)\n";
+    if (data.isSabbathEve) ss << "   • Sabbath Eve (အဖိတ်နေ့)\n";
+    if (data.isYatyaza) ss << "   • Yatyaza (Auspicious / ရက်ရာဇာ မင်္ဂလာအခါ)\n";
+    if (data.isPyathada) ss << "   • Pyathada (Inauspicious / ပြဿဒါး)\n";
+    if (data.isAfternoonPyathada) ss << "   • Afternoon Pyathada (မွန်းလွဲ ပြဿဒါး)\n";
+    if (data.isThamanyo) ss << "   • Thamanyo (သမားညို)\n";
+    if (data.isWarameittugyi) ss << "   • Warameittugyi (ဝါရမိတ္တုကြီး)\n";
+    if (data.isWarameittunge) ss << "   • Warameittunge (ဝါရမိတ္တုငယ်)\n";
+    if (data.isAmyeittasote) ss << "   • Amyeittasote (အမြိတ္တစုတ်)\n";
 
     if (!data.festivals.empty()) {
         ss << "\n🎉 FESTIVALS & OBSERVANCES:\n";
@@ -644,16 +644,16 @@ std::string MyanmarCalendar::generateTable(const MyanmarCalendarData& data) cons
     // Recommendations
     ss << "\n💡 RECOMMENDATIONS:\n";
     if (data.isSabbath) {
-        ss << "   Status: 🙏 Religious Observance\n";
+        ss << "   Status: 🙏 Religious Observance (ဥပုသ်သီလ ဆောက်တည်ရန်)\n";
         ss << "   Note: Observe Buddhist precepts, visit pagodas, practice meditation\n";
-    } else if (data.isWarameittugyi || data.isThamanyo) {
-        ss << "   Status: ✅ Auspicious Day\n";
-        ss << "   Note: Good day for starting new ventures and important activities\n";
-    } else if (data.isPyathada || data.isYatyaza) {
-        ss << "   Status: ⚠️  Inauspicious Day\n";
+    } else if (data.isYatyaza || data.isAmyeittasote) {
+        ss << "   Status: ✅ Auspicious Day (ရက်ရာဇာ / အမြိတ္တစုတ် မင်္ဂလာရှိသော ကောင်းသောနေ့)\n";
+        ss << "   Note: Good day for starting new ventures, business, weddings, and auspicious ceremonies\n";
+    } else if (data.isPyathada || data.isAfternoonPyathada || data.isThamanyo || data.isWarameittugyi || data.isWarameittunge) {
+        ss << "   Status: ⚠️ Inauspicious Day (ပြဿဒါး / သမားညို ရှောင်ကြဉ်ရမည့်နေ့)\n";
         ss << "   Note: Avoid important activities, postpone new beginnings\n";
     } else {
-        ss << "   Status: ⚪ Neutral Day\n";
+        ss << "   Status: ⚪ Neutral Day (သာမန်နေ့)\n";
         ss << "   Note: Normal activities permitted\n";
     }
 
@@ -719,85 +719,85 @@ std::string MyanmarCalendar::generateJSON(const MyanmarCalendarData& data) const
 
 std::string MyanmarCalendar::getMyanmarMonthName(MyanmarMonth month) const {
     switch (month) {
-        case MyanmarMonth::FIRST_WASO: return "First Waso";
-        case MyanmarMonth::TAGU: return "Tagu";
-        case MyanmarMonth::KASON: return "Kason";
-        case MyanmarMonth::NAYON: return "Nayon";
-        case MyanmarMonth::WASO: return "Waso";
-        case MyanmarMonth::WAGAUNG: return "Wagaung";
-        case MyanmarMonth::TAWTHALIN: return "Tawthalin";
-        case MyanmarMonth::THADINGYUT: return "Thadingyut";
-        case MyanmarMonth::TAZAUNGMON: return "Tazaungmon";
-        case MyanmarMonth::NADAW: return "Nadaw";
-        case MyanmarMonth::PYATHO: return "Pyatho";
-        case MyanmarMonth::TABODWE: return "Tabodwe";
-        case MyanmarMonth::TABAUNG: return "Tabaung";
-        case MyanmarMonth::LATE_TAGU: return "Late Tagu";
-        case MyanmarMonth::LATE_KASON: return "Late Kason";
+        case MyanmarMonth::FIRST_WASO: return "First Waso (ပထမဝါဆို)";
+        case MyanmarMonth::TAGU: return "Tagu (တန်ခူး)";
+        case MyanmarMonth::KASON: return "Kason (ကဆုန်)";
+        case MyanmarMonth::NAYON: return "Nayon (နယုန်)";
+        case MyanmarMonth::WASO: return "Waso (ဝါဆို)";
+        case MyanmarMonth::WAGAUNG: return "Wagaung (ဝါခေါင်)";
+        case MyanmarMonth::TAWTHALIN: return "Tawthalin (တော်သလင်း)";
+        case MyanmarMonth::THADINGYUT: return "Thadingyut (သီတင်းကျွတ်)";
+        case MyanmarMonth::TAZAUNGMON: return "Tazaungmon (တန်ဆောင်မုန်း)";
+        case MyanmarMonth::NADAW: return "Nadaw (နတ်တော်)";
+        case MyanmarMonth::PYATHO: return "Pyatho (ပြာသို)";
+        case MyanmarMonth::TABODWE: return "Tabodwe (တပို့တွဲ)";
+        case MyanmarMonth::TABAUNG: return "Tabaung (တပေါင်း)";
+        case MyanmarMonth::LATE_TAGU: return "Late Tagu (နှောင်းတန်ခူး)";
+        case MyanmarMonth::LATE_KASON: return "Late Kason (နှောင်းကဆုန်)";
         default: return "Unknown";
     }
 }
 
 std::string MyanmarCalendar::getMyanmarWeekdayName(MyanmarWeekday weekday) const {
     switch (weekday) {
-        case MyanmarWeekday::SATURDAY: return "Saturday";
-        case MyanmarWeekday::SUNDAY: return "Sunday";
-        case MyanmarWeekday::MONDAY: return "Monday";
-        case MyanmarWeekday::TUESDAY: return "Tuesday";
-        case MyanmarWeekday::WEDNESDAY: return "Wednesday";
-        case MyanmarWeekday::THURSDAY: return "Thursday";
-        case MyanmarWeekday::FRIDAY: return "Friday";
+        case MyanmarWeekday::SATURDAY: return "Saturday (စနေ)";
+        case MyanmarWeekday::SUNDAY: return "Sunday (တနင်္ဂနွေ)";
+        case MyanmarWeekday::MONDAY: return "Monday (တနင်္လာ)";
+        case MyanmarWeekday::TUESDAY: return "Tuesday (အင်္ဂါ)";
+        case MyanmarWeekday::WEDNESDAY: return "Wednesday (ဗုဒ္ဓဟူး)";
+        case MyanmarWeekday::THURSDAY: return "Thursday (ကြာသပတေး)";
+        case MyanmarWeekday::FRIDAY: return "Friday (သောကြာ)";
         default: return "Unknown";
     }
 }
 
 std::string MyanmarCalendar::getMahaboteName(Mahabote mahabote) const {
     switch (mahabote) {
-        case Mahabote::BINGA: return "Binga";
-        case Mahabote::ATUN: return "Atun";
-        case Mahabote::YAZA: return "Yaza";
-        case Mahabote::ADIPATI: return "Adipati";
-        case Mahabote::MARANA: return "Marana";
-        case Mahabote::THIKE: return "Thike";
-        case Mahabote::PUTI: return "Puti";
+        case Mahabote::BINGA: return "Binga (ဘင်္ဂ)";
+        case Mahabote::ATUN: return "Atun (အထွန်း)";
+        case Mahabote::YAZA: return "Yaza (ရာဇ)";
+        case Mahabote::ADIPATI: return "Adipati (အဓိပတိ)";
+        case Mahabote::MARANA: return "Marana (မရဏ)";
+        case Mahabote::THIKE: return "Thike (သိုက်)";
+        case Mahabote::PUTI: return "Puti (ပုတိ)";
         default: return "Unknown";
     }
 }
 
 std::string MyanmarCalendar::getNakhatName(Nakhat nakhat) const {
     switch (nakhat) {
-        case Nakhat::ORC: return "Orc";
-        case Nakhat::ELF: return "Elf";
-        case Nakhat::HUMAN: return "Human";
+        case Nakhat::ORC: return "Balu (ဘီလူး)";
+        case Nakhat::ELF: return "Nat (နတ်)";
+        case Nakhat::HUMAN: return "Lu (လူ)";
         default: return "Unknown";
     }
 }
 
 std::string MyanmarCalendar::getNagahleDirectionName(NagahleDirection direction) const {
     switch (direction) {
-        case NagahleDirection::WEST: return "West";
-        case NagahleDirection::NORTH: return "North";
-        case NagahleDirection::EAST: return "East";
-        case NagahleDirection::SOUTH: return "South";
+        case NagahleDirection::WEST: return "West (အနောက်)";
+        case NagahleDirection::NORTH: return "North (မြောက်)";
+        case NagahleDirection::EAST: return "East (အရှေ့)";
+        case NagahleDirection::SOUTH: return "South (တောင်)";
         default: return "Unknown";
     }
 }
 
 std::string MyanmarCalendar::getMoonPhaseName(MyanmarMoonPhase phase) const {
     switch (phase) {
-        case MyanmarMoonPhase::WAXING: return "Waxing";
-        case MyanmarMoonPhase::FULL_MOON: return "Full Moon";
-        case MyanmarMoonPhase::WANING: return "Waning";
-        case MyanmarMoonPhase::NEW_MOON: return "New Moon";
+        case MyanmarMoonPhase::WAXING: return "Waxing (လဆန်း)";
+        case MyanmarMoonPhase::FULL_MOON: return "Full Moon (လပြည့်)";
+        case MyanmarMoonPhase::WANING: return "Waning (လဆုတ်)";
+        case MyanmarMoonPhase::NEW_MOON: return "New Moon (လကွယ်)";
         default: return "Unknown";
     }
 }
 
 std::string MyanmarCalendar::getYearTypeName(MyanmarYearType type) const {
     switch (type) {
-        case MyanmarYearType::COMMON: return "Common Year";
-        case MyanmarYearType::LITTLE_WATAT: return "Little Watat";
-        case MyanmarYearType::BIG_WATAT: return "Big Watat";
+        case MyanmarYearType::COMMON: return "Common Year (သာမန်နှစ်)";
+        case MyanmarYearType::LITTLE_WATAT: return "Little Watat (ဝါငယ်ထပ်နှစ်)";
+        case MyanmarYearType::BIG_WATAT: return "Big Watat (ဝါကြီးထပ်နှစ်)";
         default: return "Unknown";
     }
 }

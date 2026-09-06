@@ -101,11 +101,11 @@ public:
 
     // Ephemeris, Calendar & Table Views
     void showPlanetaryPositions();
-    void showHinduPanchang();
-    void showHinduMonth();
-    void showMyanmarCalendar();
-    void showMyanmarMonth();
-    void showChineseCalendar();
+    void showHinduPanchang(bool prompt = true);
+    void showHinduMonth(bool prompt = true);
+    void showMyanmarCalendar(bool prompt = true);
+    void showMyanmarMonth(bool prompt = true);
+    void showChineseCalendar(bool prompt = true);
     void showAspectGrid();
     void showConjunctions();
     void showEclipses();
@@ -113,11 +113,11 @@ public:
     void showKPTransitions();
     void showEphemerisTable();
     void showAstroCoordinates();
-    void showEphemerisMonthly();
+    void showEphemerisMonthly(bool prompt = true);
     void showEphemerisYearly();
     void showEphemerisTransits();
-    void showAstroCalendarDay();
-    void showAstroCalendarMonth();
+    void showAstroCalendarDay(bool prompt = true);
+    void showAstroCalendarMonth(bool prompt = true);
 
     // Help Dialogs
     void showHelpAbout();
