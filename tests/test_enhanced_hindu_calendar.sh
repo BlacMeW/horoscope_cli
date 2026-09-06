@@ -2,9 +2,13 @@
 
 echo "=== Building Enhanced Hindu Calendar Test ==="
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$ROOT_DIR"
+
 # Set compiler and flags
 CXX=g++
-CXXFLAGS="-std=c++17 -O2 -Wall -Wextra -DSE_EPHE_PATH=\"$(pwd)/data\""
+CXXFLAGS="-std=c++17 -O2 -Wall -Wextra -DSE_EPHE_PATH=\"$ROOT_DIR/data\""
 INCLUDES="-Iinclude -Ithird_party/swisseph -Ithird_party/tabulate/single_include"
 LIBS="-lm"
 
@@ -16,7 +20,7 @@ src/birth_chart.cpp
 src/location_manager.cpp
 src/ephemeris_manager.cpp
 src/myanmar_calendar.cpp
-test_enhanced_panchanga.cpp
+tests/test_enhanced_panchanga.cpp
 "
 
 # Swiss Ephemeris source files
@@ -57,14 +61,14 @@ fi
 # Compile the test
 echo "🔨 Compiling Enhanced Hindu Calendar Test..."
 
-$CXX $CXXFLAGS $INCLUDES -o test_enhanced_panchanga $SOURCES $SWISSEPH_SOURCES $LIBS
+$CXX $CXXFLAGS $INCLUDES -o tests/bin/test_enhanced_panchanga $SOURCES $SWISSEPH_SOURCES $LIBS
 
 if [ $? -eq 0 ]; then
     echo "✅ Compilation successful!"
     echo ""
     echo "🚀 Running Enhanced Hindu Calendar Test..."
     echo "================================================"
-    ./test_enhanced_panchanga
+    ./tests/bin/test_enhanced_panchanga
 
     if [ $? -eq 0 ]; then
         echo ""

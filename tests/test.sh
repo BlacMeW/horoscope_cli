@@ -9,12 +9,18 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-EXECUTABLE="./bin/horoscope_cli"
-if [ ! -f "$EXECUTABLE" ]; then
-    EXECUTABLE="./build/horoscope_cli"
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [ ! -f "$EXECUTABLE" ]; then
+EXECUTABLE=""
+for candidate in "$ROOT_DIR/bin/horoscope_cli" "$ROOT_DIR/build/horoscope_cli" "$ROOT_DIR/horoscope_cli" "./bin/horoscope_cli" "./horoscope_cli"; do
+    if [ -x "$candidate" ]; then
+        EXECUTABLE="$candidate"
+        break
+    fi
+done
+
+if [ -z "$EXECUTABLE" ]; then
     echo -e "${RED}Error: horoscope_cli executable not found. Build the project first.${NC}"
     exit 1
 fi
